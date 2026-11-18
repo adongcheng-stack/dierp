@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0">
+  <bpmn:collaboration id="Collaboration_0g57pqx">
+    <bpmn:participant id="Participant_1wbwmoj" name="生产订单关闭" processRef="HF_PP_P200" />
+  </bpmn:collaboration>
+  <bpmn:process id="HF_PP_P200" name="生产订单关闭流程" isExecutable="true">
+    <bpmn:documentation>适用范围: 本流程适用于所有生产订单类型的关闭流程</bpmn:documentation>
+    <bpmn:extensionElements />
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_PMC_PPC" name="PMC/PPC">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_PP_P200-</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_020</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_HF-SD-P060</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_050</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_PP_P200-ZP01-060</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_Settlement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_PP_P200-ZP01-010</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_PP_P200-ZP01-040</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Marketing" name="市场部">
+        <bpmn:flowNodeRef>Gateway_030</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_Replenishment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_BackflushError</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="开始">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:callActivity id="HF_PP_P200-" name="生成车间计划流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 承接生成车间计划流程</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="ShopFloorPlanning" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_020" name="是否满足SO交货数量?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_030" name="是否需要补投?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="SubProcess_Replenishment" name="生产补投流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 承接生产补投流程</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="Replenishment" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="SubProcess_HF-SD-P060" name="销售发货流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 转至销售发货流程</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="HF-SD-P060" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_050" name="是否存在反冲错误?">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="SubProcess_BackflushError" name="反冲错误处理流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 转接反冲错误处理流程</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="BackflushError" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:serviceTask id="HF_PP_P200-ZP01-060" name="060: 生产订单技术性关闭">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+SAP操作: COHV, CO02
+操作: PPC对生产订单进行技术性关闭
+关闭条件:
+1. 入库数量≥生产数量
+2. 在线天数超过30天(第一笔发料日期作为起始日期)
+3. 暂停的生产订单不在以上范围内
+关单原则: 当投料数量=入仓数量+报废数量(只有良品和不良品两种状态)时，该订单才可以关闭</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="external" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="SubProcess_Settlement" name="生产订单结算流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 转至生产订单结算流程</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="Settlement" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_1" name="结束">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="HF_PP_P200-ZP01-010" name="010: 生产订单执行情况确认">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+SAP操作: COOIS
+输入输出文件: 生产订单查询报表
+操作: PPC查询生产订单查询报表，检查生产订单报工、投料、退料、报废、入库情况</bpmn:documentation>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="HF_PP_P200-ZP01-040" name="040: 检查生产订单投料、报工情况">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+SAP操作: COOIS, C003
+操作: PPC检查生产订单投料、报工情况，确保投料、报工业务数据正常、准确</bpmn:documentation>
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="HF_PP_P200-" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="SubProcess_Replenishment" targetRef="HF_PP_P200-" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="HF_PP_P200-" targetRef="HF_PP_P200-ZP01-010" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="HF_PP_P200-ZP01-010" targetRef="Gateway_020" />
+    <bpmn:sequenceFlow id="Flow_4" name="是" sourceRef="Gateway_020" targetRef="SubProcess_HF-SD-P060">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${meetsSODeliveryQuantity == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" name="否" sourceRef="Gateway_020" targetRef="Gateway_030">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${meetsSODeliveryQuantity == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" name="是" sourceRef="Gateway_030" targetRef="SubProcess_Replenishment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${replenishmentNeeded == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" name="否" sourceRef="Gateway_030" targetRef="SubProcess_HF-SD-P060">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${replenishmentNeeded == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="SubProcess_HF-SD-P060" targetRef="HF_PP_P200-ZP01-040" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="HF_PP_P200-ZP01-040" targetRef="Gateway_050" />
+    <bpmn:sequenceFlow id="Flow_11" name="是" sourceRef="Gateway_050" targetRef="SubProcess_BackflushError">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${hasBackflushError == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_12" name="否" sourceRef="Gateway_050" targetRef="HF_PP_P200-ZP01-060">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${hasBackflushError == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="SubProcess_BackflushError" targetRef="HF_PP_P200-ZP01-060" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="HF_PP_P200-ZP01-060" targetRef="SubProcess_Settlement" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="SubProcess_Settlement" targetRef="EndEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0g57pqx">
+      <bpmndi:BPMNShape id="Participant_1wbwmoj_di" bpmnElement="Participant_1wbwmoj" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2010" height="720" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_PMC_PPC_di" bpmnElement="Lane_PMC_PPC" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="1980" height="490" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Marketing_di" bpmnElement="Lane_Marketing" isHorizontal="true">
+        <dc:Bounds x="190" y="570" width="1980" height="230" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="302" y="249" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="309" y="292" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_ShopFloorPlanning" bpmnElement="HF_PP_P200-" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="410" y="227" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_020" bpmnElement="Gateway_020" isMarkerVisible="true">
+        <dc:Bounds x="732" y="242" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="716" y="205" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_030" bpmnElement="Gateway_030" isMarkerVisible="true">
+        <dc:Bounds x="852" y="642" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="841" y="699" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_Replenishment" bpmnElement="SubProcess_Replenishment" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="970" y="627" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_SalesDelivery" bpmnElement="SubProcess_HF-SD-P060">
+        <dc:Bounds x="1130" y="227" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_050" bpmnElement="Gateway_050" isMarkerVisible="true">
+        <dc:Bounds x="1455" y="242" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1435" y="205" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_BackflushError" bpmnElement="SubProcess_BackflushError">
+        <dc:Bounds x="1580" y="627" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Task_060" bpmnElement="HF_PP_P200-ZP01-060">
+        <dc:Bounds x="1690" y="227" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_Settlement" bpmnElement="SubProcess_Settlement" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="1860" y="227" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_EndEvent_2" bpmnElement="EndEvent_1">
+        <dc:Bounds x="2032" y="249" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2038" y="225" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_117c4yd_di" bpmnElement="HF_PP_P200-ZP01-010">
+        <dc:Bounds x="570" y="227" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_081qsk3_di" bpmnElement="HF_PP_P200-ZP01-040">
+        <dc:Bounds x="1300" y="227" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="338" y="267" />
+        <di:waypoint x="410" y="267" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1020" y="710" />
+        <di:waypoint x="1020" y="740" />
+        <di:waypoint x="460" y="740" />
+        <di:waypoint x="460" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="510" y="267" />
+        <di:waypoint x="570" y="267" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="670" y="267" />
+        <di:waypoint x="732" y="267" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="782" y="267" />
+        <di:waypoint x="1130" y="267" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="954" y="249" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="757" y="292" />
+        <di:waypoint x="757" y="667" />
+        <di:waypoint x="852" y="667" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="767" y="479" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="902" y="667" />
+        <di:waypoint x="970" y="667" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="934" y="649" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="877" y="640" />
+        <di:waypoint x="877" y="280" />
+        <di:waypoint x="1130" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="887" y="459" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1230" y="267" />
+        <di:waypoint x="1300" y="267" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1400" y="267" />
+        <di:waypoint x="1455" y="267" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1480" y="292" />
+        <di:waypoint x="1480" y="667" />
+        <di:waypoint x="1580" y="667" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1490" y="479" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1505" y="267" />
+        <di:waypoint x="1690" y="267" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1594" y="249" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1680" y="667" />
+        <di:waypoint x="1740" y="667" />
+        <di:waypoint x="1740" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1790" y="267" />
+        <di:waypoint x="1860" y="267" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="1960" y="267" />
+        <di:waypoint x="2032" y="267" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

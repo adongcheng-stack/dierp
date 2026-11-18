@@ -1,0 +1,102 @@
+{
+  "bom_id": "BOM-4L-001",
+  "revision": "A",
+  "effective_date": "2024-01-10",
+  "description": "四层PCB板物料清单",
+  
+  "raw_materials": [
+    {
+      "level": 1,
+      "item_no": "RM-FR4-150",
+      "description": "FR-4覆铜板 Tg150",
+      "specification": "1.6mm, 1oz铜厚",
+      "uom": "张",
+      "qty_per_unit": 0.5,
+      "waste_factor": "5%",
+      "supplier": "南亚塑胶",
+      "unit_cost": 280.00,
+      "lead_time": "7天"
+    },
+    {
+      "level": 1,
+      "item_no": "RM-PP1080",
+      "description": "1080半固化片",
+      "specification": "0.075mm",
+      "uom": "张",
+      "qty_per_unit": 1.0,
+      "waste_factor": "3%",
+      "supplier": "台光电子",
+      "unit_cost": 85.00,
+      "lead_time": "5天"
+    },
+    {
+      "level": 2,
+      "item_no": "RM-CU-FOIL",
+      "description": "电解铜箔",
+      "specification": "1oz",
+      "uom": "公斤",
+      "qty_per_unit": 0.025,
+      "waste_factor": "8%",
+      "supplier": "长春石化",
+      "unit_cost": 65.00,
+      "lead_time": "3天"
+    },
+    {
+      "level": 3,
+      "item_no": "RM-DRY-FILM",
+      "description": "干膜",
+      "specification": "1.2mil",
+      "uom": "平方米",
+      "qty_per_unit": 0.012,
+      "waste_factor": "10%",
+      "supplier": "杜邦",
+      "unit_cost": 38.00,
+      "lead_time": "10天"
+    },
+    {
+      "level": 3,
+      "item_no": "RM-SOLDER-MASK",
+      "description": "防焊油墨",
+      "specification": "绿色",
+      "uom": "公斤",
+      "qty_per_unit": 0.002,
+      "waste_factor": "15%",
+      "supplier": "太阳油墨",
+      "unit_cost": 120.00,
+      "lead_time": "7天"
+    },
+    {
+      "level": 3,
+      "item_no": "RM-ENIG-CHEM",
+      "description": "化金药水",
+      "specification": "ENIG系列",
+      "uom": "升",
+      "qty_per_unit": 0.0005,
+      "waste_factor": "20%",
+      "supplier": "安美特",
+      "unit_cost": 850.00,
+      "lead_time": "5天"
+    }
+  ],
+  
+  "consumables": [
+    {
+      "item_no": "CONS-DRILL-BIT",
+      "description": "钻头 0.3mm",
+      "uom": "支",
+      "qty_per_1000_units": 2.5,
+      "unit_cost": 12.00
+    },
+    {
+      "item_no": "CONS-ROUTER-BIT",
+      "description": "成型刀",
+      "uom": "支",
+      "qty_per_1000_units": 0.5,
+      "unit_cost": 45.00
+    }
+  ],
+  
+  "total_material_cost": 18.50,
+  "last_updated": "2024-01-10",
+  "approved_by": "王工"
+}

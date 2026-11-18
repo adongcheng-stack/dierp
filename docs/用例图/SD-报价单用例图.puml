@@ -1,0 +1,68 @@
+@startuml SD-报价单用例图
+
+title SD模块 - 报价单子模块用例图
+
+left to right direction
+
+actor 销售员 as sales
+actor 销售经理 as salesManager
+actor 工程师 as engineer
+actor 客户经理 as accountManager
+actor 总经理 as generalManager
+actor 系统 as system
+
+rectangle "报价单管理" {
+  usecase "创建报价单\n(UC-SD-004)" as UC004
+  usecase "提交报价单审批\n(UC-SD-005)" as UC005
+  usecase "审批报价单\n(UC-SD-006)" as UC006
+  usecase "拒绝报价单\n(UC-SD-007)" as UC007
+  usecase "重新提交报价单\n(UC-SD-008)" as UC008
+  usecase "销售员经客户确认报价单\n(UC-SD-009)" as UC009
+}
+
+sales --> UC004 : 创建报价单
+sales --> UC005 : 提交审批
+sales --> UC008 : 重新提交
+sales --> UC009 : 客户确认
+
+salesManager --> UC006 : 一级审核
+engineer --> UC006 : 二级审核
+accountManager --> UC006 : 三级审核
+generalManager --> UC006 : 三级审核
+
+salesManager --> UC007 : 拒绝
+engineer --> UC007 : 拒绝
+accountManager --> UC007 : 拒绝
+generalManager --> UC007 : 拒绝
+
+system --> UC004 : 自动创建产品主数据
+
+UC004 ..> UC005 : <<include>>
+UC005 ..> UC006 : <<include>>
+UC006 ..> UC007 : <<extend>>
+UC007 ..> UC008 : <<extend>>
+UC006 ..> UC009 : <<extend>>
+
+note right of UC004
+  创建报价单
+  包含客户、产品（本厂编号、产品名称）、
+  价格、交付条款等信息
+  如果本厂编号对应的产品主数据不存在，
+  SD模块调用ENG模块API自动创建产品主数据
+  手动计算报价明细成本
+end note
+
+note right of UC006
+  三级审核流程（串行）
+  一级：销售经理
+  二级：工程师
+  三级：客户经理或总经理
+end note
+
+note right of UC009
+  客户确认是线下确认
+  销售员在系统中标记"客户已确认"
+  确认后可转为销售订单
+end note
+
+@enduml

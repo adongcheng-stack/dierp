@@ -1,0 +1,154 @@
+{
+  "routing_id": "RT-8L-001",
+  "revision": "A",
+  "product_code": "PCB-8L-001",
+  
+  "process_flow": [
+    {
+      "operation_no": "10",
+      "operation_name": "内层核心板制作",
+      "work_center": "WC-CORE",
+      "setup_time": "02:00",
+      "run_time_per_unit": "00:05",
+      "sub_operations": ["开料", "内层线路", "AOI", "棕化"],
+      "quality_checkpoints": ["线宽精度", "层间对准"],
+      "output_yield": "97.5%"
+    },
+    {
+      "operation_no": "20",
+      "operation_name": "第一次压合",
+      "work_center": "WC-LAM-1",
+      "setup_time": "02:30",
+      "run_time_per_unit": "00:08",
+      "machine": "真空压合机",
+      "quality_checkpoints": ["压合厚度", "介质均匀性"],
+      "output_yield": "98.0%"
+    },
+    {
+      "operation_no": "30",
+      "operation_name": "激光钻孔",
+      "work_center": "WC-LASER",
+      "setup_time": "03:00",
+      "run_time_per_unit": "00:06",
+      "machine": "CO2激光钻孔机",
+      "quality_checkpoints": ["盲孔质量", "孔型检查"],
+      "output_yield": "97.0%"
+    },
+    {
+      "operation_no": "40",
+      "operation_name": "电镀填孔",
+      "work_center": "WC-FILL",
+      "setup_time": "01:30",
+      "run_time_per_unit": "00:05",
+      "machine": "脉冲电镀线",
+      "quality_checkpoints": ["填孔效果", "切片分析"],
+      "output_yield": "96.5%"
+    },
+    {
+      "operation_no": "50",
+      "operation_name": "第二次压合",
+      "work_center": "WC-LAM-2",
+      "setup_time": "02:30",
+      "run_time_per_unit": "00:08",
+      "quality_checkpoints": ["总厚度", "平整度"],
+      "output_yield": "98.0%"
+    },
+    {
+      "operation_no": "60",
+      "operation_name": "机械钻孔",
+      "work_center": "WC-DRILL-HDI",
+      "setup_time": "03:30",
+      "run_time_per_unit": "00:07",
+      "machine": "高精度钻孔机",
+      "tooling": "阶梯钻头",
+      "quality_checkpoints": ["孔位精度", "孔壁质量"],
+      "output_yield": "98.5%"
+    },
+    {
+      "operation_no": "70",
+      "operation_name": "背钻",
+      "work_center": "WC-BACKDRILL",
+      "setup_time": "02:00",
+      "run_time_per_unit": "00:04",
+      "machine": "背钻专用机",
+      "quality_checkpoints": ["残桩长度", "背钻深度"],
+      "output_yield": "97.5%"
+    },
+    {
+      "operation_no": "80",
+      "operation_name": "沉铜与电镀",
+      "work_center": "WC-PLATE",
+      "setup_time": "02:00",
+      "run_time_per_unit": "00:06",
+      "machine": "水平电镀线",
+      "quality_checkpoints": ["孔铜厚度", "面铜均匀性"],
+      "output_yield": "98.0%"
+    },
+    {
+      "operation_no": "90",
+      "operation_name": "外层线路(LDI)",
+      "work_center": "WC-LDI",
+      "setup_time": "02:30",
+      "run_time_per_unit": "00:05",
+      "machine": "激光直接成像机",
+      "quality_checkpoints": ["线宽精度±10%", "AOI检查"],
+      "output_yield": "98.5%"
+    },
+    {
+      "operation_no": "100",
+      "operation_name": "阻焊(LDI)",
+      "work_center": "WC-SM-LDI",
+      "setup_time": "01:45",
+      "run_time_per_unit": "00:04",
+      "quality_checkpoints": ["开窗精度", "厚度均匀性"],
+      "output_yield": "99.0%"
+    },
+    {
+      "operation_no": "110",
+      "operation_name": "表面处理",
+      "work_center": "WC-SF-ENIG",
+      "setup_time": "01:00",
+      "run_time_per_unit": "00:03",
+      "quality_checkpoints": ["镍层厚度", "金层厚度"],
+      "output_yield": "99.2%"
+    },
+    {
+      "operation_no": "120",
+      "operation_name": "二次钻孔(锣边)",
+      "work_center": "WC-ROUTER-HDI",
+      "setup_time": "01:30",
+      "run_time_per_unit": "00:02",
+      "quality_checkpoints": ["尺寸精度", "边缘质量"],
+      "output_yield": "99.5%"
+    },
+    {
+      "operation_no": "130",
+      "operation_name": "电测与阻抗",
+      "work_center": "WC-TEST-ADV",
+      "setup_time": "03:00",
+      "run_time_per_unit": "00:04",
+      "machine": "飞针测试机+TDR",
+      "quality_checkpoints": ["100%电测", "阻抗测试"],
+      "output_yield": "99.8%"
+    },
+    {
+      "operation_no": "140",
+      "operation_name": "终检与包装",
+      "work_center": "WC-FQC",
+      "setup_time": "01:00",
+      "run_time_per_unit": "00:02",
+      "sub_operations": ["外观检查", "X-ray检查", "真空包装"],
+      "quality_checkpoints": ["AQL 0.65", "包装符合性"],
+      "output_yield": "100%"
+    }
+  ],
+  
+  "total_cycle_time": "01:09",
+  "total_yield": "78.4%",
+  "standard_batch_size": 50,
+  "special_notes": [
+    "需做首板确认",
+    "每批提供切片报告",
+    "阻抗测试报告随货提供"
+  ]
+}

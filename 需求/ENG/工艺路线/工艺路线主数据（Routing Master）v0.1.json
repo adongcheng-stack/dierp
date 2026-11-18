@@ -1,0 +1,126 @@
+{
+  "routingHeader": {
+    "routingId": "RT-2023-PCB-8801",
+    "version": "A01", 
+    "materialId": "PN-PCB-Motherboard-V3",
+    "description": "Mainboard Layer 1-4 Process / 主板1-4层压合后制程",
+    "plantId": "SZ-FACTORY-01",
+    "routingStatus": "RELEASED", // RELEASED, DRAFT, OBSOLETE
+    "validity": {
+      "validFrom": "2023-10-01T00:00:00Z",
+      "validTo": "9999-12-31T23:59:59Z"
+    },
+    "productionBasis": { //PCB行业核心逻辑：拼板与大板定义"
+      "baseUnit": "PNL",               // 基础单位：通常按大板(Panel)计算
+      "baseQuantity": 1,               // 基数为1个Panel
+      "unitsPerPanel": 12,             // 1个Panel里有12个Set/Unit (最关键的换算系数)
+      "panelSize": "18x24 INCH"        // 物理属性，辅助排程
+    },
+  },
+  
+    "auditTrail": {
+      "description": "审计追踪，替代SAP的更改记录",
+      "createdBy": "User_007",
+      "createdDate": "2023-09-28",
+      "lastModifiedBy": "User_009",
+      "changeRequestNo": "ECN-2023-889" // 关联工程变更单(ECN)
+    }
+  },
+
+  "operations": [
+    // -------------------------------------------------------
+    // 工序 10: 内部生产 (Standard Internal Operation)
+    // -------------------------------------------------------
+    {
+      "opSequence": 0010,
+      "opName": "CNC Drilling / 数控钻孔",
+      "opCode": "DRL-001",
+      
+      // 【核心实体】：物理存在的机器组
+      "workCenterId": "WC-DRL-CNC-A",
+      
+      // 【控制逻辑】：替代 SAP Control Key
+      "processBehavior": {
+        "type": "INTERNAL",           // 类型：内部制造
+        "costingRelevant": true,      // 计入成本
+        "schedulingRelevant": true,   // 占用产能排程
+        "confirmationRequired": true, // 需要工人报工
+        "allowAutoBackflush": false,  // 不允许自动倒扣料（钻头贵，需实扣）
+        "qualityInspection": false    // 非质检工序
+      },
+
+      // 【参数块】：因为 type=INTERNAL，系统读取此块
+      "internalParams": {
+        "setupTime": 30.0,       // 调机时间 (分钟)
+        "machineTime": 120.0,    // 机器运行时间 (分钟/BaseQty)
+        "laborTime": 30.0,       // 人工辅助时间 (分钟/BaseQty)
+        "waitQueueTime": 0.0     // 排队缓冲
+      },
+      
+      // 生产作业指导书链接
+      "sopLink": "http://docs.factory/sop/drl-v3.pdf"
+    },
+
+    // -------------------------------------------------------
+    // 工序 20: 工序外协 (Subcontracting Operation)
+    // -------------------------------------------------------
+    {
+      "opSequence": 0020,
+      "opName": "Surface Finish ENIG / 沉金",
+      "opCode": "SFIN-ENIG",
+      
+      // 【核心实体】：虚拟工作中心 (逻辑占位符)
+      // 用于物流指引(发货区)和排程占位
+      "workCenterId": "WC-EXT-GENERAL", 
+      
+      // 【控制逻辑】
+      "processBehavior": {
+        "type": "EXTERNAL",           // 类型：外部协作
+        "costingRelevant": true,      // 计入成本 (只不过算的是采购费)
+        "schedulingRelevant": true,   // 影响交期 (Lead Time)
+        "confirmationRequired": true, // 需要收货确认
+        "generatePurchaseReq": true   // 自动触发出PR
+      },
+
+      // 【参数块】：因为 type=EXTERNAL，系统读取此块
+      "externalParams": {
+        "serviceId": "SRV-ENIG-01",   // 采购服务代码
+        "plannedLeadTimeDays": 2.0,   // 计划交期：2天
+        "standardPricePerUnit": 15.5, // 估算单价 (实际取采购订单)
+        "currency": "CNY",
+        "preferredVendorId": "VEN-FOXCONN" // 建议供应商(可选)
+      }
+    },
+
+    // -------------------------------------------------------
+    // 工序 30: 内部质检 (Quality Inspection)
+    // -------------------------------------------------------
+    {
+      "opSequence": 30,
+      "opName": "AOI Inspection / 光学检测",
+      "opCode": "QC-AOI",
+      
+      "workCenterId": "WC-QA-AOI-01",
+      
+      "processBehavior": {
+        "type": "QUALITY",            // 类型：质检
+        "costingRelevant": true,      // 质检也要算人工成本
+        "schedulingRelevant": true,   // 占机器
+        "qualityInspection": true,    // 触发生成检验单(Inspection Lot)
+        "verificationLogic": "BLOCK_ON_FAIL" // 失败则锁单
+      },
+
+      "internalParams": {
+        "setupTime": 10.0,
+        "machineTime": 60.0,
+        "laborTime": 60.0
+      },
+      
+      // 质检特有参数
+      "qualityParams": {
+        "inspectionPlanId": "QP-PCB-LEVEL2", // 关联具体的检验项目表
+        "samplingRate": 100.0 // 全检
+      }
+    }
+  ]
+}

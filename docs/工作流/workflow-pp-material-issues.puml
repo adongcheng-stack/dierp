@@ -1,0 +1,49 @@
+' ============================================
+' 某某ERP系统 - 生产领料工作流
+' ============================================
+' 版本：v1.4
+' 创建日期：2025-01-XX
+' 最后更新：2025-01-XX
+' 基于：某某ERP系统MVP版本需求规格说明书 v1.4
+' 模块：PP（生产计划与控制）/ MM（物料管理）
+'
+' 本文档包含生产领料模块的业务流程，使用PlantUML活动图格式。
+' ============================================
+
+' 3.2 生产领料流程
+@startuml PP-生产领料流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title PP模块 - 生产领料流程
+
+start
+:选择生产订单（状态：RELEASED/IN_PRODUCTION）;
+:加载BOM，自动生成领料需求;
+:显示库存信息（当前库存、在途量、可用量）;
+
+if (库存是否充足?) then (不足)
+  :生成缺料单;
+  stop
+else (充足)
+endif
+
+:创建领料单;
+:物控岗发放物料，生产线领料;
+:更新物料库存;
+:创建MaterialTransaction记录;
+stop
+
+note right
+  **关键规则：**
+  1. 系统根据生产订单关联的BOM自动生成领料需求
+  2. 领料后自动更新物料库存
+  3. 创建MaterialTransaction记录
+end note
+
+@enduml
+

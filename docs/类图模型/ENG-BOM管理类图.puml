@@ -1,0 +1,80 @@
+@startuml ENG-BOM管理类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title ENG模块 - BOM管理子模块类图
+
+package "BOM管理 (BOM Management)" {
+    
+    class Material {
+        +String material_code
+        +String material_name
+    }
+    
+    class BOM {
+        +Integer id
+        +String bom_number
+        +String version
+        +String parent_material_code
+        +String plant_id
+        +String bom_type
+        +BigDecimal base_quantity
+        +String base_uom
+        +Date effective_date
+        +Date expiry_date
+        +Enum status
+        +String description
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class BOMItem {
+        +Integer id
+        +String bom_number
+        +Integer line_number
+        +String material_code
+        +String item_category
+        +BigDecimal quantity
+        +String unit
+        +BigDecimal scrap_rate
+        +String calculation_formula
+        +String layer_code
+        +String material_type
+        +String process_step
+        +String remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class ProductionVersion {
+        +String production_version_id
+        +String bom_number
+    }
+    
+    ' 关系定义
+    Material "1" --> "*" BOM : has
+    BOM "1" *-- "*" BOMItem : contains
+    Material "1" --> "*" BOMItem : used_in
+    BOM "1" --> "*" ProductionVersion : used_in
+    
+    note right of BOM
+        BOM（物料清单）
+        状态：NEW, REVIEWING, RELEASED, PRODUCING, OBSOLETE
+        基础单位通常为PNL（拼板）
+        只有RELEASED状态的BOM才能用于生产版本
+    end note
+    
+    note right of BOMItem
+        BOM明细
+        包含层码、物料类型等PCB专用信息
+        支持PCB行业特定的物料分类和属性
+    end note
+}
+
+@enduml

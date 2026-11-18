@@ -1,0 +1,131 @@
+{
+  "workCenterId": "DRILL-A", // <工作中心代码>，业务主键，系统唯一标识
+  "description": "CNC钻孔机组A (4轴)", // <工作中心描述>
+  "workCenterType": "MACHINE_GROUP", // <工作中心类型>，！！！可能值：MACHINE (单台机器), MACHINE_GROUP (机组), LABOR (人工工位), PRODUCTION_LINE (产线)
+  "plantId": "PLANT-1000", // <所属工厂代码>
+  "status": "ACTIVE", // <状态>，！！！可能值：ACTIVE (活动的), INACTIVE (停用), IN_MAINTENANCE (维护中)
+  "hierarchy": { // <层级关系>
+    "parentWorkCenterId": "DRILLING_DEPT", //<父工作中心代码>，！！！可能值：DRILLING_DEPT (钻孔部门), PLATING_LINE_A (电镀A线)
+    "level": 2
+  },
+
+  // 1. 基础与调度数据 (Basic & Scheduling Data)
+  "schedulingData": {
+    "workCenterCategory": "0001", // <工作中心类别>，标准配置，定义了屏幕字段和功能。！！！可能值：0001 (机器), 0002 (人工), 0003 (产线)
+    "usage": "PP01", // <用途>，过滤字段，决定此工作中心能用于哪些任务。！！！可能值：PP01 (生产), PM01 (设备维护), QM01 (质量检验)
+    "standardValueKey": "SAP_02", // <标准值码>，定义了该工作中心需要维护哪几种标准时间。！！！可能值：SVK_02 (准备+机器+人工), SVK_01 (仅机器时间)
+    "controlKey": "PP01", // <默认控制码>???
+    "queueTime": 0.5, // <排队时间> (小时)，物料到达工作中心后，开始加工前的平均排队时间。0.5 (小时), 1.0 (小时) - 用于更真实的提前期计算
+    "waitTime": 0, // <等待时间> (小时)，一批PCB板子在这个工作中心 加工完成后，由于工艺要求（如冷却、固化、等待质检结果）而必须停留的最小时间，之后才能移动到下一个工作中心。
+    "moveTime": 0.25 // <传送时间> (小时)，将一批PCB板子从上一个工作中心的产出点，物理搬运到下一个工作中心的投入点所花费的时间。
+  },
+
+  // 2. 产能数据 (Capacity Data)
+  "capacityData": {
+    "capacityCategory": "001", // <能力类别>，定义了计算产能的基础是机器还是人工。 (e.g., 001=机器, 002=人工)
+    "factoryCalendarId": "CN", // <工厂日历ID>，需要有可以自定义的地方，我们的节假日可以由工厂总经理来决定调整
+    "standardAvailableCapacity": { //<标准产能>
+      "startTime": "08:00:00", // <班次开始时间>
+      "finishTime": "17:00:00", // <班次结束时间>
+      "breakTime": 1.0, // <休息时间 (小时)>
+      "capacityUtilization": 90, // <产能利用率 (%)>，手动维护，考虑到设备故障、效率损失等因素的百分比。
+      "numberOfCapacities": 4 // <能力数量> (e.g., 4台机器或4个工人)，并行处理的同类单元的数量。
+    },
+    "capacityFormula": { // <产能计算公式>，用于计算工时的公式，指向系统配置的公式，用于计算工序的执行时间。
+      "setup": "SAPF01", // 准备时间公式
+      "processing": "SAPF02", // 处理时间公式
+      "teardown": "SAPF03" // 清理时间公式
+    }
+  },
+
+  // 3. 成本核算数据 (Costing Data)
+  "costingData": { //<成本数据>
+    "costCenterId": "CC-4210", // <关联的成本中心代码>
+    "activityTypes": [ // <作业类型>
+      {
+        "activityTypeId": "ACT-SETUP", // <作业类型>，！！！可能值: ACT-SETUP (准备), ACT-MACHINE (机器), ACT-LABOR (人工)
+        "description": "机器准备作业", // <描述>
+        "standardRate": 50.00, // <作业标准费率> (e.g., 50 USD/Hour)
+        "unitOfMeasure": "CNY/H"
+      },
+      {
+        "activityTypeId": "ACT-MACHINE",
+        "description": "机器运行作业",
+        "standardRate": 120.00,
+        "unitOfMeasure": "CNY/H"
+      },
+      {
+        "activityTypeId": "ACT-LABOR",
+        "description": "人工监控作业",
+        "standardRate": 35.00,
+        "unitOfMeasure": "CNY/H"
+      }
+    ]
+  },
+
+  // 4. PCB行业特定数据 (PCB-Specific Technical Data)
+/*
+##如何关联PCB行业特定数据与工作中心类别
+这是一个非常棒的系统设计问题！您希望实现 “分类别、动态属性” 的管理，避免让不相关的属性出现在不相关的工作中心上。在自研系统或对SAP进行增强时，可以这样实现：
+
+核心思路：引入“属性模板”或“类别定义”的元数据层。
+
+###第一步：定义类别模板 (Category Template)
+在您的系统中，创建一个新的配置模块，叫做“工作中心类别模板”。在这里您可以定义：
+
+类别代码: DRILLING (钻孔)
+类别描述: 钻孔类工作中心
+关联属性:
+MinHoleSize (最小孔径), 数据类型: Number, 单位: mm, 是否必填: 是
+PositionalAccuracy (定位精度), 数据类型: Number, 单位: mm, 是否必填: 否
+MaxLayerCount (最大加工层数), 数据类型: Integer, 单位: Layers, 是否必填: 是
+同样，为其他类别创建模板：
+
+类别代码: PLATING (电镀)
+关联属性:
+TankCapacity (镀缸容量), 数据类型: Number, 单位: L
+MaxCurrent (最大电流), 数据类型: Number, 单位: A
+
+###第二步：在主数据创建界面实现动态加载
+当用户在您的系统中创建或编辑一个工作中心主数据时：
+
+界面上会有一个必填的下拉框，让用户首先选择 “工作中心类别” (例如，从DRILLING, PLATING, AOI中选择)。
+一旦用户选择了DRILLING，您的前端应用或后端逻辑会立即去查询DRILLING的类别模板。
+然后，界面会 动态地生成 “最小孔径”、“定位精度”、“最大加工层数”这几个输入框，并根据模板定义好它们的标签、单位和校验规则（如是否必填）。
+
+###第三步：数据的存储
+无论前端如何动态展示，后端的数据存储模型仍然可以是您之前设计的那个灵活的technicalAttributes数组。当用户保存时，数据会被转换成键值对的形式存入：
+
+<JSON>
+*/
+"technicalAttributes": [
+  { "attributeName": "MinHoleSize", "attributeValue": "0.15", "unit": "mm" },
+  { "attributeName": "MaxLayerCount", "attributeValue": "12", "unit": "Layers" }
+]
+---
+  "technicalAttributes": [
+    {
+      "attributeName": "MinHoleSize", // 最小孔径
+      "attributeValue": "0.15",
+      "unit": "mm"
+    },
+    {
+      "attributeName": "MaxLayerCount", // 最大加工层数
+      "attributeValue": "12",
+      "unit": "Layers"
+    },
+    {
+      "attributeName": "PositionalAccuracy", // 定位精度
+      "attributeValue": "0.01",
+      "unit": "mm"
+    }
+  ],
+
+  // 5. 系统与审计信息 (System & Audit Info)
+  "systemInfo": {
+    "createdBy": "user_admin",
+    "creationDate": "2024-01-15T09:00:00Z",
+    "lastModifiedBy": "user_prod_mgr",
+    "lastModifiedDate": "2024-05-22T11:45:00Z"
+  }
+}

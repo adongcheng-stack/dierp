@@ -1,0 +1,88 @@
+@startuml PP-工序报工类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title PP模块 - 工序报工子模块类图
+
+package "工序报工 (Operation Reporting)" {
+    
+    class ProductionOrder {
+        +String order_number
+        +String lot_number
+        +Enum status
+    }
+    
+    class LotCard {
+        +String lot_number
+        +String production_order_number
+    }
+    
+    class RoutingOperation {
+        +Integer id
+        +String routing_id
+        +String operation_no
+        +String operation_code
+        +String operation_name
+        +String operation_type
+        +String work_center_id
+    }
+    
+    class WorkCenter {
+        +String work_center_id
+        +String description
+    }
+    
+    class OperationReport {
+        +Integer id
+        +String report_number
+        +String production_order_number
+        +String lot_number
+        +Integer routing_operation_id
+        +String work_center_id
+        +String operation_no
+        +String operation_name
+        +BigDecimal reported_quantity
+        +BigDecimal good_quantity
+        +BigDecimal defective_quantity
+        +BigDecimal actual_hours
+        +Timestamp report_date
+        +String reported_by
+        +Timestamp reported_at
+        +Enum status
+        +String rejection_reason
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    ProductionOrder "1" --> "*" OperationReport : generates
+    LotCard "1" --> "*" OperationReport : used_in
+    RoutingOperation "1" --> "*" OperationReport : reported_for
+    WorkCenter "1" --> "*" OperationReport : reports_to
+    
+    note right of OperationReport
+        工序报工/报工单
+        状态：PENDING, IN_PROGRESS, COMPLETED, REJECTED
+        系统根据生产订单/工单号自动查询关联的LOT卡（1:1关系）
+        系统自动读取LOT卡号并填充到报工单中，LOT卡号不可修改
+        如果找不到LOT卡，不允许保存报工
+        记录完成数量、良品数量、不良品数量、工时等
+        如果工序配置了自动倒扣料，则扣减物料库存
+    end note
+    
+    note right of ProductionOrder
+        生产订单/工单
+        一个生产订单/工单对应一个LOT卡（1:1关系）
+    end note
+    
+    note right of LotCard
+        LOT卡
+        系统根据生产订单/工单号自动查询关联的LOT卡
+        用于工序报工
+    end note
+}
+
+@enduml

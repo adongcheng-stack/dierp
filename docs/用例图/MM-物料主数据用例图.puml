@@ -1,0 +1,48 @@
+@startuml MM-物料主数据用例图
+
+title MM模块 - 物料主数据子模块用例图
+
+left to right direction
+
+actor 工程师 as engineer
+actor 物料管理员 as warehouse
+actor 生产人员 as production
+
+rectangle "物料主数据管理" {
+  usecase "创建物料\n(UC-ENG-002)" as UC002
+  usecase "更新物料\n(UC-ENG-002A)" as UC002A
+  usecase "查看物料库存\n(UC-MM-002)" as UCMM002
+  usecase "查看物料事务历史\n(UC-MM-003)" as UCMM003
+}
+
+engineer --> UC002 : 创建物料
+engineer --> UC002A : 更新物料
+warehouse --> UCMM002 : 查看库存
+warehouse --> UCMM003 : 查看事务历史
+production --> UCMM002 : 查看库存
+
+UC002 ..> UC002A : <<extend>>
+
+note right of UC002
+  创建物料
+  创建非成品类物料
+  （原材料、半成品等）
+  物料编码必须唯一
+  成品(FG)物料通过产品主数据管理
+end note
+
+note right of UCMM002
+  查看物料库存
+  查询当前库存、在途量、可用量
+  支持按物料编码、仓库等条件筛选
+  为领料与计划提供依据
+end note
+
+note right of UCMM003
+  查看物料事务历史
+  查看物料出入库历史
+  （MaterialTransaction）
+  包括领料、退料、入库等记录
+end note
+
+@enduml

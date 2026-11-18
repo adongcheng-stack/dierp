@@ -1,0 +1,837 @@
+{
+  "system": "某某ERP系统",
+  "version": "MVP 1.3",
+  "module": "工作中心主数据管理",
+  "interface_elements": {
+    "页面头部": {
+      "标题": "某某ERP系统 - 工作中心主数据管理",
+      "子标题": "工作中心主数据创建与维护界面"
+    },
+    "工作中心基本信息": {
+      "卡片标题": "工作中心基本信息",
+      "字段组": [
+        {
+          "field": "workCenterId",
+          "label": "工作中心代码 - Work Center ID",
+          "type": "text_input",
+          "required": true,
+          "sample_value": "DRILL-A",
+          "placeholder": "请输入工作中心代码",
+          "description": "业务主键，系统唯一标识"
+        },
+        {
+          "field": "description",
+          "label": "工作中心描述 - Description",
+          "type": "text_input",
+          "required": true,
+          "sample_value": "CNC钻孔机组A (4轴)",
+          "placeholder": "请输入工作中心描述"
+        },
+        {
+          "field": "workCenterType",
+          "label": "工作中心类型 - Work Center Type",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "MACHINE",
+              "label": "MACHINE (单台机器)",
+              "type_class": "type-machine"
+            },
+            {
+              "value": "MACHINE_GROUP",
+              "label": "MACHINE_GROUP (机组)",
+              "type_class": "type-machine-group"
+            },
+            {
+              "value": "LABOR",
+              "label": "LABOR (人工工位)",
+              "type_class": "type-labor"
+            },
+            {
+              "value": "PRODUCTION_LINE",
+              "label": "PRODUCTION_LINE (产线)",
+              "type_class": "type-production-line"
+            }
+          ],
+          "default": "MACHINE_GROUP",
+          "dynamic_behavior": "onWorkCenterTypeChange()"
+        },
+        {
+          "field": "plantId",
+          "label": "所属工厂代码 - Plant ID",
+          "type": "text_input",
+          "required": true,
+          "sample_value": "PLANT-1000",
+          "placeholder": "请输入工厂代码"
+        },
+        {
+          "field": "status",
+          "label": "状态 - Status",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "ACTIVE",
+              "label": "ACTIVE (活动的)",
+              "status_class": "status-active"
+            },
+            {
+              "value": "INACTIVE",
+              "label": "INACTIVE (停用)",
+              "status_class": "status-inactive"
+            },
+            {
+              "value": "IN_MAINTENANCE",
+              "label": "IN_MAINTENANCE (维护中)",
+              "status_class": "status-maintenance"
+            }
+          ],
+          "default": "ACTIVE"
+        }
+      ],
+      "层级关系组": {
+        "title": "层级关系 - Hierarchy",
+        "fields": [
+          {
+            "field": "parentWorkCenterId",
+            "label": "父工作中心代码 - Parent Work Center ID",
+            "type": "dropdown_select",
+            "required": false,
+            "options": [
+              {
+                "value": "",
+                "label": "请选择父工作中心"
+              },
+              {
+                "value": "DRILLING_DEPT",
+                "label": "DRILLING_DEPT (钻孔部门)"
+              },
+              {
+                "value": "PLATING_LINE_A",
+                "label": "PLATING_LINE_A (电镀A线)"
+              },
+              {
+                "value": "ETCHING_LINE_1",
+                "label": "ETCHING_LINE_1 (蚀刻线1)"
+              },
+              {
+                "value": "LAMINATION_LINE",
+                "label": "LAMINATION_LINE (压合线)"
+              },
+              {
+                "value": "AOI_DEPT",
+                "label": "AOI_DEPT (AOI检测部门)"
+              }
+            ],
+            "default": "DRILLING_DEPT"
+          },
+          {
+            "field": "hierarchyLevel",
+            "label": "层级 - Level",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 2,
+            "min": 1,
+            "max": 5,
+            "description": "1=工厂, 2=部门/产线, 3=机组, 4=设备, 5=工位"
+          }
+        ]
+      }
+    },
+    "基础与调度数据": {
+      "卡片标题": "基础与调度数据 - Basic & Scheduling Data",
+      "字段组": [
+        {
+          "field": "workCenterCategory",
+          "label": "工作中心类别 - Work Center Category",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "0001",
+              "label": "0001 (机器)"
+            },
+            {
+              "value": "0002",
+              "label": "0002 (人工)"
+            },
+            {
+              "value": "0003",
+              "label": "0003 (产线)"
+            }
+          ],
+          "default": "0003",
+          "description": "标准配置，定义了屏幕字段和功能",
+          "dynamic_behavior": "onWorkCenterCategoryChange()"
+        },
+        {
+          "field": "usage",
+          "label": "用途 - Usage",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "PP01",
+              "label": "PP01 (生产)"
+            },
+            {
+              "value": "PM01",
+              "label": "PM01 (设备维护)"
+            },
+            {
+              "value": "QM01",
+              "label": "QM01 (质量检验)"
+            }
+          ],
+          "default": "PP01",
+          "description": "决定此工作中心能用于哪些任务"
+        },
+        {
+          "field": "standardValueKey",
+          "label": "标准值码 - Standard Value Key",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "SAP_02",
+              "label": "SAP_02 (准备+机器+人工)"
+            },
+            {
+              "value": "SAP_01",
+              "label": "SAP_01 (仅机器时间)"
+            }
+          ],
+          "default": "SAP_02",
+          "description": "定义了该工作中心需要维护哪几种标准时间"
+        }
+      ],
+      "时间参数组": {
+        "title": "时间参数",
+        "fields": [
+          {
+            "field": "queueTime",
+            "label": "排队时间 - Queue Time",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 0.5,
+            "step": 0.1,
+            "min": 0,
+            "unit": "小时",
+            "description": "物料到达工作中心后，开始加工前的平均排队时间"
+          },
+          {
+            "field": "waitTime",
+            "label": "等待时间 - Wait Time",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 0,
+            "step": 0.1,
+            "min": 0,
+            "unit": "小时",
+            "description": "加工完成后必须停留的最小时间"
+          },
+          {
+            "field": "moveTime",
+            "label": "传送时间 - Move Time",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 0.25,
+            "step": 0.05,
+            "min": 0,
+            "unit": "小时",
+            "description": "物理搬运到下一个工作中心所花费的时间"
+          }
+        ]
+      }
+    },
+    "产能数据": {
+      "卡片标题": "产能数据 - Capacity Data",
+      "字段组": [
+        {
+          "field": "capacityCategory",
+          "label": "能力类别 - Capacity Category",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "001",
+              "label": "001 (机器)"
+            },
+            {
+              "value": "002",
+              "label": "002 (人工)"
+            }
+          ],
+          "default": "001",
+          "description": "定义了计算产能的基础是机器还是人工"
+        },
+        {
+          "field": "factoryCalendarId",
+          "label": "工厂日历ID - Factory Calendar ID",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "CN",
+              "label": "CN (中国标准日历)"
+            },
+            {
+              "value": "CN_SHENZHEN",
+              "label": "CN_SHENZHEN (深圳工厂日历)"
+            },
+            {
+              "value": "CN_SUZHOU",
+              "label": "CN_SUZHOU (苏州工厂日历)"
+            }
+          ],
+          "default": "CN",
+          "description": "我们的节假日可以由工厂总经理来决定调整"
+        }
+      ],
+      "标准产能组": {
+        "title": "标准产能 - Standard Available Capacity",
+        "fields": [
+          {
+            "field": "shiftStartTime",
+            "label": "班次开始时间 - Start Time",
+            "type": "time_input",
+            "required": false,
+            "sample_value": "08:00"
+          },
+          {
+            "field": "shiftFinishTime",
+            "label": "班次结束时间 - Finish Time",
+            "type": "time_input",
+            "required": false,
+            "sample_value": "17:00"
+          },
+          {
+            "field": "breakTime",
+            "label": "休息时间 - Break Time",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 1.0,
+            "step": 0.5,
+            "min": 0,
+            "unit": "小时",
+            "description": "小时"
+          },
+          {
+            "field": "capacityUtilization",
+            "label": "产能利用率 - Capacity Utilization",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 90,
+            "min": 0,
+            "max": 100,
+            "unit": "%",
+            "description": "% (考虑到设备故障、效率损失等因素)"
+          },
+          {
+            "field": "numberOfCapacities",
+            "label": "能力数量 - Number of Capacities",
+            "type": "number_input",
+            "required": false,
+            "sample_value": 4,
+            "min": 1,
+            "description": "并行处理的同类单元的数量"
+          }
+        ]
+      },
+      "产能公式组": {
+        "title": "产能计算公式 - Capacity Formula",
+        "fields": [
+          {
+            "field": "setupFormula",
+            "label": "准备时间公式 - Setup Formula",
+            "type": "dropdown_select",
+            "required": false,
+            "options": [
+              {
+                "value": "SAPF01",
+                "label": "SAPF01 (标准准备时间公式)"
+              },
+              {
+                "value": "SAPF02",
+                "label": "SAPF02 (快速换模公式)"
+              }
+            ],
+            "default": "SAPF01"
+          },
+          {
+            "field": "processingFormula",
+            "label": "处理时间公式 - Processing Formula",
+            "type": "dropdown_select",
+            "required": false,
+            "options": [
+              {
+                "value": "SAPF02",
+                "label": "SAPF02 (标准处理时间公式)"
+              },
+              {
+                "value": "SAPF03",
+                "label": "SAPF03 (高速处理公式)"
+              }
+            ],
+            "default": "SAPF02"
+          },
+          {
+            "field": "teardownFormula",
+            "label": "清理时间公式 - Teardown Formula",
+            "type": "dropdown_select",
+            "required": false,
+            "options": [
+              {
+                "value": "SAPF03",
+                "label": "SAPF03 (标准清理公式)"
+              },
+              {
+                "value": "SAPF04",
+                "label": "SAPF04 (快速清理公式)"
+              }
+            ],
+            "default": "SAPF03"
+          }
+        ]
+      }
+    },
+    "成本核算数据": {
+      "卡片标题": "成本核算数据 - Costing Data",
+      "字段组": [
+        {
+          "field": "costCenterId",
+          "label": "关联的成本中心代码 - Cost Center ID",
+          "type": "text_input",
+          "required": true,
+          "sample_value": "CC-4210",
+          "placeholder": "请输入成本中心代码"
+        }
+      ],
+      "作业类型组": {
+        "title": "作业类型 - Activity Types",
+        "dynamic": true,
+        "add_button": {
+          "label": "+ 添加作业类型",
+          "action": "addActivityType()"
+        },
+        "sample_items": [
+          {
+            "activity_type_id": "ACT-SETUP",
+            "description": "机器准备作业",
+            "rate": 50.00,
+            "unit": "CNY/H"
+          },
+          {
+            "activity_type_id": "ACT-MACHINE",
+            "description": "机器运行作业",
+            "rate": 120.00,
+            "unit": "CNY/H"
+          },
+          {
+            "activity_type_id": "ACT-LABOR",
+            "description": "人工监控作业",
+            "rate": 35.00,
+            "unit": "CNY/H"
+          }
+        ],
+        "structure": {
+          "activity_type_id": {
+            "type": "text_input",
+            "placeholder": "作业类型代码"
+          },
+          "description": {
+            "type": "text_input",
+            "placeholder": "作业类型描述"
+          },
+          "rate": {
+            "type": "number_input",
+            "step": 0.01,
+            "min": 0
+          },
+          "unit": {
+            "type": "dropdown_select",
+            "options": [
+              {
+                "value": "CNY/H",
+                "label": "CNY/H"
+              },
+              {
+                "value": "USD/H",
+                "label": "USD/H"
+              },
+              {
+                "value": "EUR/H",
+                "label": "EUR/H"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "PCB行业特定数据": {
+      "卡片标题": "PCB行业特定数据 - PCB-Specific Technical Data",
+      "字段组": [
+        {
+          "field": "processCategory",
+          "label": "工艺类别 - Process Category",
+          "type": "dropdown_select",
+          "required": true,
+          "options": [
+            {
+              "value": "",
+              "label": "请选择工艺类别"
+            },
+            {
+              "value": "DRILLING",
+              "label": "DRILLING (钻孔)"
+            },
+            {
+              "value": "PLATING",
+              "label": "PLATING (电镀)"
+            },
+            {
+              "value": "ETCHING",
+              "label": "ETCHING (蚀刻)"
+            },
+            {
+              "value": "LAMINATION",
+              "label": "LAMINATION (压合)"
+            },
+            {
+              "value": "AOI",
+              "label": "AOI (自动光学检测)"
+            },
+            {
+              "value": "SOLDER_MASK",
+              "label": "SOLDER_MASK (阻焊)"
+            },
+            {
+              "value": "SURFACE_FINISH",
+              "label": "SURFACE_FINISH (表面处理)"
+            }
+          ],
+          "default": "DRILLING",
+          "description": "选择工艺类别后，系统会自动加载相应的技术属性",
+          "dynamic_behavior": "onProcessCategoryChange()"
+        }
+      ],
+      "技术属性组": {
+        "title": "技术属性 - Technical Attributes",
+        "dynamic": true,
+        "dynamic_note": "根据工艺类别动态加载",
+        "add_button": {
+          "label": "+ 添加技术属性",
+          "action": "addTechnicalAttribute()"
+        },
+        "process_category_templates": {
+          "DRILLING": [
+            {
+              "name": "MinHoleSize",
+              "label": "最小孔径",
+              "defaultValue": "0.15",
+              "unit": "mm",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "MaxLayerCount",
+              "label": "最大加工层数",
+              "defaultValue": "12",
+              "unit": "Layers",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "PositionalAccuracy",
+              "label": "定位精度",
+              "defaultValue": "0.01",
+              "unit": "mm",
+              "type": "number",
+              "required": false
+            }
+          ],
+          "PLATING": [
+            {
+              "name": "TankCapacity",
+              "label": "镀缸容量",
+              "defaultValue": "1000",
+              "unit": "L",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "MaxCurrent",
+              "label": "最大电流",
+              "defaultValue": "500",
+              "unit": "A",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "CoatingThickness",
+              "label": "镀层厚度范围",
+              "defaultValue": "1-5",
+              "unit": "μm",
+              "type": "text",
+              "required": false
+            }
+          ],
+          "ETCHING": [
+            {
+              "name": "EtchingPrecision",
+              "label": "蚀刻精度",
+              "defaultValue": "0.02",
+              "unit": "mm",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "MaxPanelSize",
+              "label": "最大面板尺寸",
+              "defaultValue": "610x710",
+              "unit": "mm",
+              "type": "text",
+              "required": true
+            },
+            {
+              "name": "EtchingSolutionType",
+              "label": "蚀刻液类型",
+              "defaultValue": "碱性",
+              "unit": "",
+              "type": "text",
+              "required": false
+            }
+          ],
+          "LAMINATION": [
+            {
+              "name": "MaxPressure",
+              "label": "最大压力",
+              "defaultValue": "300",
+              "unit": "T",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "HeatingPlateSize",
+              "label": "加热板尺寸",
+              "defaultValue": "600x600",
+              "unit": "mm",
+              "type": "text",
+              "required": true
+            },
+            {
+              "name": "TemperatureRange",
+              "label": "温度范围",
+              "defaultValue": "180-220",
+              "unit": "°C",
+              "type": "text",
+              "required": false
+            }
+          ],
+          "AOI": [
+            {
+              "name": "DetectionResolution",
+              "label": "检测分辨率",
+              "defaultValue": "10",
+              "unit": "μm",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "ScanSpeed",
+              "label": "扫描速度",
+              "defaultValue": "30",
+              "unit": "cm²/s",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "MinDefectSize",
+              "label": "最小缺陷尺寸",
+              "defaultValue": "25",
+              "unit": "μm",
+              "type": "number",
+              "required": false
+            }
+          ]
+        }
+      }
+    },
+    "系统与审计信息": {
+      "卡片标题": "系统与审计信息 - System & Audit Info",
+      "字段组": [
+        {
+          "field": "createdBy",
+          "label": "创建人",
+          "type": "readonly_text",
+          "sample_value": "user_admin"
+        },
+        {
+          "field": "creationDate",
+          "label": "创建时间",
+          "type": "readonly_text",
+          "sample_value": "2024-01-15T09:00:00Z"
+        },
+        {
+          "field": "lastModifiedBy",
+          "label": "最后修改人",
+          "type": "readonly_text",
+          "sample_value": "user_prod_mgr"
+        },
+        {
+          "field": "lastModifiedDate",
+          "label": "最后修改时间",
+          "type": "readonly_text",
+          "sample_value": "2024-05-22T11:45:00Z"
+        }
+      ]
+    },
+    "操作按钮": [
+      {
+        "id": "save",
+        "label": "保存工作中心",
+        "type": "success",
+        "action": "saveWorkCenter()"
+      },
+      {
+        "id": "activate",
+        "label": "激活工作中心",
+        "type": "primary",
+        "action": "activateWorkCenter()"
+      },
+      {
+        "id": "deactivate",
+        "label": "停用工作中心",
+        "type": "warning",
+        "action": "deactivateWorkCenter()"
+      },
+      {
+        "id": "saveAsDraft",
+        "label": "保存为草稿",
+        "type": "secondary",
+        "action": "saveAsDraft()"
+      },
+      {
+        "id": "delete",
+        "label": "删除工作中心",
+        "type": "danger",
+        "action": "deleteWorkCenter()"
+      },
+      {
+        "id": "cancel",
+        "label": "取消",
+        "type": "secondary",
+        "action": "cancelForm()"
+      }
+    ],
+    "状态栏": {
+      "display_template": "当前工作中心: {workCenterId} | 状态: {status} | 最后保存时间: {lastSavedTime}",
+      "fields": {
+        "workCenterId": "DRILL-A",
+        "status": "ACTIVE (活动的)",
+        "lastSavedTime": "2024-05-22 11:45:00"
+      }
+    }
+  },
+  "ui_specifications": {
+    "设计系统": {
+      "primary_color": "#3498db",
+      "secondary_color": "#7f8c8d",
+      "success_color": "#27ae60",
+      "danger_color": "#e74c3c",
+      "warning_color": "#f39c12",
+      "status_colors": {
+        "active": "#d4edda",
+        "inactive": "#d6d8d9",
+        "maintenance": "#fff3cd"
+      },
+      "type_colors": {
+        "machine": "#3498db",
+        "machine_group": "#9b59b6",
+        "labor": "#e74c3c",
+        "production_line": "#f39c12"
+      },
+      "card_background": "white",
+      "border_color": "#dee2e6",
+      "field_description_color": "#7f8c8d"
+    },
+    "布局": {
+      "form_layout": "responsive_grid",
+      "form_sections": true,
+      "group_containers": true,
+      "responsive_breakpoints": {
+        "mobile": "768px"
+      }
+    },
+    "交互功能": {
+      "dynamic_form_loading": true,
+      "dynamic_attributes": true,
+      "dynamic_activity_types": true,
+      "form_validation": true,
+      "real_time_status_update": true
+    },
+    "字段类型": {
+      "text_input": true,
+      "number_input": true,
+      "dropdown_select": true,
+      "time_input": true,
+      "readonly_text": true,
+      "dynamic_list": true
+    }
+  },
+  "sample_data": {
+    "工作中心ID": "DRILL-A",
+    "描述": "CNC钻孔机组A (4轴)",
+    "类型": "MACHINE_GROUP",
+    "工厂": "PLANT-1000",
+    "状态": "ACTIVE",
+    "父工作中心": "DRILLING_DEPT",
+    "层级": 2,
+    "工作中心类别": "0003",
+    "用途": "PP01",
+    "标准值码": "SAP_02",
+    "排队时间": 0.5,
+    "等待时间": 0,
+    "传送时间": 0.25,
+    "能力类别": "001",
+    "工厂日历": "CN",
+    "班次开始时间": "08:00",
+    "班次结束时间": "17:00",
+    "休息时间": 1.0,
+    "产能利用率": 90,
+    "能力数量": 4,
+    "成本中心": "CC-4210",
+    "工艺类别": "DRILLING",
+    "创建人": "user_admin",
+    "创建时间": "2024-01-15T09:00:00Z",
+    "最后修改人": "user_prod_mgr",
+    "最后修改时间": "2024-05-22T11:45:00Z"
+  },
+  "validation_rules": {
+    "required_fields": [
+      "workCenterId",
+      "description",
+      "workCenterType",
+      "plantId",
+      "status",
+      "workCenterCategory",
+      "usage",
+      "standardValueKey",
+      "capacityCategory",
+      "factoryCalendarId",
+      "costCenterId",
+      "processCategory"
+    ],
+    "number_ranges": {
+      "hierarchyLevel": {"min": 1, "max": 5},
+      "capacityUtilization": {"min": 0, "max": 100},
+      "numberOfCapacities": {"min": 1}
+    },
+    "business_rules": {
+      "workCenterId_unique": true,
+      "hierarchy_validation": true,
+      "capacity_formula_validation": true
+    }
+  }
+}

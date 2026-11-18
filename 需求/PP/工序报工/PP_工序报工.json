@@ -1,0 +1,361 @@
+{
+  "system": "某某ERP系统",
+  "version": "MVP 1.3",
+  "modules": {
+    "process_reporting": {
+      "module_name": "PP模块 - 工序报工界面",
+      "interface_title": "工序报工 - 工作中心: {work_center}",
+      "interface_elements": {
+        "任务信息区": {
+          "title": "当前任务信息",
+          "fields": [
+            {
+              "field": "production_order",
+              "label": "生产订单",
+              "type": "readonly_text_input",
+              "sample_value": "PO20251204001"
+            },
+            {
+              "field": "process_name",
+              "label": "工序名称",
+              "type": "readonly_text_input",
+              "sample_value": "内层图形转移"
+            },
+            {
+              "field": "planned_quantity",
+              "label": "计划数量",
+              "type": "readonly_text_input",
+              "sample_value": "100 PCS"
+            }
+          ]
+        },
+        "报工数据录入区": {
+          "title": "报工信息录入",
+          "fields": [
+            {
+              "field": "completed_quantity",
+              "label": "完成数量 (PCS)",
+              "type": "number_input",
+              "min": 0,
+              "max": 100,
+              "sample_value": 65,
+              "required": true
+            },
+            {
+              "field": "good_quantity",
+              "label": "良品数量 (PCS)",
+              "type": "number_input",
+              "min": 0,
+              "max": 100,
+              "sample_value": 62,
+              "required": true
+            },
+            {
+              "field": "defective_quantity",
+              "label": "不良品数量 (PCS)",
+              "type": "number_input",
+              "min": 0,
+              "max": 100,
+              "sample_value": 3,
+              "warning_color": "#f8d7da",
+              "required": true
+            }
+          ]
+        },
+        "不良品管理区": {
+          "fields": [
+            {
+              "field": "defect_reason",
+              "label": "不良原因",
+              "type": "dropdown_select",
+              "options": [
+                "曝光不良",
+                "划伤",
+                "对位偏移",
+                "显影不良",
+                "其他"
+              ],
+              "default": "曝光不良"
+            },
+            {
+              "field": "defect_handling",
+              "label": "不良品处理",
+              "type": "dropdown_select",
+              "options": [
+                "返工",
+                "报废",
+                "挑选使用"
+              ],
+              "default": "返工"
+            }
+          ]
+        },
+        "时间管理区": {
+          "fields": [
+            {
+              "field": "start_time",
+              "label": "开始时间",
+              "type": "datetime_input",
+              "sample_value": "2025-12-04T08:00"
+            },
+            {
+              "field": "end_time",
+              "label": "结束时间",
+              "type": "datetime_input",
+              "sample_value": "2025-12-04T14:30"
+            }
+          ]
+        },
+        "工时管理区": {
+          "fields": [
+            {
+              "field": "actual_hours",
+              "label": "实际工时 (小时)",
+              "type": "number_input",
+              "step": 0.1,
+              "min": 0,
+              "sample_value": 6.5
+            },
+            {
+              "field": "standard_hours",
+              "label": "标准工时 (小时)",
+              "type": "readonly_text_input",
+              "sample_value": "6.0",
+              "background_color": "#f8f9fa"
+            },
+            {
+              "field": "time_difference",
+              "label": "工时差异",
+              "type": "readonly_text_input",
+              "sample_value": "+0.5 小时",
+              "dynamic_coloring": true,
+              "color_logic": {
+                "positive": "#fff3cd",
+                "negative": "#d4edda",
+                "large_positive": "#f8d7da"
+              }
+            }
+          ]
+        },
+        "不良品详情表": {
+          "title": "不良品详情",
+          "table_structure": {
+            "columns": [
+              {
+                "field": "defect_type",
+                "label": "不良类型"
+              },
+              {
+                "field": "quantity",
+                "label": "数量 (PCS)"
+              },
+              {
+                "field": "handling_method",
+                "label": "处理方式",
+                "type": "status_badge",
+                "status_mapping": {
+                  "返工": {
+                    "class": "status-warning",
+                    "background": "#fff3cd",
+                    "color": "#856404"
+                  },
+                  "报废": {
+                    "class": "status-error",
+                    "background": "#f8d7da",
+                    "color": "#721c24"
+                  }
+                }
+              },
+              {
+                "field": "responsible_process",
+                "label": "责任工序"
+              },
+              {
+                "field": "remarks",
+                "label": "备注"
+              }
+            ],
+            "sample_data": [
+              {
+                "defect_type": "曝光不良",
+                "quantity": 2,
+                "handling_method": "返工",
+                "responsible_process": "内层图形转移",
+                "remarks": "能量设置偏差"
+              },
+              {
+                "defect_type": "划伤",
+                "quantity": 1,
+                "handling_method": "报废",
+                "responsible_process": "搬运过程",
+                "remarks": "设备机械手异常"
+              }
+            ]
+          }
+        },
+        "设备与人员区": {
+          "fields": [
+            {
+              "field": "equipment_id",
+              "label": "设备信息",
+              "type": "dropdown_select",
+              "options": [
+                "EXP-01 (曝光机1号)",
+                "EXP-02 (曝光机2号)",
+                "EXP-03 (曝光机3号)"
+              ],
+              "default": "EXP-01 (曝光机1号)"
+            },
+            {
+              "field": "equipment_status",
+              "label": "设备运行状态",
+              "type": "dropdown_select",
+              "options": [
+                "正常",
+                "轻微异常",
+                "维修中",
+                "停机"
+              ],
+              "default": "正常"
+            },
+            {
+              "field": "abnormal_description",
+              "label": "异常描述",
+              "type": "textarea",
+              "rows": 3,
+              "placeholder": "如有异常情况，请在此描述..."
+            },
+            {
+              "field": "work_shift",
+              "label": "班组",
+              "type": "dropdown_select",
+              "options": [
+                "早班 (08:00-16:00)",
+                "中班 (16:00-24:00)",
+                "晚班 (00:00-08:00)"
+              ],
+              "default": "早班 (08:00-16:00)"
+            },
+            {
+              "field": "operator",
+              "label": "操作员",
+              "type": "text_input",
+              "sample_value": "张三, 李四"
+            }
+          ]
+        },
+        "操作按钮": [
+          {
+            "id": "save_report",
+            "label": "保存报工",
+            "type": "success",
+            "action": "save_process_report"
+          },
+          {
+            "id": "save_draft",
+            "label": "暂存",
+            "type": "warning",
+            "action": "save_draft"
+          },
+          {
+            "id": "cancel",
+            "label": "取消",
+            "type": "secondary",
+            "action": "cancel"
+          },
+          {
+            "id": "print_card",
+            "label": "打印流转卡",
+            "type": "primary",
+            "action": "print_circulation_card"
+          }
+        ],
+        "状态信息区": {
+          "display_template": "最后保存时间: {last_save_time} | 操作员: {operator}",
+          "sample_data": {
+            "last_save_time": "2025-12-04 14:35:22",
+            "operator": "王五 (WC02主管)"
+          }
+        }
+      },
+      "dynamic_behaviors": {
+        "defective_quantity_auto_calc": {
+          "trigger": ["completed_quantity", "good_quantity"],
+          "calculation": "defective_quantity = completed_quantity - good_quantity",
+          "warning_threshold": 0,
+          "warning_style": "background-color: #f8d7da"
+        },
+        "time_difference_calc": {
+          "trigger": "actual_hours",
+          "calculation": "difference = actual_hours - 6.0",
+          "format": "{sign}{difference.toFixed(1)} 小时",
+          "color_mapping": {
+            "difference > 1": "#f8d7da",
+            "difference > 0": "#fff3cd",
+            "else": "#d4edda"
+          }
+        }
+      }
+    }
+  },
+  "ui_specifications": {
+    "color_scheme": {
+      "primary": "#3498db",
+      "secondary": "#7f8c8d",
+      "success": "#27ae60",
+      "warning": "#f39c12",
+      "error": "#e74c3c",
+      "info_bg": "#f8f9fa",
+      "warning_bg": "#fff3cd",
+      "error_bg": "#f8d7da",
+      "success_bg": "#d4edda"
+    },
+    "table_styles": {
+      "header_bg": "#f8f9fa",
+      "row_hover": "#f8f9fa",
+      "border_color": "#dee2e6",
+      "highlight_row": "#fff3cd"
+    },
+    "form_layout": {
+      "form_row": "flex_gap_15px",
+      "responsive": true
+    },
+    "status_badges": {
+      "active": {
+        "class": "status-active",
+        "background": "#d4edda",
+        "color": "#155724"
+      },
+      "warning": {
+        "class": "status-warning",
+        "background": "#fff3cd",
+        "color": "#856404"
+      },
+      "error": {
+        "class": "status-error",
+        "background": "#f8d7da",
+        "color": "#721c24"
+      }
+    }
+  },
+  "interactive_features": {
+    "auto_calculation": {
+      "defective_quantity": true,
+      "time_difference": true,
+      "stock_validation": true
+    },
+    "real_time_validation": {
+      "quantity_limits": true,
+      "inventory_warnings": true
+    },
+    "save_actions": {
+      "save_with_timestamp": true,
+      "draft_saving": true
+    }
+  },
+  "common_fields": {
+    "datetime_inputs": ["start_time", "end_time", "issue_time"],
+    "quantity_inputs": ["completed_quantity", "good_quantity", "defective_quantity", "actual_issued"],
+    "readonly_fields": ["production_order", "process_name", "planned_quantity", "requisition_number"]
+  }
+}

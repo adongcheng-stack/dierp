@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0">
+  <bpmn:collaboration id="Collaboration_0v5v926">
+    <bpmn:participant id="Participant_0hpwgn1" name="BOM创建流程" processRef="HF_ENG_P020" />
+  </bpmn:collaboration>
+  <bpmn:process id="HF_ENG_P020" name="BOM创建流程" isExecutable="true">
+    <bpmn:documentation>适用范围: 本流程适用于所有类别BOM创建的需求，包括新单BOM的创建和ECN变更后对BOM的修改需求</bpmn:documentation>
+    <bpmn:extensionElements />
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Engineering" name="工程部">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_EBOMCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_ENG_P020-ZP01-010</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_ENG_P020-ZP01-050</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_ENG_P020-ZP01-060</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_ENG_P020-ZP01-030</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_ENG_P020-ZP01-020</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="开始">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_EBOMCheck" name="EBOM是否符合要求?">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Return</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_1" name="结束">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="HF_ENG_P020-ZP01-010" name="010: 制作MI资料">
+      <bpmn:documentation>任务类型: 服务任务
+系统: 工程系统
+操作: MI依生管排程及MI管理系统内的排程，依据客户资料要求制作产品的MI资料，制作完的MI资料按照《PE工作指引程序文件》要求给到PPQE完成内部审核</bpmn:documentation>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_Return</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="HF_ENG_P020-ZP01-050" name="050: 创建半成品料号之后生成BOM">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+SAP操作: ZPPXX
+操作: SAP创建半成品料号之后，由SAP系统根据BOM耗用量计算规则生成成品和半成品BOM清单
+输出文件: BOM清单</bpmn:documentation>
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0vgf9bu">
+        <bpmn:targetRef>HF_ENG_P020-ZP01-DO02</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:userTask id="HF_ENG_P020-ZP01-060" name="060: 下发BOM到生产执行系统">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+SAP操作: ZPPXX
+操作: SAP系统把生成的BOM清单下发到生产执行系统</bpmn:documentation>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0kk18pa">
+        <bpmn:targetRef>HF_ENG_P020-ZP01-DO02</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="HF_ENG_P020-ZP01-030" name="030: 输出EBOM参数">
+      <bpmn:documentation>任务类型: 服务任务
+系统: 工程系统
+操作: PPQE对审核后的MI资料进行输出，再输出EBOM参数</bpmn:documentation>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_073ww5p">
+        <bpmn:targetRef>HF_ENG_P020-ZP01-DO02</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="HF_ENG_P020-ZP01-020" name="020: 输出半成品料号">
+      <bpmn:documentation>任务类型: 服务任务
+系统: 工程系统
+操作: PPQE对审核后的MI资料进行输出，当有半成品料号时，先输出半成品料号</bpmn:documentation>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0trsbcr">
+        <bpmn:targetRef>HF_ENG_P020-ZP01-DO01</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:dataObjectReference id="HF_ENG_P020-ZP01-DO02" name="BOM" dataObjectRef="DataObject_0x0orhs" />
+    <bpmn:dataObject id="DataObject_0x0orhs" />
+    <bpmn:dataObjectReference id="HF_ENG_P020-ZP01-DO01" name="半成品料号" dataObjectRef="DataObject_0kfba8u" />
+    <bpmn:dataObject id="DataObject_0kfba8u" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="HF_ENG_P020-ZP01-010" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="HF_ENG_P020-ZP01-030" targetRef="Gateway_EBOMCheck" />
+    <bpmn:sequenceFlow id="Flow_5" name="是" sourceRef="Gateway_EBOMCheck" targetRef="HF_ENG_P020-ZP01-050">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ebomMeetsRequirements == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Return" name="否" sourceRef="Gateway_EBOMCheck" targetRef="HF_ENG_P020-ZP01-010">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ebomMeetsRequirements == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="HF_ENG_P020-ZP01-060" targetRef="EndEvent_1" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="HF_ENG_P020-ZP01-010" targetRef="HF_ENG_P020-ZP01-020" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="HF_ENG_P020-ZP01-050" targetRef="HF_ENG_P020-ZP01-060" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="HF_ENG_P020-ZP01-020" targetRef="HF_ENG_P020-ZP01-030" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0v5v926">
+      <bpmndi:BPMNShape id="Participant_0hpwgn1_di" bpmnElement="Participant_0hpwgn1" isHorizontal="true">
+        <dc:Bounds x="160" y="50" width="1250" height="400" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Engineering_di" bpmnElement="Lane_Engineering" isHorizontal="true">
+        <dc:Bounds x="190" y="50" width="1220" height="400" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="302" y="229" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="309" y="272" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_EBOMCheck" bpmnElement="Gateway_EBOMCheck" isMarkerVisible="true">
+        <dc:Bounds x="845" y="222" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="831" y="185" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_EndEvent_2" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1292" y="229" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1298" y="205" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1e8exbp_di" bpmnElement="HF_ENG_P020-ZP01-010">
+        <dc:Bounds x="400" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ursg4z_di" bpmnElement="HF_ENG_P020-ZP01-050">
+        <dc:Bounds x="970" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18rwcou_di" bpmnElement="HF_ENG_P020-ZP01-060">
+        <dc:Bounds x="1130" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0vu8bal_di" bpmnElement="HF_ENG_P020-ZP01-030">
+        <dc:Bounds x="710" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_07k1dco_di" bpmnElement="HF_ENG_P020-ZP01-020">
+        <dc:Bounds x="540" y="207" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_05awr5k_di" bpmnElement="HF_ENG_P020-ZP01-DO02">
+        <dc:Bounds x="962" y="315" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="967" y="372" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_17auv38_di" bpmnElement="HF_ENG_P020-ZP01-DO01">
+        <dc:Bounds x="572" y="315" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="563" y="372" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="338" y="247" />
+        <di:waypoint x="400" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="810" y="247" />
+        <di:waypoint x="845" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="895" y="247" />
+        <di:waypoint x="970" y="247" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="927" y="229" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Return_di" bpmnElement="Flow_Return">
+        <di:waypoint x="870" y="272" />
+        <di:waypoint x="870" y="400" />
+        <di:waypoint x="450" y="400" />
+        <di:waypoint x="450" y="287" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="881" y="340" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1230" y="247" />
+        <di:waypoint x="1292" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="500" y="247" />
+        <di:waypoint x="540" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1070" y="247" />
+        <di:waypoint x="1130" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="640" y="247" />
+        <di:waypoint x="710" y="247" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_0vgf9bu_di" bpmnElement="DataOutputAssociation_0vgf9bu">
+        <di:waypoint x="1002" y="287" />
+        <di:waypoint x="989" y="315" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_0kk18pa_di" bpmnElement="DataOutputAssociation_0kk18pa">
+        <di:waypoint x="1130" y="269" />
+        <di:waypoint x="998" y="326" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_073ww5p_di" bpmnElement="DataOutputAssociation_073ww5p">
+        <di:waypoint x="810" y="267" />
+        <di:waypoint x="962" y="327" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_0trsbcr_di" bpmnElement="DataOutputAssociation_0trsbcr">
+        <di:waypoint x="589" y="287" />
+        <di:waypoint x="588" y="315" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

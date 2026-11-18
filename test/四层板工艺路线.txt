@@ -1,0 +1,136 @@
+{
+  "routing_id": "RT-4L-001",
+  "revision": "B",
+  "product_code": "PCB-4L-001",
+  
+  "process_flow": [
+    {
+      "operation_no": "10",
+      "operation_name": "开料",
+      "work_center": "WC-CUT",
+      "setup_time": "00:30",
+      "run_time_per_unit": "00:01",
+      "machine": "自动裁板机",
+      "tooling": "裁切模具",
+      "quality_checkpoints": ["尺寸检查", "板厚检查"],
+      "output_yield": "99.5%"
+    },
+    {
+      "operation_no": "20",
+      "operation_name": "内层线路",
+      "work_center": "WC-INNER",
+      "setup_time": "01:00",
+      "run_time_per_unit": "00:03",
+      "sub_operations": ["贴膜", "曝光", "显影", "蚀刻", "退膜"],
+      "machine": "水平线",
+      "quality_checkpoints": ["线宽检查", "AOI检查"],
+      "output_yield": "98.0%"
+    },
+    {
+      "operation_no": "30",
+      "operation_name": "棕化",
+      "work_center": "WC-BROWN",
+      "setup_time": "00:20",
+      "run_time_per_unit": "00:02",
+      "machine": "棕化线",
+      "quality_checkpoints": ["棕化效果检查"],
+      "output_yield": "99.0%"
+    },
+    {
+      "operation_no": "40",
+      "operation_name": "压合",
+      "work_center": "WC-LAM",
+      "setup_time": "01:30",
+      "run_time_per_unit": "00:05",
+      "machine": "真空压合机",
+      "quality_checkpoints": ["板厚测量", "涨缩检查"],
+      "output_yield": "98.5%"
+    },
+    {
+      "operation_no": "50",
+      "operation_name": "钻孔",
+      "work_center": "WC-DRILL",
+      "setup_time": "02:00",
+      "run_time_per_unit": "00:04",
+      "machine": "数控钻孔机",
+      "tooling": "0.3mm钻针",
+      "quality_checkpoints": ["孔壁检查", "孔偏检查"],
+      "output_yield": "99.0%"
+    },
+    {
+      "operation_no": "60",
+      "operation_name": "沉铜",
+      "work_center": "WC-PTH",
+      "setup_time": "00:45",
+      "run_time_per_unit": "00:03",
+      "machine": "沉铜线",
+      "quality_checkpoints": ["背光测试", "孔铜厚度"],
+      "output_yield": "98.0%"
+    },
+    {
+      "operation_no": "70",
+      "operation_name": "外层线路",
+      "work_center": "WC-OUTER",
+      "setup_time": "01:15",
+      "run_time_per_unit": "00:03",
+      "machine": "垂直线",
+      "quality_checkpoints": ["AOI检查"],
+      "output_yield": "98.5%"
+    },
+    {
+      "operation_no": "80",
+      "operation_name": "阻焊",
+      "work_center": "WC-SM",
+      "setup_time": "01:00",
+      "run_time_per_unit": "00:02",
+      "machine": "阻焊印刷机",
+      "quality_checkpoints": ["厚度检查", "曝光效果"],
+      "output_yield": "99.0%"
+    },
+    {
+      "operation_no": "90",
+      "operation_name": "表面处理",
+      "work_center": "WC-SF",
+      "setup_time": "00:30",
+      "run_time_per_unit": "00:02",
+      "machine": "化金线",
+      "quality_checkpoints": ["厚度测试", "可焊性测试"],
+      "output_yield": "99.2%"
+    },
+    {
+      "operation_no": "100",
+      "operation_name": "成型",
+      "work_center": "WC-ROUTER",
+      "setup_time": "00:40",
+      "run_time_per_unit": "00:01",
+      "machine": "数控成型机",
+      "quality_checkpoints": ["尺寸检查", "毛边检查"],
+      "output_yield": "99.5%"
+    },
+    {
+      "operation_no": "110",
+      "operation_name": "测试",
+      "work_center": "WC-TEST",
+      "setup_time": "01:30",
+      "run_time_per_unit": "00:02",
+      "machine": "飞针测试机",
+      "quality_checkpoints": ["电气测试", "阻抗测试"],
+      "output_yield": "99.8%"
+    },
+    {
+      "operation_no": "120",
+      "operation_name": "终检",
+      "work_center": "WC-QC",
+      "setup_time": "00:20",
+      "run_time_per_unit": "00:01",
+      "machine": "人工检验台",
+      "quality_checkpoints": ["外观检查", "包装检查"],
+      "output_yield": "100%"
+    }
+  ],
+  
+  "total_cycle_time": "00:27",
+  "total_yield": "89.2%",
+  "standard_batch_size": 100,
+  "last_updated": "2024-01-12"
+}

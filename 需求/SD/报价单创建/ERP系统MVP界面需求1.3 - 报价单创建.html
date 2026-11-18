@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统MVP版本界面可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .module-section {
+            margin-bottom: 50px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .module-title {
+            color: #2980b9;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 22px;
+        }
+        
+        .ui-container {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            background-color: #fff;
+        }
+        
+        .ui-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .ui-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-new { background-color: #d4edda; color: #155724; }
+        .status-reviewing { background-color: #fff3cd; color: #856404; }
+        .status-producing { background-color: #cce5ff; color: #004085; }
+        .status-completed { background-color: #d1ecf1; color: #0c5460; }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 5px 0 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .select-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .select-dropdown select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        .gantt-chart {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .gantt-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .gantt-label {
+            width: 120px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .gantt-track {
+            flex: 1;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+            position: relative;
+        }
+        
+        .gantt-task {
+            position: absolute;
+            height: 100%;
+            background-color: #3498db;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dashboard-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .dashboard-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .dashboard-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3498db;
+        }
+        
+        .dashboard-subtext {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .instructions {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>某某ERP系统MVP版本 - 模块界面可视化</h1>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li>此页面展示了ERP系统MVP版本的主要模块界面</li>
+                <li>您可以使用浏览器的截图功能保存为图片</li>
+                <li>按Ctrl+P可以打印页面，选择"另存为PDF"可生成PDF文档</li>
+                <li>每个模块界面都是响应式设计，支持不同屏幕尺寸</li>
+            </ul>
+        </div>
+        
+        <!-- SD模块界面 -->
+        <div class="module-section">
+            <h2 class="module-title">SD模块 - 销售与分销</h2>
+            
+           <div class="ui-container">
+                <div class="ui-header">报价单创建</div>
+                <div class="ui-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>客户信息</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>ABC电子</option>
+                                    <option>XYZ科技</option>
+                                    <option>123通信</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>联系人</label>
+                            <input type="text" class="form-control" value="张三" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>电话</label>
+                            <input type="text" class="form-control" value="138****5678" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>产品系列</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>HS10 标准系列</option>
+                                    <option>HS20 高频系列</option>
+                                    <option>HS30 高速系列</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>层数</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>4层</option>
+                                    <option>6层</option>
+                                    <option>8层</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>工艺</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>ENIG 沉金</option>
+                                    <option>HASL 喷锡</option>
+                                    <option>OSP 防氧化</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>14位编号</label>
+                        <input type="text" class="form-control" value="HS1004ENIGAB01" readonly style="background-color: #f8f9fa; font-weight: bold;">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>数量(PCS)</label>
+                            <input type="number" class="form-control" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>单价(¥)</label>
+                            <input type="text" class="form-control" value="85.00">
+                        </div>
+                        <div class="form-group">
+                            <label>金额(¥)</label>
+                            <input type="text" class="form-control" value="8,500.00" readonly style="background-color: #f8f9fa;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>标准交期</label>
+                            <input type="text" class="form-control" value="10天" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>承诺交期</label>
+                            <input type="date" class="form-control" value="2025-12-18">
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary">保存草稿</button>
+                        <button class="btn btn-success">提交审核</button>
+                        <button class="btn btn-secondary">打印预览</button>
+                        <button class="btn btn-secondary">取消</button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+</body>
+</html>

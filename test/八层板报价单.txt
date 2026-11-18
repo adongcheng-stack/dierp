@@ -1,0 +1,54 @@
+{
+  "quotation_id": "QTN-2024-PCB-002",
+  "customer": "XYZ Technology Ltd.",
+  "customer_code": "CUST-XYZ-005",
+  "date": "2024-01-16",
+  "valid_until": "2024-02-16",
+  "sales_rep": "李四",
+  
+  "items": [
+    {
+      "item_no": "PCB-8L-001",
+      "description": "八层PCB板 FR-4 Tg170 HDI",
+      "specifications": {
+        "size": "120mm × 100mm × 1.6mm",
+        "layers": 8,
+        "material": "FR-4 Tg170",
+        "copper_weight": "外层1oz/内层0.5oz",
+        "surface_finish": "ENIG",
+        "min_trace": "0.1mm",
+        "min_spacing": "0.1mm",
+        "min_hole": "0.15mm",
+        "special_features": ["阻抗控制", "盲埋孔", "背钻"]
+      },
+      "quantity": 500,
+      "unit_price": 185.60,
+      "currency": "CNY",
+      "moq": 100,
+      "delivery_weeks": 4,
+      
+      "cost_breakdown": {
+        "material_cost": 75.40,
+        "labor_cost": 48.20,
+        "overhead": 32.50,
+        "profit_margin": 29.50,
+        "total_unit_cost": 185.60
+      },
+      
+      "tooling_charges": {
+        "nre": 3500.00,
+        "tooling": 2000.00,
+        "testing": 2500.00,
+        "total_tooling": 8000.00
+      }
+    }
+  ],
+  
+  "terms_and_conditions": [
+    "报价有效期30天",
+    "预付款50%，发货前付清余款",
+    "最小订单量100片",
+    "允许±5%数量偏差",
+    "特殊包装要求：防潮包装，独立托盘"
+  ]
+}

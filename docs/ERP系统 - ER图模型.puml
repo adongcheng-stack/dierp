@@ -1,0 +1,330 @@
+@startuml
+skinparam linetype ortho
+
+title 某某ERP系统 - 完整ER图模型 (v1.4)
+
+' ============================================
+' 销售与分销模块 (SD Module)
+' ============================================
+
+entity customers {
+    id SERIAL
+    customer_id VARCHAR
+    legal_name VARCHAR
+    trade_name VARCHAR
+    tax_id VARCHAR
+    customer_status ENUM
+    credit_limit NUMERIC
+}
+
+entity customer_addresses {
+    id SERIAL
+    customer_id VARCHAR
+    address_type VARCHAR
+    detail_address VARCHAR
+    country VARCHAR
+    province VARCHAR
+    city VARCHAR
+}
+
+entity customer_contacts {
+    id SERIAL
+    customer_id VARCHAR
+    contact_name VARCHAR
+    contact_phone VARCHAR
+    contact_email VARCHAR
+}
+
+entity quotations {
+    id SERIAL
+    quotation_number VARCHAR
+    customer_id VARCHAR
+    quantity NUMERIC
+    unit_price NUMERIC
+    status ENUM
+}
+
+entity quotation_items {
+    id SERIAL
+    quotation_number VARCHAR
+    line_number INTEGER
+    material_code VARCHAR
+    quantity NUMERIC
+}
+
+entity sales_orders {
+    id SERIAL
+    order_number VARCHAR
+    customer_id VARCHAR
+    quotation_number VARCHAR
+    material_code VARCHAR
+    production_version_id VARCHAR
+    quantity NUMERIC
+    status ENUM
+}
+
+entity contract_reviews {
+    id SERIAL
+    sales_order_number VARCHAR
+    reviewer VARCHAR
+    review_result VARCHAR
+}
+
+entity factory_product_mappings {
+    id SERIAL
+    customer_id VARCHAR
+    factory_product_number VARCHAR
+    material_code VARCHAR
+    production_version_id VARCHAR
+}
+
+' ============================================
+' 工程管理模块 (ENG Module)
+' ============================================
+
+entity materials {
+    id SERIAL
+    material_code VARCHAR
+    material_name VARCHAR
+    material_type VARCHAR
+    status VARCHAR
+    base_unit VARCHAR
+    current_stock NUMERIC
+}
+
+entity boms {
+    id SERIAL
+    bom_number VARCHAR
+    version VARCHAR
+    parent_material_code VARCHAR
+    status ENUM
+    effective_date DATE
+}
+
+entity bom_items {
+    id SERIAL
+    bom_number VARCHAR
+    line_number INTEGER
+    material_code VARCHAR
+    quantity NUMERIC
+    unit VARCHAR
+}
+
+entity routings {
+    id SERIAL
+    routing_id VARCHAR
+    version VARCHAR
+    material_code VARCHAR
+    status ENUM
+    effective_date DATE
+}
+
+entity routing_operations {
+    id SERIAL
+    routing_id VARCHAR
+    operation_no VARCHAR
+    operation_code VARCHAR
+    work_center_id VARCHAR
+    setup_time NUMERIC
+    machine_time NUMERIC
+}
+
+entity mis {
+    id SERIAL
+    mi_number VARCHAR
+    version VARCHAR
+    material_code VARCHAR
+    status ENUM
+    effective_date DATE
+}
+
+entity production_versions {
+    id SERIAL
+    production_version_id VARCHAR
+    version VARCHAR
+    material_code VARCHAR
+    bom_number VARCHAR
+    routing_id VARCHAR
+    mi_number VARCHAR
+    status VARCHAR
+}
+
+' ============================================
+' 物料管理模块 (MM Module)
+' ============================================
+
+entity material_issues {
+    id SERIAL
+    issue_number VARCHAR
+    production_order_number VARCHAR
+    material_code VARCHAR
+    quantity NUMERIC
+    unit VARCHAR
+}
+
+entity material_transactions {
+    id SERIAL
+    transaction_number VARCHAR
+    material_code VARCHAR
+    transaction_type VARCHAR
+    quantity NUMERIC
+}
+
+' ============================================
+' 生产计划与控制模块 (PP Module)
+' ============================================
+
+entity work_centers {
+    id SERIAL
+    work_center_id VARCHAR
+    description VARCHAR
+    work_center_type VARCHAR
+    status ENUM
+    parent_work_center_id VARCHAR
+}
+
+entity production_orders {
+    id SERIAL
+    order_number VARCHAR
+    sales_order_number VARCHAR
+    material_code VARCHAR
+    production_version_id VARCHAR
+    quantity NUMERIC
+    status ENUM
+}
+
+entity lot_cards {
+    id SERIAL
+    lot_number VARCHAR
+    production_order_number VARCHAR
+    mi_number VARCHAR
+    material_code VARCHAR
+    quantity NUMERIC
+    unit VARCHAR
+    status VARCHAR
+    mi_content TEXT
+    completed_at TIMESTAMP
+    remarks TEXT
+}
+
+entity operation_reports {
+    id SERIAL
+    report_number VARCHAR
+    production_order_number VARCHAR
+    routing_operation_id INTEGER
+    work_center_id VARCHAR
+    lot_number VARCHAR
+    reported_quantity NUMERIC
+    good_quantity NUMERIC
+    defective_quantity NUMERIC
+    actual_hours NUMERIC
+    report_date TIMESTAMP
+}
+
+' ============================================
+' 用户与权限管理模块
+' ============================================
+
+entity users {
+    id SERIAL
+    username VARCHAR
+    email VARCHAR
+    password_hash VARCHAR
+    full_name VARCHAR
+    role ENUM
+    is_active BOOLEAN
+}
+
+' ============================================
+' 工作流模块
+' ============================================
+
+entity workflows {
+    id SERIAL
+    workflow_id VARCHAR
+    workflow_name VARCHAR
+    module VARCHAR
+}
+
+entity workflow_nodes {
+    id SERIAL
+    workflow_id VARCHAR
+    node_id VARCHAR
+    node_name VARCHAR
+    node_type VARCHAR
+}
+
+entity workflow_instances {
+    id SERIAL
+    instance_id VARCHAR
+    workflow_id VARCHAR
+    business_id VARCHAR
+    business_type VARCHAR
+    status ENUM
+}
+
+entity workflow_instance_nodes {
+    id SERIAL
+    instance_id VARCHAR
+    node_id VARCHAR
+    status ENUM
+    approver VARCHAR
+}
+
+' ============================================
+' 关系定义
+' ============================================
+
+customers ||--o{ customer_addresses : has
+customers ||--o{ customer_contacts : has
+customers ||--o{ quotations : places
+customers ||--o{ sales_orders : orders
+customers ||--o{ factory_product_mappings : has
+
+quotations ||--o{ quotation_items : contains
+quotations ||--o{ sales_orders : converts_to
+
+sales_orders ||--o{ contract_reviews : has
+sales_orders ||--o{ production_orders : creates
+
+materials ||--o{ boms : has
+materials ||--o{ bom_items : used_in
+materials ||--o{ routings : has
+materials ||--o{ mis : has
+materials ||--o{ production_versions : has
+materials ||--o{ material_issues : issued
+materials ||--o{ material_transactions : transacted
+materials ||--o{ sales_orders : references
+materials ||--o{ production_orders : produces
+materials ||--o{ factory_product_mappings : mapped_by
+
+boms ||--o{ bom_items : contains
+boms ||--o{ production_versions : used_in
+
+routings ||--o{ routing_operations : contains
+routings ||--o{ production_versions : used_in
+
+routing_operations }o--|| work_centers : uses
+routing_operations ||--o{ operation_reports : reported_for
+
+mis ||--o{ production_versions : used_in
+
+production_versions ||--o{ sales_orders : uses
+production_versions ||--o{ production_orders : uses
+production_versions ||--o{ factory_product_mappings : mapped_by
+
+work_centers ||--o{ work_centers : parent
+work_centers ||--o{ operation_reports : reports_to
+
+production_orders ||--o| lot_cards : "关联(1:1)"
+production_orders ||--o{ material_issues : generates
+production_orders ||--o{ operation_reports : generates
+mis ||--o{ lot_cards : "生成"
+lot_cards ||--o{ operation_reports : "关联"
+
+workflows ||--o{ workflow_nodes : contains
+workflows ||--o{ workflow_instances : instantiates
+
+workflow_instances ||--o{ workflow_instance_nodes : has
+
+@enduml

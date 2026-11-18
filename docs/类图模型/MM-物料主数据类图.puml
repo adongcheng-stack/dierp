@@ -1,0 +1,97 @@
+@startuml MM-物料主数据类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title MM模块 - 物料主数据子模块类图
+
+package "物料主数据管理 (Material Master Data)" {
+    
+    class Material {
+        +Integer id
+        +String material_code
+        +String material_name
+        +String material_type
+        +String category
+        +String status
+        +String base_unit
+        +String production_unit
+        +BigDecimal conversion_factor
+        +Integer layer_count
+        +BigDecimal board_thickness
+        +BigDecimal copper_weight
+        +String surface_finish
+        +String solder_mask_color
+        +String silkscreen_color
+        +Boolean impedance_control
+        +BigDecimal unit_length
+        +BigDecimal unit_width
+        +BigDecimal panel_length
+        +BigDecimal panel_width
+        +Integer units_per_panel
+        +String procurement_type
+        +String mrp_controller
+        +Integer lead_time_days
+        +String valuation_method
+        +BigDecimal standard_price
+        +String currency
+        +BigDecimal current_stock
+        +BigDecimal safety_stock
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class MaterialTransaction {
+        +Integer id
+        +String transaction_number
+        +String material_code
+        +String transaction_type
+        +BigDecimal quantity
+        +String unit
+        +String reference_number
+        +String reference_type
+        +String warehouse
+        +Timestamp transaction_date
+        +String operator
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class BOMItem {
+        +String bom_number
+        +String material_code
+    }
+    
+    class MaterialIssue {
+        +String issue_number
+        +String material_code
+    }
+    
+    ' 关系定义
+    Material "1" --> "*" MaterialTransaction : transacted
+    Material "1" --> "*" BOMItem : used_in
+    Material "1" --> "*" MaterialIssue : issued
+    
+    note right of Material
+        物料主数据
+        物料类型：RAW（原材料）、SEMI（半成品）
+        不显示FG类型（FG类型在产品主数据管理中显示）
+        支持PCB专有属性
+        支持单位转换
+        包含库存信息（current_stock, safety_stock）
+    end note
+    
+    note right of MaterialTransaction
+        物料事务
+        记录库存进出、调整明细
+        事务类型：ISSUE, RETURN, RECEIPT, ADJUSTMENT等
+        用于物料事务历史查询
+    end note
+}
+
+@enduml

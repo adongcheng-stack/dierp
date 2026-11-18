@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - 客户主数据管理界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .form-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        label.required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            color: #7f8c8d;
+        }
+        
+        .select-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .select-dropdown select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        
+        .checkbox-item label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+        
+        .dynamic-list {
+            margin-top: 10px;
+        }
+        
+        .dynamic-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .dynamic-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .item-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .field-description {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 3px;
+            font-style: italic;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-draft { background-color: #cce5ff; color: #004085; }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-active { background-color: #d4edda; color: #155724; }
+        .status-blocked { background-color: #f8d7da; color: #721c24; }
+        .status-inactive { background-color: #d6d8d9; color: #383d41; }
+        
+        .datetime-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .datetime-group .form-group {
+            flex: 1;
+        }
+        
+        .checkbox-single {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-single input {
+            margin-right: 8px;
+        }
+        
+        .checkbox-single label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+        
+        .instructions {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .group-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .group-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .datetime-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>某某ERP系统 - 客户主数据管理</h1>
+            <p style="color: #666;">客户主数据管理界面</p>
+        </header>
+        
+        <div class="form-container">
+            <!-- 客户主数据头部信息 -->
+            <div class="form-section">
+                <h2 class="section-title">客户主数据</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customerId" class="required">客户代码 - Customer ID</label>
+                        <input type="text" id="customerId" class="form-control" placeholder="请输入客户代码">
+                        <div class="field-description">客户唯一标识代码</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="customerStatus" class="required">客户状态 - Customer Status</label>
+                        <div class="select-dropdown">
+                            <select id="customerStatus">
+                                <option value="">请选择客户状态</option>
+                                <option value="DRAFT">草稿 - DRAFT</option>
+                                <option value="PENDING_APPROVAL">待审批 - PENDING_APPROVAL</option>
+                                <option value="ACTIVE">激活 - ACTIVE</option>
+                                <option value="BLOCKED">冻结 - BLOCKED</option>
+                                <option value="INACTIVE">未激活 - INACTIVE</option>
+                            </select>
+                        </div>
+                        <div class="field-description">客户当前业务状态</div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="createdDate">创建日期 - Created Date</label>
+                        <div class="datetime-group">
+                            <div class="form-group">
+                                <input type="date" id="createdDate" class="form-control" value="2025-12-04">
+                            </div>
+                            <div class="form-group">
+                                <input type="time" id="createdTime" class="form-control" value="14:30">
+                            </div>
+                        </div>
+                        <div class="field-description">客户档案创建时间</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modifiedDate">修改日期 - Modified Date</label>
+                        <div class="datetime-group">
+                            <div class="form-group">
+                                <input type="date" id="modifiedDate" class="form-control" value="2025-12-04">
+                            </div>
+                            <div class="form-group">
+                                <input type="time" id="modifiedTime" class="form-control" value="15:45">
+                            </div>
+                        </div>
+                        <div class="field-description">客户档案最后修改时间</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 常规数据 -->
+            <div class="form-section">
+                <h2 class="section-title">常规数据 - General Data</h2>
+                
+                <div class="group-container">
+                    <div class="group-title">客户公司基本信息 - Customer Basic Info</div>
+                    
+                    <div class="form-group">
+                        <label for="legalName" class="required">客户公司法定全称 - Customer Full Company Name</label>
+                        <input type="text" id="legalName" class="form-control" placeholder="请输入公司法定全称">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tradeName">常用商号/简称 - Customer Trade Name</label>
+                            <input type="text" id="tradeName" class="form-control" placeholder="请输入常用商号或简称">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taxId" class="required">客户公司税号 - Customer Company Tax Number</label>
+                            <input type="text" id="taxId" class="form-control" placeholder="请输入公司税号">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customerIndustry">客户所属行业 - Customer Industry</label>
+                            <div class="select-dropdown">
+                                <select id="customerIndustry">
+                                    <option value="">请选择行业</option>
+                                    <option value="汽车">汽车</option>
+                                    <option value="工业控制">工业控制</option>
+                                    <option value="医疗">医疗</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="customerWebsite">客户公司网址 - Customer Website</label>
+                            <input type="text" id="customerWebsite" class="form-control" placeholder="请输入公司网址">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 合作属性/角色 -->
+            <div class="form-section">
+                <h2 class="section-title">合作属性/角色 - Partner Functions</h2>
+                
+                <div class="dynamic-list" id="partnerFunctionsList">
+                    <!-- 动态列表项 -->
+                    <div class="dynamic-item">
+                        <div class="dynamic-item-header">
+                            <div class="item-title">合作方 1</div>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removePartnerFunction(this)">删除</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="partnerRole_1" class="required">合作角色 - Partner Role</label>
+                                <div class="select-dropdown">
+                                    <select id="partnerRole_1">
+                                        <option value="">请选择合作角色</option>
+                                        <option value="SOLD_TO">售达方 - SOLD_TO</option>
+                                        <option value="SHIP_TO">送达方 - SHIP_TO</option>
+                                        <option value="BILL_TO">开票方 - BILL_TO</option>
+                                        <option value="PAYER">付款方 - PAYER</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="partnerId_1">合作方代码 - Partner ID</label>
+                                <input type="text" id="partnerId_1" class="form-control" placeholder="请输入合作方代码">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="partnerName_1">合作方名称</label>
+                            <input type="text" id="partnerName_1" class="form-control" placeholder="请输入合作方名称">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="partnershipDescription_1">合作描述 - Partnership Description</label>
+                            <input type="text" id="partnershipDescription_1" class="form-control" placeholder="请输入合作描述">
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="addPartnerFunction()">+ 添加合作属性</button>
+            </div>
+            
+            <!-- 地址信息 -->
+            <div class="form-section">
+                <h2 class="section-title">地址信息 - Addresses</h2>
+                
+                <div class="dynamic-list" id="addressesList">
+                    <!-- 动态列表项 -->
+                    <div class="dynamic-item">
+                        <div class="dynamic-item-header">
+                            <div class="item-title">地址 1</div>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removeAddress(this)">删除</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="autoInput_1">自动识别 - Auto Input</label>
+                            <textarea id="autoInput_1" class="form-control" placeholder="自动识别地址信息"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="addressType_1" class="required">地址类型 - Address Type</label>
+                                <div class="select-dropdown">
+                                    <select id="addressType_1">
+                                        <option value="">请选择地址类型</option>
+                                        <option value="HEADQUARTERS">总部 - HEADQUARTERS</option>
+                                        <option value="PLANT">工厂 - PLANT</option>
+                                        <option value="Warehouse">仓库 - Warehouse</option>
+                                        <option value="Billing">账单 - Billing</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>默认选项 - Default Options</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="isDefaultShipping_1" name="defaultOptions_1">
+                                        <label for="isDefaultShipping_1">默认送货地址？ - isDefaultShipping</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="isDefaultBilling_1" name="defaultOptions_1">
+                                        <label for="isDefaultBilling_1">默认账单地址？ - isDefaultBilling</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="detailAddress_1" class="required">详细地址 - Detail Address</label>
+                                <input type="text" id="detailAddress_1" class="form-control" placeholder="请输入详细地址">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="location_1">归属地 - Location</label>
+                                <input type="text" id="location_1" class="form-control" placeholder="请输入归属地">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="postalCode_1">邮政编码 - Postal Code</label>
+                                <input type="text" id="postalCode_1" class="form-control" placeholder="请输入邮政编码">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="country_1">国家 - Country</label>
+                                <input type="text" id="country_1" class="form-control" value="中国 - China">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="province_1">省 - Province</label>
+                                <input type="text" id="province_1" class="form-control" placeholder="请输入省份">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="city_1">市 - City</label>
+                                <input type="text" id="city_1" class="form-control" placeholder="请输入城市">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="district_1">区 - District</label>
+                                <input type="text" id="district_1" class="form-control" placeholder="请输入区域">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="addAddress()">+ 添加地址</button>
+            </div>
+            
+            <!-- 联系人信息 -->
+            <div class="form-section">
+                <h2 class="section-title">联系人信息 - Contacts</h2>
+                
+                <div class="dynamic-list" id="contactsList">
+                    <!-- 动态列表项 -->
+                    <div class="dynamic-item">
+                        <div class="dynamic-item-header">
+                            <div class="item-title">联系人 1</div>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removeContact(this)">删除</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="checkbox-single">
+                                    <input type="checkbox" id="isPrimaryContact_1">
+                                    <label for="isPrimaryContact_1">第一联系人？ - Is Primary Contact</label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactName_1">联系人姓名 - Contact Name</label>
+                                <input type="text" id="contactName_1" class="form-control" placeholder="请输入联系人姓名">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactRole_1">联系人职务 - Contact Role</label>
+                                <input type="text" id="contactRole_1" class="form-control" placeholder="请输入联系人职务">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactDepartment_1">联系人部门 - Contact Department</label>
+                                <input type="text" id="contactDepartment_1" class="form-control" placeholder="请输入联系人部门">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactPhone_1">联系人电话 - Contact Phone</label>
+                                <input type="text" id="contactPhone_1" class="form-control" placeholder="请输入联系人电话">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactEmail_1">联系人邮件 - Contact Email</label>
+                                <input type="text" id="contactEmail_1" class="form-control" placeholder="请输入联系人邮箱">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="addContact()">+ 添加联系人</button>
+            </div>
+            
+            <!-- 销售数据 -->
+            <div class="form-section">
+                <h2 class="section-title">销售数据 - Sales Data</h2>
+                
+                <div class="group-container">
+                    <div class="group-title">销售数据 - Sales Data</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="salesOrganization">销售组织 - Sales Organization</label>
+                            <div class="select-dropdown">
+                                <select id="salesOrganization">
+                                    <option value="">请选择销售组织</option>
+                                    <option value="华南区">华南区</option>
+                                    <option value="华东区">华东区</option>
+                                    <option value="华北区">华北区</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="accountManagerName">业务员姓名 - Sales Manager Name</label>
+                            <div class="select-dropdown">
+                                <select id="accountManagerName">
+                                    <option value="">请选择业务员</option>
+                                    <option value="张三">张三</option>
+                                    <option value="李四">李四</option>
+                                    <option value="王五">王五</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="salesAssistantName">跟单员姓名 - Sales Assistant Name</label>
+                            <div class="select-dropdown">
+                                <select id="salesAssistantName">
+                                    <option value="">请选择跟单员</option>
+                                    <option value="赵六">赵六</option>
+                                    <option value="孙七">孙七</option>
+                                    <option value="周八">周八</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tradingCurrency">默认交易货币 - Trading Currency</label>
+                            <div class="select-dropdown">
+                                <select id="tradingCurrency">
+                                    <option value="">请选择交易货币</option>
+                                    <option value="CNY">人民币 (CNY)</option>
+                                    <option value="USD">美元 (USD)</option>
+                                    <option value="EUR">欧元 (EUR)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="group-container" style="margin-top: 15px;">
+                        <div class="group-title">外贸信息 - Foreign Trade</div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="primaryTradeCountry">主要贸易国 - Primary Trade Country</label>
+                                <div class="select-dropdown">
+                                    <select id="primaryTradeCountry">
+                                        <option value="">请选择主要贸易国</option>
+                                        <option value="中国">中国</option>
+                                        <option value="美国">美国</option>
+                                        <option value="德国">德国</option>
+                                        <option value="日本">日本</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="incoterms">国际贸易术语 - Incoterms</label>
+                                <input type="text" id="incoterms" class="form-control" placeholder="请输入国际贸易术语">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="shippingConditions">运输条件 - Shipping Conditions</label>
+                                <input type="text" id="shippingConditions" class="form-control" placeholder="请输入运输条件">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="saveCustomer()">保存客户档案</button>
+                <button class="btn btn-primary" onclick="submitForApproval()">提交审核</button>
+                <button class="btn btn-secondary" onclick="saveAsDraft()">保存草稿</button>
+                <button class="btn btn-warning" onclick="resetForm()">重置表单</button>
+                <button class="btn btn-danger" onclick="cancelForm()">取消</button>
+            </div>
+            
+            <div class="timestamp">
+                最后保存时间: 2025-12-04 15:45:22 | 操作员: 张三 (销售专员)
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>客户建档说明</h3>
+            <ul>
+                <li><strong>客户代码:</strong> 客户唯一标识，创建后不可修改</li>
+                <li><strong>合作属性:</strong> 一个客户可以有多个合作角色（售达方、送达方、开票方、付款方）</li>
+                <li><strong>地址信息:</strong> 支持添加多个地址，可标记默认送货地址和默认账单地址</li>
+                <li><strong>联系人:</strong> 支持添加多个联系人，可指定第一联系人</li>
+                <li><strong>销售数据:</strong> 包括销售组织、业务员、交易货币等销售相关信息</li>
+                <li>标记 <span style="color: #e74c3c;">*</span> 的字段为必填项</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 动态列表计数器
+        let partnerCounter = 1;
+        let addressCounter = 1;
+        let contactCounter = 1;
+        
+        // 添加合作属性
+        function addPartnerFunction() {
+            partnerCounter++;
+            const list = document.getElementById('partnerFunctionsList');
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-item';
+            newItem.innerHTML = `
+                <div class="dynamic-item-header">
+                    <div class="item-title">合作方 ${partnerCounter}</div>
+                    <div class="item-actions">
+                        <button class="btn btn-danger btn-sm" onclick="removePartnerFunction(this)">删除</button>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="partnerRole_${partnerCounter}" class="required">合作角色 - Partner Role</label>
+                        <div class="select-dropdown">
+                            <select id="partnerRole_${partnerCounter}">
+                                <option value="">请选择合作角色</option>
+                                <option value="SOLD_TO">售达方 - SOLD_TO</option>
+                                <option value="SHIP_TO">送达方 - SHIP_TO</option>
+                                <option value="BILL_TO">开票方 - BILL_TO</option>
+                                <option value="PAYER">付款方 - PAYER</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="partnerId_${partnerCounter}">合作方代码 - Partner ID</label>
+                        <input type="text" id="partnerId_${partnerCounter}" class="form-control" placeholder="请输入合作方代码">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="partnerName_${partnerCounter}">合作方名称</label>
+                    <input type="text" id="partnerName_${partnerCounter}" class="form-control" placeholder="请输入合作方名称">
+                </div>
+                
+                <div class="form-group">
+                    <label for="partnershipDescription_${partnerCounter}">合作描述 - Partnership Description</label>
+                    <input type="text" id="partnershipDescription_${partnerCounter}" class="form-control" placeholder="请输入合作描述">
+                </div>
+            `;
+            
+            list.appendChild(newItem);
+        }
+        
+        // 删除合作属性
+        function removePartnerFunction(button) {
+            const item = button.closest('.dynamic-item');
+            if (item) {
+                item.remove();
+            }
+        }
+        
+        // 添加地址
+        function addAddress() {
+            addressCounter++;
+            const list = document.getElementById('addressesList');
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-item';
+            newItem.innerHTML = `
+                <div class="dynamic-item-header">
+                    <div class="item-title">地址 ${addressCounter}</div>
+                    <div class="item-actions">
+                        <button class="btn btn-danger btn-sm" onclick="removeAddress(this)">删除</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="autoInput_${addressCounter}">自动识别 - Auto Input</label>
+                    <textarea id="autoInput_${addressCounter}" class="form-control" placeholder="自动识别地址信息"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="addressType_${addressCounter}" class="required">地址类型 - Address Type</label>
+                        <div class="select-dropdown">
+                            <select id="addressType_${addressCounter}">
+                                <option value="">请选择地址类型</option>
+                                <option value="HEADQUARTERS">总部 - HEADQUARTERS</option>
+                                <option value="PLANT">工厂 - PLANT</option>
+                                <option value="Warehouse">仓库 - Warehouse</option>
+                                <option value="Billing">账单 - Billing</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>默认选项 - Default Options</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="isDefaultShipping_${addressCounter}" name="defaultOptions_${addressCounter}">
+                                <label for="isDefaultShipping_${addressCounter}">默认送货地址？ - isDefaultShipping</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="isDefaultBilling_${addressCounter}" name="defaultOptions_${addressCounter}">
+                                <label for="isDefaultBilling_${addressCounter}">默认账单地址？ - isDefaultBilling</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="detailAddress_${addressCounter}" class="required">详细地址 - Detail Address</label>
+                        <input type="text" id="detailAddress_${addressCounter}" class="form-control" placeholder="请输入详细地址">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location_${addressCounter}">归属地 - Location</label>
+                        <input type="text" id="location_${addressCounter}" class="form-control" placeholder="请输入归属地">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="postalCode_${addressCounter}">邮政编码 - Postal Code</label>
+                        <input type="text" id="postalCode_${addressCounter}" class="form-control" placeholder="请输入邮政编码">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="country_${addressCounter}">国家 - Country</label>
+                        <input type="text" id="country_${addressCounter}" class="form-control" value="中国 - China">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="province_${addressCounter}">省 - Province</label>
+                        <input type="text" id="province_${addressCounter}" class="form-control" placeholder="请输入省份">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="city_${addressCounter}">市 - City</label>
+                        <input type="text" id="city_${addressCounter}" class="form-control" placeholder="请输入城市">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="district_${addressCounter}">区 - District</label>
+                        <input type="text" id="district_${addressCounter}" class="form-control" placeholder="请输入区域">
+                    </div>
+                </div>
+            `;
+            
+            list.appendChild(newItem);
+        }
+        
+        // 删除地址
+        function removeAddress(button) {
+            const item = button.closest('.dynamic-item');
+            if (item) {
+                item.remove();
+            }
+        }
+        
+        // 添加联系人
+        function addContact() {
+            contactCounter++;
+            const list = document.getElementById('contactsList');
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-item';
+            newItem.innerHTML = `
+                <div class="dynamic-item-header">
+                    <div class="item-title">联系人 ${contactCounter}</div>
+                    <div class="item-actions">
+                        <button class="btn btn-danger btn-sm" onclick="removeContact(this)">删除</button>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="checkbox-single">
+                            <input type="checkbox" id="isPrimaryContact_${contactCounter}">
+                            <label for="isPrimaryContact_${contactCounter}">第一联系人？ - Is Primary Contact</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contactName_${contactCounter}">联系人姓名 - Contact Name</label>
+                        <input type="text" id="contactName_${contactCounter}" class="form-control" placeholder="请输入联系人姓名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contactRole_${contactCounter}">联系人职务 - Contact Role</label>
+                        <input type="text" id="contactRole_${contactCounter}" class="form-control" placeholder="请输入联系人职务">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contactDepartment_${contactCounter}">联系人部门 - Contact Department</label>
+                        <input type="text" id="contactDepartment_${contactCounter}" class="form-control" placeholder="请输入联系人部门">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactPhone_${contactCounter}">联系人电话 - Contact Phone</label>
+                        <input type="text" id="contactPhone_${contactCounter}" class="form-control" placeholder="请输入联系人电话">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contactEmail_${contactCounter}">联系人邮件 - Contact Email</label>
+                        <input type="text" id="contactEmail_${contactCounter}" class="form-control" placeholder="请输入联系人邮箱">
+                    </div>
+                </div>
+            `;
+            
+            list.appendChild(newItem);
+        }
+        
+        // 删除联系人
+        function removeContact(button) {
+            const item = button.closest('.dynamic-item');
+            if (item) {
+                item.remove();
+            }
+        }
+        
+        // 保存客户档案
+        function saveCustomer() {
+            // 验证必填字段
+            const customerId = document.getElementById('customerId').value;
+            const customerStatus = document.getElementById('customerStatus').value;
+            const legalName = document.getElementById('legalName').value;
+            const taxId = document.getElementById('taxId').value;
+            
+            if (!customerId || !customerStatus || !legalName || !taxId) {
+                alert('请填写所有必填字段（客户代码、客户状态、公司法定全称、公司税号）');
+                return;
+            }
+            
+            // 收集表单数据
+            const formData = {
+                customerId: customerId,
+                customerStatus: customerStatus,
+                createdDate: document.getElementById('createdDate').value,
+                createdTime: document.getElementById('createdTime').value,
+                modifiedDate: document.getElementById('modifiedDate').value,
+                modifiedTime: document.getElementById('modifiedTime').value,
+                customerBasicInfo: {
+                    legalName: legalName,
+                    tradeName: document.getElementById('tradeName').value,
+                    taxId: taxId,
+                    customerIndustry: document.getElementById('customerIndustry').value,
+                    customerWebsite: document.getElementById('customerWebsite').value
+                },
+                partnerFunctions: [],
+                customerAddresses: [],
+                customerContacts: [],
+                salesData: {
+                    salesOrganization: document.getElementById('salesOrganization').value,
+                    accountManagerName: document.getElementById('accountManagerName').value,
+                    salesAssistantName: document.getElementById('salesAssistantName').value,
+                    tradingCurrency: document.getElementById('tradingCurrency').value,
+                    foreignTrade: {
+                        primaryTradeCountry: document.getElementById('primaryTradeCountry').value,
+                        incoterms: document.getElementById('incoterms').value,
+                        shippingConditions: document.getElementById('shippingConditions').value
+                    }
+                }
+            };
+            
+            // 这里可以添加代码将formData发送到服务器
+            console.log('客户档案数据:', formData);
+            
+            // 更新最后保存时间
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            document.querySelector('.timestamp').textContent = `最后保存时间: ${timeString} | 操作员: 张三 (销售专员)`;
+            
+            alert('客户档案保存成功！');
+        }
+        
+        // 提交审核
+        function submitForApproval() {
+            if (confirm('确认提交客户档案进行审核吗？提交后将进入审批流程。')) {
+                // 更新客户状态为待审批
+                document.getElementById('customerStatus').value = 'PENDING_APPROVAL';
+                
+                // 保存并提交
+                saveCustomer();
+                alert('客户档案已提交审核！');
+            }
+        }
+        
+        // 保存草稿
+        function saveAsDraft() {
+            // 更新客户状态为草稿
+            document.getElementById('customerStatus').value = 'DRAFT';
+            
+            // 保存
+            saveCustomer();
+            alert('客户档案已保存为草稿！');
+        }
+        
+        // 重置表单
+        function resetForm() {
+            if (confirm('确定要重置表单吗？所有输入的数据将丢失。')) {
+                document.querySelector('form').reset();
+                alert('表单已重置！');
+            }
+        }
+        
+        // 取消
+        function cancelForm() {
+            if (confirm('确定要取消吗？未保存的数据将丢失。')) {
+                window.location.href = 'customer_list.html'; // 假设返回客户列表页
+            }
+        }
+        
+        // 页面加载时设置当前时间
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+            
+            // 设置创建时间和修改时间
+            document.getElementById('createdDate').value = dateStr;
+            document.getElementById('createdTime').value = timeStr;
+            document.getElementById('modifiedDate').value = dateStr;
+            document.getElementById('modifiedTime').value = timeStr;
+        });
+    </script>
+</body>
+</html>

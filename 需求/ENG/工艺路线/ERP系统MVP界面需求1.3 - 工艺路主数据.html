@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - 工艺路线主数据管理</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --primary-light: #3498db;
+            --secondary-color: #7f8c8d;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --external-color: #fa8c16;
+            --quality-color: #73d13d;
+            --background-light: #f5f7fa;
+            --border-color: #d1d8e0;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 顶部导航 */
+        .app-header {
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .logo i {
+            color: var(--primary-light);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* 选项卡导航 */
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover {
+            color: var(--primary-color);
+        }
+        
+        .tab.active {
+            color: var(--primary-light);
+            border-bottom-color: var(--primary-light);
+        }
+        
+        /* 统计信息 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        /* 搜索和筛选 */
+        .search-filter {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        /* 卡片样式 */
+        .routing-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* 路由状态 */
+        .routing-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-released {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-draft {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-obsolete {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* 网格布局 */
+        .info-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .grid-3-col {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .grid-4-col {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 8px 0;
+        }
+        
+        .info-value strong {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e6a700;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--background-light);
+        }
+        
+        /* 工序类型标签 */
+        .operation-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .type-internal {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .type-external {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .type-quality {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        /* 工序列表表格 */
+        .operations-container {
+            overflow-x: auto;
+        }
+        
+        .operations-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .operations-table thead {
+            background-color: #f8f9fa;
+        }
+        
+        .operations-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        
+        .operations-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        
+        .operations-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 拖拽手柄 */
+        .drag-handle {
+            cursor: move;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            padding: 4px;
+        }
+        
+        .drag-handle:hover {
+            opacity: 1;
+            color: var(--primary-color);
+        }
+        
+        /* 操作按钮组 */
+        .operation-actions {
+            display: flex;
+            gap: 6px;
+        }
+        
+        /* 生产基础信息 */
+        .production-basis {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .basis-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .basis-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* 审计追踪 */
+        .audit-trail {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        /* 表单样式 */
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+        
+        /* 模态窗口 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-label.required::after {
+            content: " *";
+            color: var(--danger-color);
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .app-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .tabs {
+                overflow-x: auto;
+            }
+            
+            .tab {
+                white-space: nowrap;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .grid-3-col,
+            .grid-4-col {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-filter {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-wrap: wrap;
+            }
+            
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .operations-table th,
+            .operations-table td {
+                padding: 10px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 工序详情卡片 */
+        .operation-details {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-section {
+            margin-bottom: 20px;
+        }
+        
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 开关指示器 */
+        .switch-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .switch-on {
+            background-color: var(--success-color);
+        }
+        
+        .switch-off {
+            background-color: var(--secondary-color);
+            opacity: 0.5;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fas fa-industry"></i>
+                <span>某某ERP - 工艺路线主数据管理系统</span>
+            </div>
+            <div class="user-info">
+                <span>当前用户: 工程师_张工</span>
+                <button class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </button>
+            </div>
+        </header>
+        
+        <!-- 选项卡导航 -->
+        <nav class="tabs">
+            <button class="tab">
+                <i class="fas fa-list"></i>
+                BOM管理
+            </button>
+            <button class="tab">
+                <i class="fas fa-cube"></i>
+                物料主数据
+            </button>
+            <button class="tab active">
+                <i class="fas fa-project-diagram"></i>
+                工艺路线
+            </button>
+            <button class="tab">
+                <i class="fas fa-chart-bar"></i>
+                成本分析
+            </button>
+            <button class="tab">
+                <i class="fas fa-file-export"></i>
+                数据导出
+            </button>
+        </nav>
+        
+        <!-- 统计信息 -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">328</div>
+                <div class="stat-label">工艺路线总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">285</div>
+                <div class="stat-label">已发布</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">42</div>
+                <div class="stat-label">含外协工序</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">8</div>
+                <div class="stat-label">今日更新</div>
+            </div>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="search-filter">
+            <div class="search-box">
+                <input type="text" class="form-control" placeholder="搜索工艺路线ID、物料ID或描述...">
+            </div>
+            <div class="filter-group">
+                <select class="form-control" style="width: 150px;">
+                    <option value="">所有状态</option>
+                    <option value="RELEASED">已发布</option>
+                    <option value="DRAFT">草稿</option>
+                    <option value="OBSOLETE">已废弃</option>
+                </select>
+                <select class="form-control" style="width: 150px;">
+                    <option value="">所有工厂</option>
+                    <option value="SZ-FACTORY-01">深圳工厂</option>
+                    <option value="DG-FACTORY-01">东莞工厂</option>
+                </select>
+                <button class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    搜索
+                </button>
+                <button class="btn btn-success" onclick="openAddRoutingModal()">
+                    <i class="fas fa-plus"></i>
+                    新建工艺路线
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- 工艺路线基本信息 -->
+            <div class="routing-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        工艺路线基本信息
+                    </div>
+                    <span class="routing-status status-released">RELEASED</span>
+                </div>
+                
+                <div class="info-grid grid-3-col">
+                    <div class="info-item">
+                        <div class="info-label">工艺路线ID</div>
+                        <div class="info-value"><strong>RT-2023-PCB-8801</strong></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">版本</div>
+                        <div class="info-value">A01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">物料ID</div>
+                        <div class="info-value">PN-PCB-Motherboard-V3</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">描述</div>
+                        <div class="info-value">Mainboard Layer 1-4 Process / 主板1-4层压合后制程</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">工厂</div>
+                        <div class="info-value">SZ-FACTORY-01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">有效期</div>
+                        <div class="info-value">2023-10-01 → 9999-12-31</div>
+                    </div>
+                </div>
+                
+                <!-- 生产基础信息 -->
+                <div style="margin-top: 20px;">
+                    <div class="info-label" style="margin-bottom: 10px;">生产基础信息 (PCB行业核心逻辑)</div>
+                    <div class="production-basis">
+                        <div class="basis-item">
+                            <span>基础单位</span>
+                            <strong>PNL (Panel)</strong>
+                        </div>
+                        <div class="basis-item">
+                            <span>基数</span>
+                            <strong>1 Panel</strong>
+                        </div>
+                        <div class="basis-item">
+                            <span>每Panel单元数</span>
+                            <strong>12 Units</strong>
+                        </div>
+                        <div class="basis-item">
+                            <span>Panel尺寸</span>
+                            <strong>18x24 INCH</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="openEditRoutingModal()">
+                        <i class="fas fa-edit"></i>
+                        编辑工艺路线信息
+                    </button>
+                    <button class="btn btn-success" onclick="releaseRouting()">
+                        <i class="fas fa-check-circle"></i>
+                        发布
+                    </button>
+                    <button class="btn btn-warning" onclick="obsoleteRouting()">
+                        <i class="fas fa-archive"></i>
+                        废弃
+                    </button>
+                    <button class="btn btn-outline" onclick="exportRoutingJSON()">
+                        <i class="fas fa-file-export"></i>
+                        导出JSON
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 工序列表 -->
+            <div class="routing-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-list-ol"></i>
+                        工序列表 (3)
+                    </div>
+                    <div class="action-buttons" style="margin: 0; padding: 0; border: none;">
+                        <button class="btn btn-success" onclick="openAddOperationModal()">
+                            <i class="fas fa-plus"></i>
+                            新增工序
+                        </button>
+                        <button class="btn btn-outline">
+                            <i class="fas fa-upload"></i>
+                            批量导入
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="operations-container">
+                    <table class="operations-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th style="width: 80px;">序号</th>
+                                <th>工序名称</th>
+                                <th style="width: 100px;">类型</th>
+                                <th>工作中心</th>
+                                <th style="width: 100px;">控制逻辑</th>
+                                <th style="width: 150px;">时间参数(分钟)</th>
+                                <th style="width: 120px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 工序0010: 内部生产 -->
+                            <tr>
+                                <td class="drag-handle">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </td>
+                                <td>0010</td>
+                                <td>
+                                    <strong>CNC Drilling / 数控钻孔</strong>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                        <i class="fas fa-barcode"></i> DRL-001
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="operation-type type-internal">
+                                        <i class="fas fa-industry"></i>
+                                        内部
+                                    </span>
+                                </td>
+                                <td>WC-DRL-CNC-A</td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span class="switch-indicator switch-on"></span>
+                                            <span style="font-size: 11px;">成本相关</span>
+                                        </span>
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span class="switch-indicator switch-on"></span>
+                                            <span style="font-size: 11px;">排程相关</span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="font-size: 12px;">调机: <strong>30.0</strong></span>
+                                        <span style="font-size: 12px;">机器: <strong>120.0</strong></span>
+                                        <span style="font-size: 12px;">人工: <strong>30.0</strong></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="operation-actions">
+                                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editOperation('0010', 'internal')">
+                                            <i class="fas fa-edit"></i>
+                                            编辑
+                                        </button>
+                                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="viewSOP('DRL-001')">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- 工序0020: 工序外协 -->
+                            <tr>
+                                <td class="drag-handle">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </td>
+                                <td>0020</td>
+                                <td>
+                                    <strong>Surface Finish ENIG / 沉金</strong>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                        <i class="fas fa-barcode"></i> SFIN-ENIG
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="operation-type type-external">
+                                        <i class="fas fa-handshake"></i>
+                                        外协
+                                    </span>
+                                </td>
+                                <td>WC-EXT-GENERAL</td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span class="switch-indicator switch-on"></span>
+                                            <span style="font-size: 11px;">成本相关</span>
+                                        </span>
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span class="switch-indicator switch-on"></span>
+                                            <span style="font-size: 11px;">生成PR</span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="font-size: 12px;">交期: <strong>2.0 天</strong></span>
+                                        <span style="font-size: 12px;">单价: <strong>¥15.5/Unit</strong></span>
+                                        <span style="font-size: 12px;">服务: <strong>SRV-ENIG-01</strong></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="operation-actions">
+                                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editOperation('0020', 'external')">
+                                            <i class="fas fa-edit"></i>
+                                            编辑
+                                        </button>
+                                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--external-color);">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- 工序0030: 内部质检 -->
+                            <tr>
+                                <td class="drag-handle">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </td>
+                                <td>0030</td>
+                                <td>
+                                    <strong>AOI Inspection / 光学检测</strong>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                                        <i class="fas fa-barcode"></i> QC-AOI
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="operation-type type-quality">
+                                        <i class="fas fa-clipboard-check"></i>
+                                        质检
+                                    </span>
+                                </td>
+                                <td>WC-QA-AOI-01</td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span class="switch-indicator switch-on"></span>
+                                            <span style="font-size: 11px;">质检工序</span>
+                                        </span>
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span class="switch-indicator switch-on"></span>
+                                            <span style="font-size: 11px;">失败锁单</span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="font-size: 12px;">调机: <strong>10.0</strong></span>
+                                        <span style="font-size: 12px;">机器: <strong>60.0</strong></span>
+                                        <span style="font-size: 12px;">人工: <strong>60.0</strong></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="operation-actions">
+                                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editOperation('0030', 'quality')">
+                                            <i class="fas fa-edit"></i>
+                                            编辑
+                                        </button>
+                                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--quality-color);">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">
+                    <i class="fas fa-info-circle"></i> 拖拽 <i class="fas fa-grip-vertical"></i> 手柄可重新排序工序
+                </div>
+            </div>
+            
+            <!-- 审计追踪 -->
+            <div class="routing-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-history"></i>
+                        审计追踪
+                    </div>
+                </div>
+                
+                <div class="audit-trail">
+                    <div class="info-item">
+                        <div class="info-label">创建人</div>
+                        <div class="info-value">User_007</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">创建时间</div>
+                        <div class="info-value">2023-09-28</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最后修改人</div>
+                        <div class="info-value">User_009</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">关联变更单</div>
+                        <div class="info-value">
+                            <a href="#" style="color: var(--primary-light); text-decoration: none;">
+                                ECN-2023-889
+                                <i class="fas fa-external-link-alt" style="margin-left: 5px;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑工艺路线模态窗口 -->
+    <div class="modal-overlay" id="editRoutingModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑工艺路线信息
+                </div>
+                <button class="modal-close" onclick="closeModal('editRoutingModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">工艺路线ID</label>
+                        <input type="text" class="form-control" value="RT-2023-PCB-8801">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">版本</label>
+                        <input type="text" class="form-control" value="A01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">物料ID</label>
+                        <input type="text" class="form-control" value="PN-PCB-Motherboard-V3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">描述</label>
+                        <input type="text" class="form-control" value="Mainboard Layer 1-4 Process / 主板1-4层压合后制程">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工厂</label>
+                        <select class="form-control">
+                            <option value="SZ-FACTORY-01" selected>深圳工厂</option>
+                            <option value="DG-FACTORY-01">东莞工厂</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">状态</label>
+                        <select class="form-control">
+                            <option value="RELEASED" selected>已发布 (RELEASED)</option>
+                            <option value="DRAFT">草稿 (DRAFT)</option>
+                            <option value="OBSOLETE">已废弃 (OBSOLETE)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">生效日期</label>
+                        <input type="date" class="form-control" value="2023-10-01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">失效日期</label>
+                        <input type="date" class="form-control" value="9999-12-31">
+                    </div>
+                    
+                    <!-- 生产基础信息 -->
+                    <div class="form-group full-width">
+                        <label class="form-label" style="margin-top: 20px;">生产基础信息 (PCB行业核心逻辑)</label>
+                        <div class="form-grid" style="margin-top: 10px;">
+                            <div class="form-group">
+                                <label class="form-label required">基础单位</label>
+                                <select class="form-control">
+                                    <option value="PNL" selected>PNL (Panel)</option>
+                                    <option value="PCS">PCS (Piece)</option>
+                                    <option value="SET">SET</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">基数</label>
+                                <input type="number" class="form-control" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">每Panel单元数</label>
+                                <input type="number" class="form-control" value="12">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Panel尺寸</label>
+                                <input type="text" class="form-control" value="18x24 INCH">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editRoutingModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveRouting()">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑内部工序模态窗口 -->
+    <div class="modal-overlay" id="editInternalOpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑工序 - 0010: CNC钻孔
+                </div>
+                <button class="modal-close" onclick="closeModal('editInternalOpModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">工序号</label>
+                        <input type="text" class="form-control" value="0010">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工序代码</label>
+                        <input type="text" class="form-control" value="DRL-001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工序名称</label>
+                        <input type="text" class="form-control" value="CNC Drilling / 数控钻孔">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工作中心</label>
+                        <select class="form-control">
+                            <option value="WC-DRL-CNC-A" selected>WC-DRL-CNC-A</option>
+                            <option value="WC-DRL-CNC-B">WC-DRL-CNC-B</option>
+                            <option value="WC-DRL-CNC-C">WC-DRL-CNC-C</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SOP文档链接</label>
+                        <input type="text" class="form-control" value="http://docs.factory/sop/drl-v3.pdf">
+                    </div>
+                </div>
+                
+                <!-- 控制逻辑 -->
+                <div class="operation-details">
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-sliders-h"></i>
+                            控制逻辑
+                        </div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                成本相关
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                排程相关
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                需报工
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox">
+                                自动倒扣料
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox">
+                                触发质检
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 时间参数 -->
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-clock"></i>
+                            时间参数（单位：分钟）
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">调机时间</label>
+                                <input type="number" class="form-control" value="30.0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">机器时间</label>
+                                <input type="number" class="form-control" value="120.0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">人工时间</label>
+                                <input type="number" class="form-control" value="30.0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">排队缓冲</label>
+                                <input type="number" class="form-control" value="0.0" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editInternalOpModal')">取消</button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    保存
+                </button>
+                <button class="btn btn-outline">
+                    <i class="fas fa-copy"></i>
+                    复制为新工序
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑外协工序模态窗口 -->
+    <div class="modal-overlay" id="editExternalOpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑工序 - 0020: 沉金
+                </div>
+                <button class="modal-close" onclick="closeModal('editExternalOpModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">工序号</label>
+                        <input type="text" class="form-control" value="0020">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工序代码</label>
+                        <input type="text" class="form-control" value="SFIN-ENIG">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工序名称</label>
+                        <input type="text" class="form-control" value="Surface Finish ENIG / 沉金">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工作中心</label>
+                        <select class="form-control">
+                            <option value="WC-EXT-GENERAL" selected>WC-EXT-GENERAL</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 控制逻辑 -->
+                <div class="operation-details">
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-sliders-h"></i>
+                            控制逻辑
+                        </div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                成本相关
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                排程相关
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                需收货确认
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                生成采购申请
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 外协参数 -->
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-handshake"></i>
+                            外协参数
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">服务代码</label>
+                                <input type="text" class="form-control" value="SRV-ENIG-01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">计划交期</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" class="form-control" value="2.0" step="0.1" style="flex: 1;">
+                                    <span>天</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">预估单价</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" class="form-control" value="15.5" step="0.01" style="flex: 1;">
+                                    <select class="form-control" style="width: 80px;">
+                                        <option value="CNY" selected>CNY</option>
+                                        <option value="USD">USD</option>
+                                    </select>
+                                    <span>/ Unit</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">建议供应商</label>
+                                <select class="form-control">
+                                    <option value="">请选择</option>
+                                    <option value="VEN-FOXCONN" selected>VEN-FOXCONN</option>
+                                    <option value="VEN-PCBMASTER">VEN-PCBMASTER</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editExternalOpModal')">取消</button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    保存
+                </button>
+                <button class="btn btn-outline" style="color: var(--external-color);">
+                    <i class="fas fa-shopping-cart"></i>
+                    测试采购流程
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑质检工序模态窗口 -->
+    <div class="modal-overlay" id="editQualityOpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑工序 - 0030: AOI检测
+                </div>
+                <button class="modal-close" onclick="closeModal('editQualityOpModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">工序号</label>
+                        <input type="text" class="form-control" value="0030">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工序代码</label>
+                        <input type="text" class="form-control" value="QC-AOI">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工序名称</label>
+                        <input type="text" class="form-control" value="AOI Inspection / 光学检测">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工作中心</label>
+                        <select class="form-control">
+                            <option value="WC-QA-AOI-01" selected>WC-QA-AOI-01</option>
+                            <option value="WC-QA-AOI-02">WC-QA-AOI-02</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 控制逻辑 -->
+                <div class="operation-details">
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-sliders-h"></i>
+                            控制逻辑
+                        </div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                成本相关
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                排程相关
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked>
+                                触发生成检验单
+                            </label>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <label class="form-label">质检逻辑</label>
+                            <select class="form-control">
+                                <option value="BLOCK_ON_FAIL" selected>失败锁单</option>
+                                <option value="CONTINUE_ON_FAIL">失败继续</option>
+                                <option value="AUTO_REWORK">自动返工</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 时间参数 -->
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-clock"></i>
+                            时间参数（单位：分钟）
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">调机时间</label>
+                                <input type="number" class="form-control" value="10.0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">机器时间</label>
+                                <input type="number" class="form-control" value="60.0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">人工时间</label>
+                                <input type="number" class="form-control" value="60.0" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 质检参数 -->
+                    <div class="detail-section">
+                        <div class="section-title">
+                            <i class="fas fa-clipboard-check"></i>
+                            质检参数
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">检验计划</label>
+                                <select class="form-control">
+                                    <option value="QP-PCB-LEVEL2" selected>QP-PCB-LEVEL2</option>
+                                    <option value="QP-PCB-LEVEL1">QP-PCB-LEVEL1</option>
+                                    <option value="QP-PCB-LEVEL3">QP-PCB-LEVEL3</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">抽样率</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" class="form-control" value="100.0" step="0.1" style="flex: 1;">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editQualityOpModal')">取消</button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    保存
+                </button>
+                <button class="btn btn-outline" style="color: var(--quality-color);">
+                    <i class="fas fa-eye"></i>
+                    查看检验计划
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 模态窗口控制
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function openEditRoutingModal() {
+            openModal('editRoutingModal');
+        }
+        
+        function openAddRoutingModal() {
+            alert('新建工艺路线功能开发中...');
+        }
+        
+        function openAddOperationModal() {
+            // 默认打开内部工序添加
+            openModal('editInternalOpModal');
+            // 可以修改为新建模式
+            document.querySelector('#editInternalOpModal .modal-title').innerHTML = '<i class="fas fa-plus"></i> 新增内部工序';
+        }
+        
+        function editOperation(opId, type) {
+            if (type === 'internal') {
+                openModal('editInternalOpModal');
+            } else if (type === 'external') {
+                openModal('editExternalOpModal');
+            } else if (type === 'quality') {
+                openModal('editQualityOpModal');
+            }
+        }
+        
+        // 查看SOP文档
+        function viewSOP(opCode) {
+            if (opCode === 'DRL-001') {
+                window.open('http://docs.factory/sop/drl-v3.pdf', '_blank');
+            } else {
+                alert('该工序暂无SOP文档');
+            }
+        }
+        
+        // 保存路由
+        function saveRouting() {
+            alert('工艺路线信息已保存');
+            closeModal('editRoutingModal');
+        }
+        
+        // 发布路由
+        function releaseRouting() {
+            if (confirm('确认发布此工艺路线？发布后将在生产中生效。')) {
+                alert('工艺路线已发布');
+                document.querySelector('.routing-status').className = 'routing-status status-released';
+                document.querySelector('.routing-status').textContent = 'RELEASED';
+            }
+        }
+        
+        // 废弃路由
+        function obsoleteRouting() {
+            if (confirm('确认废弃此工艺路线？废弃后将不能在生产中使用。')) {
+                alert('工艺路线已废弃');
+                document.querySelector('.routing-status').className = 'routing-status status-obsolete';
+                document.querySelector('.routing-status').textContent = 'OBSOLETE';
+            }
+        }
+        
+        // 导出JSON
+        function exportRoutingJSON() {
+            alert('工艺路线JSON数据已导出');
+        }
+        
+        // 选项卡切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 如果是BOM管理选项卡，跳转到BOM管理页面
+                if (this.textContent.includes('BOM管理')) {
+                    window.location.href = '某某ERP系统MVP界面需求1.3 - BOM管理.html';
+                }
+                // 如果是物料主数据选项卡，跳转到物料主数据页面
+                else if (this.textContent.includes('物料主数据')) {
+                    window.location.href = '某某ERP系统MVP界面需求1.3 - 物料主数据.html';
+                }
+            });
+        });
+        
+        // 点击模态窗口外部关闭
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+        
+        // 搜索功能
+        document.querySelector('.search-filter .btn-primary').addEventListener('click', function() {
+            const searchText = document.querySelector('.search-box input').value;
+            const statusFilter = document.querySelector('.filter-group select:first-child').value;
+            const plantFilter = document.querySelector('.filter-group select:nth-child(2)').value;
+            
+            alert(`搜索条件:\n关键词: ${searchText || "空"}\n状态: ${statusFilter || "全部"}\n工厂: ${plantFilter || "全部"}`);
+        });
+        
+        // 拖拽功能（简化版）
+        let draggedRow = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const dragHandles = document.querySelectorAll('.drag-handle');
+            
+            dragHandles.forEach(handle => {
+                handle.addEventListener('mousedown', function(e) {
+                    const row = this.closest('tr');
+                    draggedRow = row;
+                    row.style.opacity = '0.5';
+                });
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (draggedRow) {
+                    draggedRow.style.opacity = '';
+                    draggedRow = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

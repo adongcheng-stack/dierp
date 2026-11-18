@@ -1,0 +1,98 @@
+@startuml ENG-工艺路线类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title ENG模块 - 工艺路线子模块类图
+
+package "工艺路线管理 (Routing Management)" {
+    
+    class Material {
+        +String material_code
+        +String material_name
+    }
+    
+    class Routing {
+        +Integer id
+        +String routing_id
+        +String version
+        +String material_code
+        +String description
+        +String plant_id
+        +String base_unit
+        +BigDecimal base_quantity
+        +Integer units_per_panel
+        +String panel_size
+        +Enum status
+        +Date effective_date
+        +Date expiry_date
+        +String change_request_no
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class RoutingOperation {
+        +Integer id
+        +String routing_id
+        +String operation_no
+        +String operation_code
+        +String operation_name
+        +String operation_type
+        +String work_center_id
+        +String sop_link
+        +BigDecimal setup_time
+        +BigDecimal machine_time
+        +BigDecimal labor_time
+        +BigDecimal queue_time
+        +Boolean cost_relevant
+        +Boolean scheduling_relevant
+        +Boolean needs_reporting
+        +Boolean auto_deduct_material
+        +Boolean trigger_quality_check
+        +String service_code
+        +Integer planned_delivery_days
+        +BigDecimal estimated_unit_price
+        +String inspection_plan_id
+        +BigDecimal sampling_rate
+        +String inspection_type
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class WorkCenter {
+        +String work_center_id
+        +String description
+    }
+    
+    class ProductionVersion {
+        +String production_version_id
+        +String routing_id
+    }
+    
+    ' 关系定义
+    Material "1" --> "*" Routing : has
+    Routing "1" *-- "*" RoutingOperation : contains
+    RoutingOperation --> WorkCenter : uses
+    Routing "1" --> "*" ProductionVersion : used_in
+    
+    note right of Routing
+        工艺路线
+        状态：DRAFT, RELEASED, OBSOLETE
+        基础单位通常为PNL（拼板）
+        只有RELEASED状态的工艺路线才能用于生产版本
+    end note
+    
+    note right of RoutingOperation
+        工艺路线工序
+        工序类型：internal, external, quality
+        工序按operation_no排序执行
+        内部工序必须关联工作中心
+    end note
+}
+
+@enduml

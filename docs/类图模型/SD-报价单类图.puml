@@ -1,0 +1,85 @@
+@startuml SD-报价单类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title SD模块 - 报价单子模块类图
+
+package "报价单管理 (Quotation Management)" {
+    
+    class Customer {
+        +String customer_id
+        +Enum customer_status
+    }
+    
+    class Quotation {
+        +Integer id
+        +String quotation_number
+        +String customer_id
+        +String product_number
+        +String product_name
+        +BigDecimal quantity
+        +BigDecimal unit_price
+        +BigDecimal total_amount
+        +String currency
+        +Date valid_until
+        +Enum status
+        +String sales_approver
+        +Timestamp sales_approved_at
+        +String engineer_approver
+        +Timestamp engineer_approved_at
+        +String account_manager_approver
+        +String general_manager_approver
+        +Timestamp account_manager_approved_at
+        +Boolean customer_confirmed
+        +Timestamp customer_confirmed_at
+        +String customer_confirmed_by
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class QuotationItem {
+        +Integer id
+        +String quotation_number
+        +Integer line_number
+        +String material_code
+        +String material_name
+        +BigDecimal quantity
+        +BigDecimal unit_price
+        +BigDecimal total_price
+        +String remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    Customer "1" --> "*" Quotation : places
+    Quotation "1" *-- "*" QuotationItem : contains
+    
+    note right of Quotation
+        报价单
+        状态：DRAFT, PENDING_SALES, PENDING_ENGINEER,
+        PENDING_ACCOUNT_MANAGER, APPROVED, REJECTED,
+        CUSTOMER_CONFIRMED, LINKED, CANCELLED
+        三级审核流程（串行）：
+        一级：SALES_MANAGER
+        二级：ENGINEER
+        三级：ACCOUNT_MANAGER或GENERAL_MANAGER
+        创建报价单时，如果输入的14位本厂编号不存在
+        对应的产品主数据，SD模块调用ENG模块的产品
+        主数据创建API自动创建产品主数据。自动创建
+        的产品主数据不需要审核
+    end note
+    
+    note right of QuotationItem
+        报价单明细
+        包含多个报价明细项
+    end note
+}
+
+@enduml

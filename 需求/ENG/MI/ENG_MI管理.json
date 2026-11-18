@@ -1,0 +1,862 @@
+{
+  "system": {
+    "name": "某某ERP系统",
+    "module": "MI制造指令管理",
+    "version": "1.0.0",
+    "lastUpdated": "2025-12-09"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "id": "mi-management",
+        "title": "MI管理",
+        "icon": "fas fa-list",
+        "order": 1,
+        "badge": null
+      },
+      {
+        "id": "mi-creation",
+        "title": "MI制作",
+        "icon": "fas fa-file-alt",
+        "order": 2,
+        "badge": null,
+        "default": true
+      },
+      {
+        "id": "mi-review",
+        "title": "MI审核",
+        "icon": "fas fa-check-circle",
+        "order": 3,
+        "badge": {
+          "count": 3,
+          "color": "#e74c3c",
+          "textColor": "white"
+        }
+      },
+      {
+        "id": "reports",
+        "title": "报表统计",
+        "icon": "fas fa-chart-bar",
+        "order": 4,
+        "badge": null
+      }
+    ]
+  },
+  "dashboard": {
+    "stats": [
+      {
+        "id": "total-mi",
+        "title": "MI总数",
+        "value": 156,
+        "icon": "fas fa-clipboard-list",
+        "iconColor": "#3498db",
+        "iconBgColor": "rgba(52, 152, 219, 0.1)"
+      },
+      {
+        "id": "pending-review",
+        "title": "待审核",
+        "value": 23,
+        "icon": "fas fa-clock",
+        "iconColor": "#f39c12",
+        "iconBgColor": "rgba(243, 156, 18, 0.1)"
+      },
+      {
+        "id": "approved",
+        "title": "已批准",
+        "value": 128,
+        "icon": "fas fa-check-circle",
+        "iconColor": "#27ae60",
+        "iconBgColor": "rgba(39, 174, 96, 0.1)"
+      },
+      {
+        "id": "rejected",
+        "title": "已驳回",
+        "value": 5,
+        "icon": "fas fa-times-circle",
+        "iconColor": "#e74c3c",
+        "iconBgColor": "rgba(231, 76, 60, 0.1)"
+      }
+    ],
+    "searchFilters": [
+      {
+        "id": "search-input",
+        "type": "text",
+        "placeholder": "搜索生产编号、客户型号...",
+        "width": "flex-1"
+      },
+      {
+        "id": "status-filter",
+        "type": "select",
+        "label": "MI状态",
+        "options": [
+          {"value": "", "label": "MI状态"},
+          {"value": "draft", "label": "草稿"},
+          {"value": "pending", "label": "待审核"},
+          {"value": "approved", "label": "已批准"},
+          {"value": "rejected", "label": "已驳回"}
+        ],
+        "width": "150px"
+      },
+      {
+        "id": "production-type-filter",
+        "type": "select",
+        "label": "生产类型",
+        "options": [
+          {"value": "", "label": "生产类型"},
+          {"value": "mass", "label": "批量生产"},
+          {"value": "sample", "label": "样品生产"},
+          {"value": "trial", "label": "试产"}
+        ],
+        "width": "150px"
+      }
+    ]
+  },
+  "miCreation": {
+    "formTitle": "创建制造指令 (MI)",
+    "defaultStatus": "draft",
+    "autoGenerateFields": [
+      {
+        "fieldId": "production-number",
+        "pattern": "PC{YYYY}{MM}{DD}{NN}",
+        "readonly": true
+      }
+    ],
+    "sections": [
+      {
+        "id": "basic-info",
+        "title": "基本信息",
+        "columns": 3,
+        "fields": [
+          {
+            "id": "client",
+            "label": "客户",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "", "label": "请选择客户"},
+              {"value": "huawei", "label": "华为技术有限公司"},
+              {"value": "xiaomi", "label": "小米科技"},
+              {"value": "zte", "label": "中兴通讯"},
+              {"value": "oppo", "label": "OPPO广东移动"},
+              {"value": "vivo", "label": "Vivo移动通信"},
+              {"value": "lenovo", "label": "联想集团"}
+            ],
+            "placeholder": "选择客户"
+          },
+          {
+            "id": "client-code",
+            "label": "客户代码",
+            "type": "text",
+            "required": true,
+            "placeholder": "请输入客户代码",
+            "maxLength": 50
+          },
+          {
+            "id": "client-model",
+            "label": "客户型号",
+            "type": "text",
+            "required": true,
+            "placeholder": "请输入客户型号",
+            "maxLength": 100
+          },
+          {
+            "id": "production-type",
+            "label": "生产类型",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "", "label": "请选择生产类型"},
+              {"value": "mass", "label": "批量生产"},
+              {"value": "sample", "label": "样品生产"},
+              {"value": "trial", "label": "试产"},
+              {"value": "urgent", "label": "紧急生产"}
+            ]
+          },
+          {
+            "id": "pcb-type",
+            "label": "PCB类型",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "", "label": "请选择PCB类型"},
+              {"value": "rigid", "label": "刚性板"},
+              {"value": "flex", "label": "柔性板"},
+              {"value": "rigid-flex", "label": "刚柔结合板"},
+              {"value": "aluminum", "label": "铝基板"},
+              {"value": "ceramic", "label": "陶瓷基板"}
+            ]
+          }
+        ]
+      },
+      {
+        "id": "technical-parameters",
+        "title": "技术参数",
+        "columns": 3,
+        "fields": [
+          {
+            "id": "layers",
+            "label": "层数",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "", "label": "请选择层数"},
+              {"value": "1", "label": "单层板"},
+              {"value": "2", "label": "双层板"},
+              {"value": "4", "label": "4层板"},
+              {"value": "6", "label": "6层板"},
+              {"value": "8", "label": "8层板"},
+              {"value": "10", "label": "10层板"},
+              {"value": "12", "label": "12层板及以上"}
+            ]
+          },
+          {
+            "id": "board-thickness",
+            "label": "板厚(mm)",
+            "type": "text",
+            "required": true,
+            "placeholder": "例如: 1.6",
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "validationMessage": "请输入有效的数字，如: 1.6, 2.0"
+          },
+          {
+            "id": "copper-thickness",
+            "label": "铜厚(oz)",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "", "label": "请选择铜厚"},
+              {"value": "0.5", "label": "0.5 oz"},
+              {"value": "1", "label": "1 oz"},
+              {"value": "1.5", "label": "1.5 oz"},
+              {"value": "2", "label": "2 oz"},
+              {"value": "3", "label": "3 oz"},
+              {"value": "4", "label": "4 oz"}
+            ]
+          },
+          {
+            "id": "surface-treatment",
+            "label": "表面处理",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "", "label": "请选择表面处理"},
+              {"value": "hasl", "label": "喷锡(HASL)"},
+              {"value": "enigma", "label": "沉金(ENIG)"},
+              {"value": "osp", "label": "有机保焊膜(OSP)"},
+              {"value": "immersion-silver", "label": "沉银"},
+              {"value": "immersion-tin", "label": "沉锡"},
+              {"value": "gold-fingers", "label": "金手指"}
+            ]
+          },
+          {
+            "id": "solder-mask-color",
+            "label": "阻焊颜色",
+            "type": "select",
+            "required": false,
+            "options": [
+              {"value": "green", "label": "绿色"},
+              {"value": "blue", "label": "蓝色"},
+              {"value": "red", "label": "红色"},
+              {"value": "black", "label": "黑色"},
+              {"value": "white", "label": "白色"},
+              {"value": "yellow", "label": "黄色"},
+              {"value": "purple", "label": "紫色"}
+            ],
+            "defaultValue": "green"
+          },
+          {
+            "id": "legend-color",
+            "label": "字符颜色",
+            "type": "select",
+            "required": false,
+            "options": [
+              {"value": "white", "label": "白色"},
+              {"value": "black", "label": "黑色"},
+              {"value": "yellow", "label": "黄色"}
+            ],
+            "defaultValue": "white"
+          },
+          {
+            "id": "delivery-size",
+            "label": "交货尺寸(mm)",
+            "type": "text",
+            "required": true,
+            "placeholder": "例如: 200x150",
+            "pattern": "^\\d+x\\d+$",
+            "validationMessage": "请输入格式如: 200x150"
+          },
+          {
+            "id": "panel",
+            "label": "拼板方式",
+            "type": "text",
+            "required": false,
+            "placeholder": "例如: 2x2, 阴阳拼板"
+          },
+          {
+            "id": "test-requirement",
+            "label": "测试要求",
+            "type": "select",
+            "required": false,
+            "options": [
+              {"value": "fly-probe", "label": "飞针测试"},
+              {"value": "fixture", "label": "测试架测试"},
+              {"value": "aoi", "label": "AOI测试"},
+              {"value": "impedance", "label": "阻抗测试"},
+              {"value": "none", "label": "无需测试"}
+            ],
+            "defaultValue": "fly-probe"
+          }
+        ]
+      },
+      {
+        "id": "additional-info",
+        "title": "附加信息",
+        "columns": 1,
+        "fields": [
+          {
+            "id": "special-requirements",
+            "label": "特殊要求",
+            "type": "textarea",
+            "required": false,
+            "placeholder": "请输入特殊工艺要求或注意事项",
+            "rows": 4,
+            "maxLength": 1000
+          },
+          {
+            "id": "file-upload",
+            "label": "文件上传",
+            "type": "file",
+            "required": false,
+            "multiple": true,
+            "accept": [".zip", ".rar", ".ger", ".gbr", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".dwg"],
+            "maxSize": 10485760,
+            "uploadText": "点击或拖拽文件到此处上传",
+            "description": "支持Gerber、PCB、PDF等格式，单个文件不超过10MB"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "reset-form",
+        "label": "重置表单",
+        "type": "button",
+        "variant": "outline",
+        "icon": "fas fa-redo",
+        "order": 1,
+        "confirmation": "确定要重置表单吗？所有已填写的内容将被清空。"
+      },
+      {
+        "id": "save-draft",
+        "label": "保存草稿",
+        "type": "button",
+        "variant": "primary",
+        "icon": "far fa-save",
+        "order": 2,
+        "requiresValidation": true
+      },
+      {
+        "id": "submit-review",
+        "label": "提交审核",
+        "type": "button",
+        "variant": "success",
+        "icon": "fas fa-paper-plane",
+        "order": 3,
+        "requiresValidation": true,
+        "confirmation": "确认提交MI进行审核吗？提交后不可修改。"
+      }
+    ]
+  },
+  "miReview": {
+    "layout": "two-column",
+    "leftColumnWidth": "1fr",
+    "rightColumnWidth": "350px",
+    "statusOptions": [
+      {
+        "value": "draft",
+        "label": "草稿",
+        "color": "#3730a3",
+        "backgroundColor": "#e0e7ff"
+      },
+      {
+        "value": "pending",
+        "label": "待审核",
+        "color": "#92400e",
+        "backgroundColor": "#fef3c7"
+      },
+      {
+        "value": "approved",
+        "label": "已批准",
+        "color": "#065f46",
+        "backgroundColor": "#d1fae5"
+      },
+      {
+        "value": "rejected",
+        "label": "已驳回",
+        "color": "#991b1b",
+        "backgroundColor": "#fee2e2"
+      },
+      {
+        "value": "pending-revision",
+        "label": "待修改",
+        "color": "#92400e",
+        "backgroundColor": "#fef3c7"
+      }
+    ],
+    "detailFields": [
+      {
+        "id": "production-number",
+        "label": "生产编号",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "client",
+        "label": "客户",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "client-model",
+        "label": "客户型号",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "production-type",
+        "label": "生产类型",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "pcb-type",
+        "label": "PCB类型",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "layers",
+        "label": "层数",
+        "type": "text",
+        "readonly": true,
+        "suffix": "层"
+      },
+      {
+        "id": "board-thickness",
+        "label": "板厚",
+        "type": "text",
+        "readonly": true,
+        "suffix": "mm"
+      },
+      {
+        "id": "copper-thickness",
+        "label": "铜厚",
+        "type": "text",
+        "readonly": true,
+        "suffix": "oz"
+      },
+      {
+        "id": "surface-treatment",
+        "label": "表面处理",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "solder-mask-color",
+        "label": "阻焊颜色",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "legend-color",
+        "label": "字符颜色",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "delivery-size",
+        "label": "交货尺寸",
+        "type": "text",
+        "readonly": true,
+        "suffix": "mm"
+      },
+      {
+        "id": "panel",
+        "label": "拼板方式",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "test-requirement",
+        "label": "测试要求",
+        "type": "text",
+        "readonly": true
+      },
+      {
+        "id": "special-requirements",
+        "label": "特殊要求",
+        "type": "textarea",
+        "readonly": true,
+        "fullWidth": true
+      },
+      {
+        "id": "attachments",
+        "label": "附件文件",
+        "type": "file-list",
+        "readonly": true,
+        "fullWidth": true,
+        "downloadable": true
+      }
+    ],
+    "reviewActions": [
+      {
+        "id": "approve-mi",
+        "label": "通过审核",
+        "type": "button",
+        "variant": "success",
+        "icon": "fas fa-check-circle",
+        "requiresComment": true,
+        "confirmation": "确认通过此MI审核吗？",
+        "statusChange": "approved"
+      },
+      {
+        "id": "reject-mi",
+        "label": "驳回申请",
+        "type": "button",
+        "variant": "danger",
+        "icon": "fas fa-times-circle",
+        "requiresComment": true,
+        "confirmation": "确认驳回此MI申请吗？",
+        "statusChange": "rejected"
+      },
+      {
+        "id": "request-revision",
+        "label": "要求修改",
+        "type": "button",
+        "variant": "warning",
+        "icon": "fas fa-edit",
+        "requiresComment": true,
+        "confirmation": "确认要求修改此MI吗？",
+        "statusChange": "pending-revision"
+      },
+      {
+        "id": "view-attachments",
+        "label": "查看附件",
+        "type": "button",
+        "variant": "outline",
+        "icon": "fas fa-paperclip",
+        "requiresComment": false
+      }
+    ],
+    "pendingList": {
+      "title": "待审核列表",
+      "maxItems": 10,
+      "fields": [
+        {
+          "id": "production-number",
+          "label": "生产编号",
+          "type": "text"
+        },
+        {
+          "id": "client",
+          "label": "客户",
+          "type": "text"
+        },
+        {
+          "id": "layers",
+          "label": "层数",
+          "type": "text",
+          "suffix": "层板"
+        }
+      ]
+    },
+    "historyConfig": {
+      "title": "审核历史",
+      "fields": [
+        {
+          "id": "user",
+          "label": "审核人",
+          "type": "text"
+        },
+        {
+          "id": "timestamp",
+          "label": "时间",
+          "type": "datetime"
+        },
+        {
+          "id": "action",
+          "label": "操作",
+          "type": "text"
+        },
+        {
+          "id": "comment",
+          "label": "意见",
+          "type": "textarea"
+        }
+      ]
+    }
+  },
+  "miManagement": {
+    "tableColumns": [
+      {
+        "id": "production-number",
+        "label": "生产编号",
+        "sortable": true,
+        "width": "150px"
+      },
+      {
+        "id": "client",
+        "label": "客户",
+        "sortable": true,
+        "width": "200px"
+      },
+      {
+        "id": "client-model",
+        "label": "客户型号",
+        "sortable": true,
+        "width": "180px"
+      },
+      {
+        "id": "layers",
+        "label": "层数",
+        "sortable": true,
+        "width": "80px",
+        "renderAs": "text"
+      },
+      {
+        "id": "surface-treatment",
+        "label": "表面处理",
+        "sortable": true,
+        "width": "120px"
+      },
+      {
+        "id": "board-thickness",
+        "label": "板厚",
+        "sortable": true,
+        "width": "80px",
+        "renderAs": "text",
+        "suffix": "mm"
+      },
+      {
+        "id": "status",
+        "label": "MI状态",
+        "sortable": true,
+        "width": "100px",
+        "renderAs": "badge"
+      },
+      {
+        "id": "created-time",
+        "label": "创建时间",
+        "sortable": true,
+        "width": "120px",
+        "renderAs": "date"
+      },
+      {
+        "id": "actions",
+        "label": "操作",
+        "sortable": false,
+        "width": "120px",
+        "actions": [
+          {
+            "id": "view",
+            "label": "查看",
+            "icon": "fas fa-eye",
+            "variant": "outline",
+            "size": "small"
+          },
+          {
+            "id": "edit",
+            "label": "编辑",
+            "icon": "fas fa-edit",
+            "variant": "outline",
+            "size": "small",
+            "allowedStatuses": ["draft", "pending-revision"]
+          },
+          {
+            "id": "print",
+            "label": "打印",
+            "icon": "fas fa-print",
+            "variant": "outline",
+            "size": "small",
+            "allowedStatuses": ["approved"]
+          },
+          {
+            "id": "revision",
+            "label": "重新提交",
+            "icon": "fas fa-redo",
+            "variant": "outline",
+            "size": "small",
+            "allowedStatuses": ["rejected"]
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "pageSize": 20,
+      "pageSizeOptions": [10, 20, 50, 100]
+    },
+    "exportOptions": [
+      {
+        "id": "export-excel",
+        "label": "导出Excel",
+        "format": "xlsx",
+        "icon": "fas fa-file-excel"
+      },
+      {
+        "id": "export-pdf",
+        "label": "导出PDF",
+        "format": "pdf",
+        "icon": "fas fa-file-pdf"
+      },
+      {
+        "id": "export-json",
+        "label": "导出JSON",
+        "format": "json",
+        "icon": "fas fa-code"
+      }
+    ]
+  },
+  "permissions": {
+    "roles": [
+      {
+        "id": "engineer",
+        "name": "工程师",
+        "permissions": [
+          "mi.create",
+          "mi.edit.own",
+          "mi.view.own",
+          "mi.delete.draft",
+          "mi.submit.review"
+        ]
+      },
+      {
+        "id": "reviewer",
+        "name": "审核员",
+        "permissions": [
+          "mi.view.all",
+          "mi.review.approve",
+          "mi.review.reject",
+          "mi.review.request-revision",
+          "mi.history.view"
+        ]
+      },
+      {
+        "id": "manager",
+        "name": "经理",
+        "permissions": [
+          "mi.view.all",
+          "mi.create",
+          "mi.edit.all",
+          "mi.delete.all",
+          "mi.review.all",
+          "mi.export",
+          "mi.reports.view"
+        ]
+      }
+    ]
+  },
+  "notifications": {
+    "events": [
+      {
+        "id": "mi-submitted",
+        "title": "MI提交审核",
+        "message": "生产编号 {productionNumber} 已提交审核",
+        "recipients": ["reviewer", "manager"],
+        "type": "info"
+      },
+      {
+        "id": "mi-approved",
+        "title": "MI审核通过",
+        "message": "生产编号 {productionNumber} 已通过审核",
+        "recipients": ["engineer", "creator"],
+        "type": "success"
+      },
+      {
+        "id": "mi-rejected",
+        "title": "MI审核驳回",
+        "message": "生产编号 {productionNumber} 审核被驳回",
+        "recipients": ["engineer", "creator"],
+        "type": "warning"
+      },
+      {
+        "id": "mi-revision-requested",
+        "title": "MI要求修改",
+        "message": "生产编号 {productionNumber} 需要修改",
+        "recipients": ["engineer", "creator"],
+        "type": "warning"
+      }
+    ]
+  },
+  "validationRules": {
+    "productionNumber": {
+      "pattern": "^PC\\d{8}\\d{2,3}$",
+      "message": "生产编号格式不正确，应为PC+日期+序列号"
+    },
+    "boardThickness": {
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "min": 0.2,
+      "max": 6.0,
+      "message": "板厚应在0.2mm到6.0mm之间"
+    },
+    "deliverySize": {
+      "pattern": "^\\d+x\\d+$",
+      "message": "交货尺寸格式应为: 宽度x高度，如200x150"
+    },
+    "copperThickness": {
+      "allowedValues": ["0.5", "1", "1.5", "2", "3", "4"]
+    },
+    "layers": {
+      "allowedValues": ["1", "2", "4", "6", "8", "10", "12"]
+    }
+  },
+  "apiEndpoints": {
+    "mi": {
+      "list": "/api/mi/list",
+      "create": "/api/mi/create",
+      "update": "/api/mi/update/{id}",
+      "delete": "/api/mi/delete/{id}",
+      "get": "/api/mi/{id}",
+      "submit": "/api/mi/{id}/submit",
+      "approve": "/api/mi/{id}/approve",
+      "reject": "/api/mi/{id}/reject",
+      "requestRevision": "/api/mi/{id}/request-revision",
+      "history": "/api/mi/{id}/history",
+      "export": "/api/mi/export"
+    },
+    "clients": {
+      "list": "/api/clients",
+      "search": "/api/clients/search"
+    },
+    "files": {
+      "upload": "/api/files/upload",
+      "download": "/api/files/download/{id}",
+      "delete": "/api/files/delete/{id}"
+    }
+  },
+  "uiConfig": {
+    "theme": {
+      "primaryColor": "#2c3e50",
+      "primaryLight": "#3498db",
+      "successColor": "#27ae60",
+      "warningColor": "#f39c12",
+      "dangerColor": "#e74c3c",
+      "borderColor": "#d1d8e0",
+      "backgroundLight": "#f5f7fa"
+    },
+    "spacing": {
+      "small": "8px",
+      "medium": "16px",
+      "large": "24px",
+      "xlarge": "32px"
+    },
+    "breakpoints": {
+      "mobile": "768px",
+      "tablet": "992px",
+      "desktop": "1200px"
+    },
+    "animations": {
+      "duration": "0.3s",
+      "easing": "ease"
+    }
+  }
+}

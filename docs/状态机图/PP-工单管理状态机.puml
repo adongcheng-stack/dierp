@@ -1,0 +1,77 @@
+@startuml PP-工单管理状态机
+
+title PP模块 - 工单管理子模块状态机
+
+[*] --> DRAFT : 创建生产订单/工单
+
+DRAFT --> RELEASED : 下达生产订单\n(release_production_order)\n(计划员/生产人员)
+RELEASED --> IN_PRODUCTION : 开始生产\n(start_production_order)\n(计划员/生产人员)
+RELEASED --> CLOSED : 关闭生产订单\n(close_production_order)\n特殊情况\n(计划员/生产人员)
+
+IN_PRODUCTION --> COMPLETED : 完成生产订单\n(complete_production_order)\n(系统自动)
+IN_PRODUCTION --> CANCELLED : 取消订单\n(计划员/生产人员)
+IN_PRODUCTION --> CLOSED : 关闭生产订单\n(close_production_order)\n特殊情况\n(计划员/生产人员)
+
+COMPLETED --> CLOSED : 关闭生产订单\n(close_production_order)\n(计划员/生产人员)
+
+DRAFT --> CANCELLED : 取消订单\n(计划员/生产人员)
+RELEASED --> CANCELLED : 取消订单\n(计划员/生产人员)
+
+CLOSED --> [*] : 完成
+CANCELLED --> [*] : 完成
+
+note right of DRAFT
+  草稿状态
+  生产订单创建但未下达
+  在生产订单/工单创建时，如果关联了MI，
+  系统根据MI自动生成LOT卡（1:1关系）
+  如果MI不存在，不允许创建生产订单/工单
+  或提示用户先创建MI
+end note
+
+note right of RELEASED
+  已下达
+  生产订单已下达，可以开始生产
+  下达时需要：
+  - 生产版本已发布
+  - MI已审核通过（如果关联了MI）
+  如果关联了MI，系统根据MI自动生成LOT卡
+  系统将lot_number写回生产订单/工单
+end note
+
+note right of IN_PRODUCTION
+  生产中
+  正在生产
+  记录实际开始时间
+  同步销售订单状态为IN_PRODUCTION
+end note
+
+note right of COMPLETED
+  已完成
+  生产完成
+  当所有工序都已报工完成时
+  系统自动完成或手动完成
+  记录实际完成时间
+  当所有生产订单/工单状态为COMPLETED或CLOSED时，
+  更新销售订单状态为COMPLETED
+  更新物料库存（成品入库）
+end note
+
+note right of CLOSED
+  已关闭
+  生产订单已关闭
+  前置条件：状态必须为RELEASED、IN_PRODUCTION或COMPLETED
+  后置条件：状态更新为CLOSED，记录实际完成时间，
+  同步销售订单状态
+  归档生产订单数据
+end note
+
+note right of CANCELLED
+  已取消
+  生产订单被取消
+  如果已开始生产，需要先
+  停止所有工序
+  释放已分配的物料
+end note
+
+@enduml

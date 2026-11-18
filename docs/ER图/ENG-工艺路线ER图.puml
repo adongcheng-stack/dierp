@@ -1,0 +1,96 @@
+@startuml ENG-工艺路线ER图
+skinparam linetype ortho
+
+title ENG模块 - 工艺路线子模块ER图
+
+entity materials {
+    material_code VARCHAR <<PK>>
+    material_name VARCHAR
+}
+
+entity routings {
+    id SERIAL <<PK>>
+    routing_id VARCHAR <<UK>>
+    version VARCHAR
+    material_code VARCHAR <<FK>>
+    description VARCHAR
+    plant_id VARCHAR
+    base_unit VARCHAR
+    base_quantity NUMERIC
+    units_per_panel INTEGER
+    panel_size VARCHAR
+    status ENUM
+    effective_date DATE
+    expiry_date DATE
+    change_request_no VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity routing_operations {
+    id SERIAL <<PK>>
+    routing_id VARCHAR <<FK>>
+    operation_no VARCHAR
+    operation_code VARCHAR
+    operation_name VARCHAR
+    operation_type VARCHAR
+    work_center_id VARCHAR <<FK>>
+    sop_link VARCHAR
+    setup_time NUMERIC
+    machine_time NUMERIC
+    labor_time NUMERIC
+    queue_time NUMERIC
+    cost_relevant BOOLEAN
+    scheduling_relevant BOOLEAN
+    needs_reporting BOOLEAN
+    auto_deduct_material BOOLEAN
+    trigger_quality_check BOOLEAN
+    service_code VARCHAR
+    planned_delivery_days INTEGER
+    estimated_unit_price NUMERIC
+    inspection_plan_id VARCHAR
+    sampling_rate NUMERIC
+    inspection_type VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity work_centers {
+    work_center_id VARCHAR <<PK>>
+    description VARCHAR
+}
+
+entity production_versions {
+    production_version_id VARCHAR <<PK>>
+    routing_id VARCHAR <<FK>>
+}
+
+' 关系定义
+materials ||--o{ routings : has
+routings ||--o{ routing_operations : contains
+routing_operations }o--|| work_centers : uses
+routings ||--o{ production_versions : used_in
+
+note right of routings
+    工艺路线
+    主键：id
+    业务主键：routing_id（唯一）
+    状态：DRAFT, RELEASED, OBSOLETE
+    基础单位通常为PNL（拼板）
+    只有RELEASED状态的工艺路线才能用于生产版本
+end note
+
+note right of routing_operations
+    工艺路线工序
+    工序类型：internal, external, quality
+    工序按operation_no排序执行
+    内部工序必须关联工作中心
+end note
+
+@enduml

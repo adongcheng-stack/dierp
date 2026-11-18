@@ -1,0 +1,133 @@
+' ============================================
+' 某某ERP系统 - 工单管理工作流
+' ============================================
+' 版本：v1.4
+' 创建日期：2025-01-XX
+' 最后更新：2025-01-XX
+' 基于：某某ERP系统MVP版本需求规格说明书 v1.4
+' 模块：PP（生产计划与控制）
+'
+' 本文档包含工单管理模块的业务流程，使用PlantUML活动图格式。
+' ============================================
+
+' 3.1 生产订单创建流程
+@startuml PP-生产订单创建流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title PP模块 - 生产订单创建流程
+
+start
+:选择销售订单（状态：APPROVED）;
+
+if (生产版本是否关联MI?) then (否)
+  :创建生产订单/工单;
+else (是)
+  if (MI是否存在且RELEASED?) then (否)
+    :错误：MI不存在或未发布\n不允许创建生产订单/工单\n或提示用户先创建MI;
+    stop
+  else (是)
+    :创建生产订单/工单;
+  endif
+endif
+
+if (是否关联MI?) then (是)
+  :系统根据MI自动生成LOT卡（1:1关系）;
+  :系统自动复制MI内容到LOT卡;
+  :系统将lot_number写回生产订单/工单;
+else (否)
+endif
+
+:设置生产订单状态：RELEASED;
+:工单状态与生产订单状态一致;
+stop
+
+note right
+  **关键规则：**
+  1. 在生产订单/工单创建时，如果关联了MI，
+     系统根据MI自动生成LOT卡（1:1关系）
+  2. 系统自动复制MI内容到LOT卡
+  3. 系统将lot_number写回生产订单/工单
+  4. 如果MI不存在，不允许创建生产订单/工单
+     或提示用户先创建MI
+  5. 由于生产订单承担工单职责，
+     工单状态与生产订单状态一致
+end note
+
+@enduml
+
+' 3.3 开始生产流程
+@startuml PP-开始生产流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title PP模块 - 开始生产流程
+
+start
+if (生产订单状态：RELEASED?) then (否)
+  :错误：生产订单状态无效;
+  stop
+else (是)
+endif
+
+:开始生产（状态：IN_PRODUCTION）;
+:记录实际开始时间;
+:同步销售订单状态：IN_PRODUCTION;
+stop
+
+note right
+  **关键规则：**
+  1. 前置条件：生产订单状态必须为RELEASED
+  2. 记录实际开始时间
+  3. 同步销售订单状态为IN_PRODUCTION
+end note
+
+@enduml
+
+' 3.4 生产订单关闭流程
+@startuml PP-生产订单关闭流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title PP模块 - 生产订单关闭流程
+
+start
+if (所有工序是否完成?) then (否)
+  :错误：还有未完成工序;
+  stop
+else (是)
+endif
+
+if (生产订单状态：RELEASED/IN_PRODUCTION/COMPLETED?) then (否)
+  :错误：生产订单状态无效;
+  stop
+else (是)
+endif
+
+:关闭生产订单（状态：CLOSED）;
+:记录实际完成时间;
+:当所有生产订单/工单状态为COMPLETED或CLOSED时，\n更新销售订单状态为COMPLETED;
+stop
+
+note right
+  **关键规则：**
+  1. 前置条件：生产订单状态必须为
+     RELEASED、IN_PRODUCTION或COMPLETED
+  2. 后置条件：状态更新为CLOSED，
+     记录实际完成时间，同步销售订单状态
+end note
+
+@enduml
+

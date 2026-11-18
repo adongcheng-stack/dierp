@@ -1,0 +1,54 @@
+@startuml ENG-MI管理用例图
+
+title ENG模块 - MI管理子模块用例图
+
+left to right direction
+
+actor 工程师 as engineer
+actor 审核员 as reviewer
+
+rectangle "MI管理" {
+  usecase "创建MI\n(UC-ENG-009)" as UC009
+  usecase "基于工艺路线生成MI草稿\n(UC-ENG-010)" as UC010
+  usecase "更新MI\n(UC-ENG-011)" as UC011
+  usecase "审批MI\n(UC-ENG-012)" as UC012
+  usecase "发布MI\n(UC-ENG-013)" as UC013
+}
+
+engineer --> UC009 : 创建MI
+engineer --> UC010 : 生成MI草稿
+engineer --> UC011 : 更新MI
+engineer --> UC013 : 发布MI
+reviewer --> UC012 : 审批MI
+
+UC009 ..> UC010 : <<include>>
+UC009 ..> UC011 : <<extend>>
+UC011 ..> UC012 : <<extend>>
+UC012 ..> UC013 : <<extend>>
+
+note right of UC009
+  创建制造指令
+  包含客户型号、技术参数等
+  MI内容以JSON格式存储
+end note
+
+note right of UC010
+  基于工艺路线自动生成MI草稿
+  预填指令集列表
+  工程师可在此基础上编辑完善
+end note
+
+note right of UC012
+  审批MI
+  状态转换：REVIEWING → APPROVED
+  或退回DRAFT
+end note
+
+note right of UC013
+  发布MI
+  状态转换：APPROVED → RELEASED
+  发布后的MI可用于生产版本发布
+  和生产订单/工单下达
+end note
+
+@enduml

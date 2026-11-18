@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - PCB BOM管理</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --primary-light: #3498db;
+            --secondary-color: #7f8c8d;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --background-light: #f5f7fa;
+            --border-color: #d1d8e0;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 顶部导航 */
+        .app-header {
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .logo i {
+            color: var(--primary-light);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* 选项卡导航 */
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover {
+            color: var(--primary-color);
+        }
+        
+        .tab.active {
+            color: var(--primary-light);
+            border-bottom-color: var(--primary-light);
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* BOM基本信息卡片 */
+        .bom-info-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .bom-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .bom-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .bom-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .info-grid {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 6px 0;
+        }
+        
+        /* BOM物料列表区域 */
+        .bom-items-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .bom-items-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .items-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .items-count {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--background-light);
+        }
+        
+        /* 物料表格 */
+        .bom-table-container {
+            overflow-x: auto;
+        }
+        
+        .bom-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .bom-table thead {
+            background-color: #f8f9fa;
+        }
+        
+        .bom-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        
+        .bom-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        
+        .bom-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 物料类别标识 */
+        .item-category {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .category-stock {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .category-sub {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .category-consumable {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        /* PCB层标识 */
+        .layer-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e8f4f8;
+            color: #2c3e50;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* 模态窗口 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* 表单样式 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-label.required::after {
+            content: " *";
+            color: var(--danger-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+        
+        /* JSON预览区域 */
+        .json-preview {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        /* 物料层级缩进 */
+        .material-level-1 { padding-left: 20px; }
+        .material-level-2 { padding-left: 40px; }
+        .material-level-3 { padding-left: 60px; }
+        .material-level-4 { padding-left: 80px; }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .app-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .tabs {
+                overflow-x: auto;
+            }
+            
+            .tab {
+                white-space: nowrap;
+            }
+            
+            .bom-table th,
+            .bom-table td {
+                padding: 10px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+        
+        /* 统计信息 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        /* 搜索和筛选 */
+        .search-filter {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fas fa-industry"></i>
+                <span>某某ERP - PCB BOM管理系统</span>
+            </div>
+            <div class="user-info">
+                <span>当前用户: 工程师_张工</span>
+                <button class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </button>
+            </div>
+        </header>
+        
+        <!-- 选项卡导航 -->
+        <nav class="tabs">
+            <button class="tab active">
+                <i class="fas fa-list"></i>
+                BOM管理
+            </button>
+            <button class="tab">
+                <i class="fas fa-sitemap"></i>
+                物料管理
+            </button>
+            <button class="tab">
+                <i class="fas fa-project-diagram"></i>
+                工艺路线
+            </button>
+            <button class="tab">
+                <i class="fas fa-chart-bar"></i>
+                成本分析
+            </button>
+            <button class="tab">
+                <i class="fas fa-file-export"></i>
+                数据导出
+            </button>
+        </nav>
+        
+        <!-- 统计信息 -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">156</div>
+                <div class="stat-label">活跃BOM数量</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">4,238</div>
+                <div class="stat-label">物料项目总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">12</div>
+                <div class="stat-label">今日更新</div>
+            </div>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="search-filter">
+            <div class="search-box">
+                <input type="text" class="form-control" placeholder="搜索BOM编号、物料编码或描述...">
+            </div>
+            <div class="filter-group">
+                <select class="form-control" style="width: 150px;">
+                    <option value="">所有状态</option>
+                    <option value="ACTIVE">活跃</option>
+                    <option value="INACTIVE">停用</option>
+                </select>
+                <select class="form-control" style="width: 150px;">
+                    <option value="">所有工厂</option>
+                    <option value="SZ-FACTORY-01">深圳工厂</option>
+                    <option value="DG-FACTORY-01">东莞工厂</option>
+                </select>
+                <button class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    搜索
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- BOM基本信息 -->
+            <div class="bom-info-card">
+                <div class="bom-header">
+                    <div class="bom-title">
+                        <i class="fas fa-box-open"></i>
+                        BOM基本信息
+                    </div>
+                    <span class="bom-status status-active">ACTIVE</span>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">BOM编号</div>
+                        <div class="info-value">BOM-PCB-23001</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">父项物料</div>
+                        <div class="info-value">PNL-PCB-4LAYER-V1 (生产拼板)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">描述</div>
+                        <div class="info-value">4-Layer Build-up Structure / 4层板压合结构</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">版本</div>
+                        <div class="info-value">A.0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">工厂</div>
+                        <div class="info-value">SZ-FACTORY-01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">BOM类型</div>
+                        <div class="info-value">PRODUCTION</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">基础数量</div>
+                        <div class="info-value">1 PNL</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">生效日期</div>
+                        <div class="info-value">2023-01-01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">创建信息</div>
+                        <div class="info-value">创建人: User_ENG001 | 2023-01-15</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <button class="btn btn-primary" style="width: 100%;" onclick="openEditModal()">
+                        <i class="fas fa-edit"></i>
+                        编辑BOM信息
+                    </button>
+                </div>
+            </div>
+            
+            <!-- BOM物料列表 -->
+            <div class="bom-items-card">
+                <div class="bom-items-header">
+                    <div>
+                        <div class="items-title">
+                            <i class="fas fa-boxes"></i>
+                            BOM物料清单
+                        </div>
+                        <div class="items-count">总计: 4项物料</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-success" onclick="openAddItemModal()">
+                            <i class="fas fa-plus"></i>
+                            添加物料
+                        </button>
+                        <button class="btn btn-primary" onclick="exportBOM()">
+                            <i class="fas fa-file-export"></i>
+                            导出JSON
+                        </button>
+                        <button class="btn btn-secondary" onclick="showJSON()">
+                            <i class="fas fa-code"></i>
+                            查看JSON
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bom-table-container">
+                    <table class="bom-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">序号</th>
+                                <th style="width: 150px;">物料编码</th>
+                                <th>描述</th>
+                                <th style="width: 100px;">物料类别</th>
+                                <th style="width: 80px;">数量</th>
+                                <th style="width: 80px;">单位</th>
+                                <th style="width: 100px;">PCB层信息</th>
+                                <th style="width: 100px;">损耗率</th>
+                                <th style="width: 120px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 顶层铜箔 -->
+                            <tr>
+                                <td>10</td>
+                                <td><strong>CU-FOIL-1OZ</strong></td>
+                                <td>Copper Foil 1oz HTE</td>
+                                <td>
+                                    <span class="item-category category-stock">库存物料</span>
+                                </td>
+                                <td>1.0</td>
+                                <td>SHT</td>
+                                <td>
+                                    <span class="layer-badge">L1</span>
+                                    <span class="layer-badge" style="background-color: #e3f2fd; margin-left: 5px;">铜箔</span>
+                                </td>
+                                <td>3.0%</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editItem(0)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--danger-color);">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- PP片 -->
+                            <tr>
+                                <td>20</td>
+                                <td><strong>PP-1080-HighTg</strong></td>
+                                <td>Prepreg 1080 / 半固化片</td>
+                                <td>
+                                    <span class="item-category category-stock">库存物料</span>
+                                </td>
+                                <td>2.0</td>
+                                <td>SHT</td>
+                                <td>
+                                    <span class="layer-badge">L1-L2</span>
+                                    <span class="layer-badge" style="background-color: #e8f5e9; margin-left: 5px;">PP片</span>
+                                </td>
+                                <td>-</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editItem(1)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--danger-color);">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- 核心芯板 -->
+                            <tr>
+                                <td>30</td>
+                                <td><strong>CORE-L2-L3-ETCHED</strong></td>
+                                <td>Etched Core L2-L3 / 已蚀刻芯板</td>
+                                <td>
+                                    <span class="item-category category-sub">半成品</span>
+                                </td>
+                                <td>1.0</td>
+                                <td>PNL</td>
+                                <td>
+                                    <span class="layer-badge">L2-L3</span>
+                                    <span class="layer-badge" style="background-color: #f3e5f5; margin-left: 5px;">芯板</span>
+                                </td>
+                                <td>-</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editItem(2)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--danger-color);">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- 底漆油墨 -->
+                            <tr>
+                                <td>90</td>
+                                <td><strong>INK-GREEN-UV</strong></td>
+                                <td>Green Solder Mask Ink / 绿油</td>
+                                <td>
+                                    <span class="item-category category-consumable">耗材</span>
+                                </td>
+                                <td>0.05</td>
+                                <td>KG</td>
+                                <td>
+                                    <span class="layer-badge" style="background-color: #fff8e1;">阻焊层</span>
+                                </td>
+                                <td>-</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="editItem(3)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: var(--danger-color);">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JSON预览模态窗口 -->
+    <div class="modal-overlay" id="jsonModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-code"></i>
+                    BOM JSON数据结构
+                </div>
+                <button class="modal-close" onclick="closeModal('jsonModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="json-preview" id="jsonPreview">
+{
+  "bomHeader": {
+    "bomId": "BOM-PCB-23001",
+    "parentMaterialId": "PNL-PCB-4LAYER-V1",
+    "description": "4-Layer Build-up Structure / 4层板压合结构",
+    "version": "A.0",
+    "plantId": "SZ-FACTORY-01",
+    "bomType": "PRODUCTION",
+    "baseQuantity": 1,
+    "baseUom": "PNL",
+    "validFrom": "2023-01-01",
+    "status": "ACTIVE"
+  },
+  "bomItems": [
+    {
+      "itemSequence": 10,
+      "componentMaterialId": "CU-FOIL-1OZ",
+      "description": "Copper Foil 1oz HTE",
+      "itemCategory": "STOCK_ITEM",
+      "pcbSpecifics": {
+        "layerCode": "L1",
+        "materialType": "COPPER_FOIL"
+      },
+      "quantity": 1.0,
+      "uom": "SHT",
+      "scrapRate": 3.0
+    },
+    {
+      "itemSequence": 20,
+      "componentMaterialId": "PP-1080-HighTg",
+      "description": "Prepreg 1080 / 半固化片",
+      "itemCategory": "STOCK_ITEM",
+      "pcbSpecifics": {
+        "layerCode": "L1-L2",
+        "materialType": "PREPREG"
+      },
+      "quantity": 2.0,
+      "uom": "SHT"
+    },
+    {
+      "itemSequence": 30,
+      "componentMaterialId": "CORE-L2-L3-ETCHED",
+      "description": "Etched Core L2-L3 / 已蚀刻芯板",
+      "itemCategory": "SUB_ASSEMBLY",
+      "pcbSpecifics": {
+        "layerCode": "L2-L3",
+        "materialType": "CORE"
+      },
+      "quantity": 1.0,
+      "uom": "PNL"
+    },
+    {
+      "itemSequence": 90,
+      "componentMaterialId": "INK-GREEN-UV",
+      "description": "Green Solder Mask Ink / 绿油",
+      "itemCategory": "CONSUMABLE",
+      "pcbSpecifics": {
+        "processStep": "SOLDER_MASK"
+      },
+      "quantity": 0.05,
+      "uom": "KG",
+      "calculationFormula": "AREA_FORMULA_V2"
+    }
+  ]
+}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('jsonModal')">关闭</button>
+                <button class="btn btn-primary" onclick="copyJSON()">
+                    <i class="fas fa-copy"></i>
+                    复制JSON
+                </button>
+                <button class="btn btn-success" onclick="downloadJSON()">
+                    <i class="fas fa-download"></i>
+                    下载JSON文件
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑BOM模态窗口 -->
+    <div class="modal-overlay" id="editBomModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑BOM信息
+                </div>
+                <button class="modal-close" onclick="closeModal('editBomModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">BOM编号</label>
+                        <input type="text" class="form-control" value="BOM-PCB-23001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">父项物料</label>
+                        <input type="text" class="form-control" value="PNL-PCB-4LAYER-V1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">描述</label>
+                        <input type="text" class="form-control" value="4-Layer Build-up Structure / 4层板压合结构">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">版本</label>
+                        <input type="text" class="form-control" value="A.0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">工厂</label>
+                        <select class="form-control">
+                            <option value="SZ-FACTORY-01" selected>深圳工厂</option>
+                            <option value="DG-FACTORY-01">东莞工厂</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">BOM类型</label>
+                        <select class="form-control">
+                            <option value="PRODUCTION" selected>生产BOM</option>
+                            <option value="ENGINEERING">工程BOM</option>
+                            <option value="COSTING">成本BOM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">基础数量</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" class="form-control" value="1" style="flex: 1;">
+                            <select class="form-control" style="width: 100px;">
+                                <option value="PNL" selected>PNL</option>
+                                <option value="SET">SET</option>
+                                <option value="UNIT">UNIT</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">生效日期</label>
+                        <input type="date" class="form-control" value="2023-01-01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">状态</label>
+                        <select class="form-control">
+                            <option value="ACTIVE" selected>活跃</option>
+                            <option value="INACTIVE">停用</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editBomModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveBOM()">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加物料模态窗口 -->
+    <div class="modal-overlay" id="addItemModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-plus"></i>
+                    添加BOM物料
+                </div>
+                <button class="modal-close" onclick="closeModal('addItemModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">物料编码</label>
+                        <input type="text" class="form-control" placeholder="例如: CU-FOIL-1OZ">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">描述</label>
+                        <input type="text" class="form-control" placeholder="物料描述">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">物料类别</label>
+                        <select class="form-control">
+                            <option value="">请选择</option>
+                            <option value="STOCK_ITEM">库存物料</option>
+                            <option value="SUB_ASSEMBLY">半成品</option>
+                            <option value="CONSUMABLE">耗材</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">数量</label>
+                        <input type="number" class="form-control" placeholder="0.0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">单位</label>
+                        <select class="form-control">
+                            <option value="">请选择</option>
+                            <option value="SHT">张(SHT)</option>
+                            <option value="PNL">拼板(PNL)</option>
+                            <option value="KG">公斤(KG)</option>
+                            <option value="M">米(M)</option>
+                            <option value="PCS">个(PCS)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PCB层代码</label>
+                        <input type="text" class="form-control" placeholder="例如: L1, L1-L2, L2-L3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">材料类型</label>
+                        <select class="form-control">
+                            <option value="">请选择</option>
+                            <option value="COPPER_FOIL">铜箔</option>
+                            <option value="PREPREG">PP片</option>
+                            <option value="CORE">芯板</option>
+                            <option value="SOLDER_MASK">阻焊油墨</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">损耗率 (%)</label>
+                        <input type="number" class="form-control" placeholder="0.0" step="0.1" min="0" max="100">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">备注</label>
+                        <textarea class="form-control" rows="3" placeholder="物料备注信息"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addItemModal')">取消</button>
+                <button class="btn btn-success" onclick="saveItem()">
+                    <i class="fas fa-save"></i>
+                    添加物料
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 模态窗口控制
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function showJSON() {
+            openModal('jsonModal');
+        }
+        
+        function openEditModal() {
+            openModal('editBomModal');
+        }
+        
+        function openAddItemModal() {
+            openModal('addItemModal');
+        }
+        
+        // 编辑物料
+        function editItem(index) {
+            alert('编辑第 ' + (index + 1) + ' 个物料');
+        }
+        
+        // 保存BOM
+        function saveBOM() {
+            alert('BOM信息已保存');
+            closeModal('editBomModal');
+        }
+        
+        // 保存物料
+        function saveItem() {
+            alert('物料已添加');
+            closeModal('addItemModal');
+        }
+        
+        // 导出BOM
+        function exportBOM() {
+            alert('BOM数据已导出');
+        }
+        
+        // 复制JSON
+        function copyJSON() {
+            const jsonText = document.getElementById('jsonPreview').innerText;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('JSON已复制到剪贴板');
+            });
+        }
+        
+        // 下载JSON文件
+        function downloadJSON() {
+            const jsonText = document.getElementById('jsonPreview').innerText;
+            const blob = new Blob([jsonText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bom-pcb-23001.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('JSON文件已下载');
+        }
+        
+        // 选项卡切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // 点击模态窗口外部关闭
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

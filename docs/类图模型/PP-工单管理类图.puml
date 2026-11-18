@@ -1,0 +1,97 @@
+@startuml PP-工单管理类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title PP模块 - 工单管理子模块类图
+
+package "工单管理 (Production Order Management)" {
+    
+    class SalesOrder {
+        +String order_number
+        +Enum status
+    }
+    
+    class Material {
+        +String material_code
+        +String material_name
+    }
+    
+    class ProductionVersion {
+        +String production_version_id
+        +String bom_number
+        +String routing_id
+        +String mi_number
+    }
+    
+    class ProductionOrder {
+        +Integer id
+        +String order_number
+        +String sales_order_number
+        +String material_code
+        +String production_version_id
+        +BigDecimal quantity
+        +String unit
+        +BigDecimal sales_quantity
+        +String sales_unit
+        +BigDecimal conversion_factor
+        +Date planned_start_date
+        +Date planned_finish_date
+        +Date actual_start_date
+        +Date actual_finish_date
+        +Enum status
+        +String lot_number
+        +String remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class LotCard {
+        +String lot_number
+        +String production_order_number
+    }
+    
+    class OperationReport {
+        +String report_number
+        +String production_order_number
+    }
+    
+    class MaterialIssue {
+        +String issue_number
+        +String production_order_number
+    }
+    
+    ' 关系定义
+    SalesOrder "1" --> "*" ProductionOrder : creates
+    Material "1" --> "*" ProductionOrder : produces
+    ProductionVersion "1" --> "*" ProductionOrder : uses
+    ProductionOrder "1" --> "1" LotCard : has
+    ProductionOrder "1" --> "*" OperationReport : generates
+    ProductionOrder "1" --> "*" MaterialIssue : generates
+    
+    note right of ProductionOrder
+        生产订单/工单
+        在实现中同时承担"生产订单"和"工单"的职责
+        状态：DRAFT, RELEASED, IN_PRODUCTION, COMPLETED, CLOSED, CANCELLED
+        在生产订单/工单创建时，如果关联了MI，
+        系统根据MI自动生成LOT卡（1:1关系）
+        系统自动复制MI内容到LOT卡
+        系统将lot_number写回生产订单/工单
+        如果MI不存在，不允许创建生产订单/工单
+        或提示用户先创建MI
+        工单状态与生产订单状态一致
+    end note
+    
+    note right of LotCard
+        LOT卡（生产批次卡）
+        一个生产订单/工单对应一个LOT卡（1:1关系）
+        由MI自动生成，关联生产订单/工单
+        包含MI内容、数量、单位、状态等信息
+        是工序报工的批次依据
+        系统自动复制MI内容到LOT卡
+    end note
+}
+
+@enduml

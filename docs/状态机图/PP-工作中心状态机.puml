@@ -1,0 +1,35 @@
+@startuml PP-工作中心状态机
+
+title PP模块 - 工作中心子模块状态机
+
+[*] --> ACTIVE : 创建工作中心
+
+ACTIVE --> IN_MAINTENANCE : 开始维护\n(工程师/管理员)
+IN_MAINTENANCE --> ACTIVE : 维护完成\n(工程师/管理员)
+
+ACTIVE --> INACTIVE : 停用\n(工程师/管理员)
+INACTIVE --> ACTIVE : 激活\n(工程师/管理员)
+
+IN_MAINTENANCE --> INACTIVE : 停用\n(工程师/管理员)
+
+note right of ACTIVE
+  激活状态
+  工作中心正常使用中
+  创建时默认为ACTIVE状态
+end note
+
+note right of IN_MAINTENANCE
+  维护中
+  工作中心正在维护，暂停使用
+  开始维护前需检查是否有
+  正在执行的生产任务
+end note
+
+note right of INACTIVE
+  未激活
+  工作中心未激活，不可用
+  停用前需检查是否有
+  正在执行的生产任务
+end note
+
+@enduml

@@ -1,0 +1,97 @@
+@startuml ENG-生产版本ER图
+skinparam linetype ortho
+
+title ENG模块 - 生产版本子模块ER图
+
+entity materials {
+    material_code VARCHAR <<PK>>
+    material_name VARCHAR
+}
+
+entity boms {
+    bom_number VARCHAR <<PK>>
+    status ENUM
+}
+
+entity routings {
+    routing_id VARCHAR <<PK>>
+    status ENUM
+}
+
+entity mis {
+    mi_number VARCHAR <<PK>>
+    status ENUM
+}
+
+entity production_versions {
+    id SERIAL <<PK>>
+    production_version_id VARCHAR <<UK>>
+    version VARCHAR
+    material_code VARCHAR <<FK>>
+    bom_number VARCHAR <<FK>>
+    routing_id VARCHAR <<FK>>
+    mi_number VARCHAR <<FK>>
+    status VARCHAR
+    effective_date DATE
+    expiry_date DATE
+    description VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity sales_orders {
+    order_number VARCHAR <<PK>>
+    production_version_id VARCHAR <<FK>>
+}
+
+entity production_orders {
+    order_number VARCHAR <<PK>>
+    production_version_id VARCHAR <<FK>>
+}
+
+entity factory_product_mappings {
+    id SERIAL <<PK>>
+    production_version_id VARCHAR <<FK>>
+}
+
+' 关系定义
+materials ||--o{ production_versions : has
+boms ||--o{ production_versions : used_in
+routings ||--o{ production_versions : used_in
+mis ||--o{ production_versions : used_in
+production_versions ||--o{ sales_orders : uses
+production_versions ||--o{ production_orders : uses
+production_versions ||--o{ factory_product_mappings : mapped_by
+
+note right of production_versions
+    生产版本
+    主键：id
+    业务主键：production_version_id（唯一）
+    将BOM、工艺路线和MI组合
+    状态：ACTIVE, RELEASED
+    BOM和工艺路线是必选的
+    MI在创建时是可选的，但在发布时是必选的
+    只有RELEASED状态的BOM和工艺路线才能用于生产版本
+    发布时需要MI已关联且状态为RELEASED
+end note
+
+note right of boms
+    BOM
+    必须为RELEASED状态
+end note
+
+note right of routings
+    工艺路线
+    必须为RELEASED状态
+end note
+
+note right of mis
+    MI
+    发布时MI是必选的
+    必须为RELEASED状态
+end note
+
+@enduml

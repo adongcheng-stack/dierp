@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - 工序报工界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .module-section {
+            margin-bottom: 50px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .module-title {
+            color: #2980b9;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 22px;
+        }
+        
+        .ui-container {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            background-color: #fff;
+        }
+        
+        .ui-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .ui-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .select-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .select-dropdown select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-active { background-color: #d4edda; color: #155724; }
+        .status-warning { background-color: #fff3cd; color: #856404; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+        
+        .instructions {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .material-table th, .material-table td {
+            text-align: center;
+        }
+        
+        .material-table input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            text-align: center;
+        }
+        
+        .highlight-row {
+            background-color: #fff3cd !important;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .section-divider {
+            height: 2px;
+            background-color: #eee;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>某某ERP系统 - 工序报工界面</h1>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li>此页面展示了ERP系统MVP版本的工序报工界面</li>
+                <li>工序报工界面：用于车间工人记录生产进度和不良品信息</li>
+                <li>您可以使用浏览器的截图功能保存为图片</li>
+            </ul>
+        </div>
+        
+        <!-- 工序报工界面 -->
+        <div class="module-section">
+            <h2 class="module-title">PP模块 - 工序报工界面</h2>
+            
+            <div class="ui-container">
+                <div class="ui-header">工序报工 - 工作中心: WC02-内层图形转移</div>
+                <div class="ui-body">
+                    <div class="info-box">
+                        <div class="info-title">当前任务信息</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>生产订单</label>
+                                <input type="text" class="form-control" value="PO20251204001" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>工序名称</label>
+                                <input type="text" class="form-control" value="内层图形转移" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>计划数量</label>
+                                <input type="text" class="form-control" value="100 PCS" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>报工信息录入</label>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>完成数量 (PCS)</label>
+                            <input type="number" class="form-control" value="65" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>良品数量 (PCS)</label>
+                            <input type="number" class="form-control" value="62" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>不良品数量 (PCS)</label>
+                            <input type="number" class="form-control" value="3" min="0" max="100" style="background-color: #f8d7da;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>不良原因</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>曝光不良</option>
+                                    <option>划伤</option>
+                                    <option>对位偏移</option>
+                                    <option>显影不良</option>
+                                    <option>其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>不良品处理</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>返工</option>
+                                    <option>报废</option>
+                                    <option>挑选使用</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>开始时间</label>
+                            <input type="datetime-local" class="form-control" value="2025-12-04T08:00">
+                        </div>
+                        <div class="form-group">
+                            <label>结束时间</label>
+                            <input type="datetime-local" class="form-control" value="2025-12-04T14:30">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>实际工时 (小时)</label>
+                            <input type="number" class="form-control" value="6.5" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>标准工时 (小时)</label>
+                            <input type="text" class="form-control" value="6.0" readonly style="background-color: #f8f9fa;">
+                        </div>
+                        <div class="form-group">
+                            <label>工时差异</label>
+                            <input type="text" class="form-control" value="+0.5 小时" readonly style="background-color: #fff3cd;">
+                        </div>
+                    </div>
+                    
+                    <div class="section-divider"></div>
+                    
+                    <div class="form-group">
+                        <label>不良品详情</label>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>不良类型</th>
+                                        <th>数量 (PCS)</th>
+                                        <th>处理方式</th>
+                                        <th>责任工序</th>
+                                        <th>备注</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>曝光不良</td>
+                                        <td>2</td>
+                                        <td><span class="status-badge status-warning">返工</span></td>
+                                        <td>内层图形转移</td>
+                                        <td>能量设置偏差</td>
+                                    </tr>
+                                    <tr>
+                                        <td>划伤</td>
+                                        <td>1</td>
+                                        <td><span class="status-badge status-error">报废</span></td>
+                                        <td>搬运过程</td>
+                                        <td>设备机械手异常</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>设备信息</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>EXP-01 (曝光机1号)</option>
+                                    <option>EXP-02 (曝光机2号)</option>
+                                    <option>EXP-03 (曝光机3号)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>设备运行状态</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>正常</option>
+                                    <option>轻微异常</option>
+                                    <option>维修中</option>
+                                    <option>停机</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>异常描述</label>
+                        <textarea class="form-control" rows="3" placeholder="如有异常情况，请在此描述..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>班组</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>早班 (08:00-16:00)</option>
+                                    <option>中班 (16:00-24:00)</option>
+                                    <option>晚班 (00:00-08:00)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>操作员</label>
+                            <input type="text" class="form-control" value="张三, 李四">
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-success">保存报工</button>
+                        <button class="btn btn-warning">暂存</button>
+                        <button class="btn btn-secondary">取消</button>
+                        <button class="btn btn-primary">打印流转卡</button>
+                    </div>
+                    
+                    <div class="timestamp">
+                        最后保存时间: 2025-12-04 14:35:22 | 操作员: 王五 (WC02主管)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>界面功能要点</h3>
+            <ul>
+                <li><strong>工序报工界面:</strong>
+                    <ul>
+                        <li>记录生产完成数量、良品数、不良品数</li>
+                        <li>支持不良原因分类和处理方式选择</li>
+                        <li>记录实际工时并与标准工时对比</li>
+                        <li>关联设备信息和操作员信息</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 工序报工界面的实时计算
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取报工界面的输入元素
+            const completeQtyInput = document.querySelector('input[type="number"][value="65"]');
+            const goodQtyInput = document.querySelector('input[type="number"][value="62"]');
+            const badQtyInput = document.querySelector('input[type="number"][value="3"]');
+            const actualTimeInput = document.querySelector('input[type="number"][value="6.5"]');
+            
+            // 工时差异计算
+            function calculateTimeDifference() {
+                const actualTime = parseFloat(actualTimeInput.value) || 0;
+                const standardTime = 6.0; // 标准工时
+                const difference = actualTime - standardTime;
+                
+                // 找到工时差异显示元素
+                const timeDiffElement = document.querySelector('input[value="+0.5 小时"]');
+                if (timeDiffElement) {
+                    const sign = difference >= 0 ? '+' : '';
+                    timeDiffElement.value = `${sign}${difference.toFixed(1)} 小时`;
+                    
+                    // 根据差异设置背景色
+                    if (difference > 1) {
+                        timeDiffElement.style.backgroundColor = '#f8d7da'; // 红色
+                    } else if (difference > 0) {
+                        timeDiffElement.style.backgroundColor = '#fff3cd'; // 黄色
+                    } else {
+                        timeDiffElement.style.backgroundColor = '#d4edda'; // 绿色
+                    }
+                }
+            }
+            
+            // 不良品数量自动计算
+            function calculateBadQuantity() {
+                const completeQty = parseFloat(completeQtyInput.value) || 0;
+                const goodQty = parseFloat(goodQtyInput.value) || 0;
+                
+                if (goodQty > completeQty) {
+                    goodQtyInput.value = completeQty;
+                }
+                
+                const badQty = completeQty - goodQty;
+                badQtyInput.value = badQty;
+                
+                // 设置不良品输入框背景色
+                if (badQty > 0) {
+                    badQtyInput.style.backgroundColor = '#f8d7da';
+                } else {
+                    badQtyInput.style.backgroundColor = '';
+                }
+            }
+            
+            // 添加事件监听
+            if (completeQtyInput) {
+                completeQtyInput.addEventListener('input', calculateBadQuantity);
+            }
+            
+            if (goodQtyInput) {
+                goodQtyInput.addEventListener('input', calculateBadQuantity);
+            }
+            
+            if (actualTimeInput) {
+                actualTimeInput.addEventListener('input', calculateTimeDifference);
+            }
+
+        });
+    </script>
+</body>
+</html>

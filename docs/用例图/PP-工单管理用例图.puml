@@ -1,0 +1,72 @@
+@startuml PP-工单管理用例图
+
+title PP模块 - 工单管理子模块用例图
+
+left to right direction
+
+actor 计划员 as planner
+actor 生产人员 as production
+actor 系统 as system
+
+rectangle "工单管理" {
+  usecase "创建生产订单/工单\n(UC-PP-003)" as UC003
+  usecase "下达生产订单/工单\n(UC-PP-004)" as UC004
+  usecase "开始生产\n(UC-PP-004A)" as UC004A
+  usecase "完成生产订单/工单\n(UC-PP-007)" as UC007
+  usecase "关闭生产订单/工单\n(UC-PP-008)" as UC008
+  usecase "生产进度查看\n(UC-PP-010)" as UC010
+}
+
+planner --> UC003 : 创建工单
+planner --> UC004 : 下达工单
+planner --> UC008 : 关闭工单
+planner --> UC010 : 查看进度
+
+production --> UC003 : 创建工单
+production --> UC004A : 开始生产
+production --> UC007 : 完成工单
+
+system --> UC003 : 自动生成LOT卡
+system --> UC007 : 自动完成
+
+UC003 ..> UC004 : <<extend>>
+UC004 ..> UC004A : <<extend>>
+UC004A ..> UC007 : <<extend>>
+UC007 ..> UC008 : <<extend>>
+
+note right of UC003
+  创建生产订单/工单
+  关联销售订单和生产版本
+  如果关联了MI，系统根据MI
+  自动生成LOT卡（1:1关系）
+  工单状态与生产订单状态一致
+end note
+
+note right of UC004
+  下达生产订单/工单
+  需要生产版本已发布
+  且MI已审核通过
+  状态：DRAFT → RELEASED
+end note
+
+note right of UC004A
+  开始生产
+  状态：RELEASED → IN_PRODUCTION
+  记录实际开始时间
+  同步销售订单状态
+end note
+
+note right of UC007
+  完成生产订单/工单
+  当所有工序都已报工完成时
+  系统自动完成或手动完成
+  状态：IN_PRODUCTION → COMPLETED
+end note
+
+note right of UC010
+  生产进度查看
+  查看订单状态、工序完成率、
+  报工情况、LOT卡状态等
+end note
+
+@enduml

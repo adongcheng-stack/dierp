@@ -1,0 +1,87 @@
+@startuml MM-生产领料ER图
+skinparam linetype ortho
+
+title MM模块 - 生产领料子模块ER图
+
+entity production_orders {
+    order_number VARCHAR <<PK>>
+    material_code VARCHAR
+    status ENUM
+}
+
+entity materials {
+    material_code VARCHAR <<PK>>
+    material_name VARCHAR
+    current_stock NUMERIC
+}
+
+entity boms {
+    bom_number VARCHAR <<PK>>
+    parent_material_code VARCHAR <<FK>>
+}
+
+entity bom_items {
+    id SERIAL <<PK>>
+    bom_number VARCHAR <<FK>>
+    material_code VARCHAR <<FK>>
+    quantity NUMERIC
+    unit VARCHAR
+}
+
+entity material_issues {
+    id SERIAL <<PK>>
+    issue_number VARCHAR <<UK>>
+    production_order_number VARCHAR <<FK>>
+    material_code VARCHAR <<FK>>
+    quantity NUMERIC
+    unit VARCHAR
+    warehouse VARCHAR
+    issued_by VARCHAR
+    issued_at TIMESTAMP
+    remarks VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity material_transactions {
+    id SERIAL <<PK>>
+    transaction_number VARCHAR <<UK>>
+    material_code VARCHAR <<FK>>
+    transaction_type VARCHAR
+    quantity NUMERIC
+    reference_number VARCHAR
+    reference_type VARCHAR
+}
+
+' 关系定义
+production_orders ||--o{ material_issues : generates
+materials ||--o{ material_issues : issued
+production_orders }o--|| boms : uses
+boms ||--o{ bom_items : contains
+material_issues ..> material_transactions : creates
+
+note right of material_issues
+    生产领料（领料单）
+    主键：id
+    业务主键：issue_number（唯一）
+    系统根据生产订单/工单关联的BOM自动生成领料需求
+    实时显示库存信息（当前库存、在途量、可用量）
+    当库存不足时，可生成缺料单
+    领料后自动更新物料库存
+    创建MaterialTransaction记录
+end note
+
+note right of production_orders
+    生产订单/工单
+    生产订单状态为RELEASED或IN_PRODUCTION时才能创建领料单
+end note
+
+note right of boms
+    BOM（物料清单）
+    系统根据BOM自动生成领料需求
+end note
+
+@enduml

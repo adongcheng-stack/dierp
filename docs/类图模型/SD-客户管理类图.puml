@@ -1,0 +1,129 @@
+@startuml SD-客户管理类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title SD模块 - 客户管理子模块类图
+
+package "客户管理 (Customer Management)" {
+    
+    class Customer {
+        +Integer id
+        +String customer_id
+        +String legal_name
+        +String trade_name
+        +String tax_id
+        +String customer_industry
+        +String customer_website
+        +Enum customer_status
+        +BigDecimal credit_limit
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerAddress {
+        +Integer id
+        +String customer_id
+        +String address_type
+        +String detail_address
+        +String location
+        +String postal_code
+        +String country
+        +String province
+        +String city
+        +String district
+        +Boolean is_default_shipping
+        +Boolean is_default_billing
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerContact {
+        +Integer id
+        +String customer_id
+        +Boolean is_primary_contact
+        +String contact_name
+        +String contact_role
+        +String contact_department
+        +String contact_phone
+        +String contact_email
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerPartnerFunction {
+        +Integer id
+        +String customer_id
+        +String partner_function_type
+        +Date partner_start_date
+        +String partner_name
+        +String partnership_description
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerSalesData {
+        +Integer id
+        +String customer_id
+        +String sales_organization
+        +String account_manager_name
+        +String sales_assistant_name
+        +String trading_currency
+        +String primary_trade_country
+        +String incoterms
+        +String shipping_conditions
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class FactoryProductMapping {
+        +Integer id
+        +String customer_id
+        +String factory_product_number
+        +String material_code
+        +String production_version_id
+        +Boolean is_default
+        +Timestamp effective_date
+        +Timestamp expiry_date
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    Customer "1" *-- "*" CustomerAddress : has
+    Customer "1" *-- "*" CustomerContact : has
+    Customer "1" *-- "*" CustomerPartnerFunction : has
+    Customer "1" *-- "*" CustomerSalesData : has
+    Customer "1" --> "*" FactoryProductMapping : has
+    
+    note right of Customer
+        客户聚合根
+        包含地址、联系人、合作属性、销售数据
+        状态：DRAFT, PENDING_APPROVAL, ACTIVE, BLOCKED, INACTIVE
+    end note
+    
+    note right of FactoryProductMapping
+        本厂编号映射
+        将客户的本厂编号映射到内部物料编码和生产版本
+        14位本厂编号，同客户下唯一
+    end note
+}
+
+@enduml

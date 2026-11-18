@@ -1,0 +1,695 @@
+{
+  "components": [
+    {
+      "text": "# 客户主数据",
+      "type": "text",
+      "layout": {
+        "row": "Row_0pwshly",
+        "columns": null
+      },
+      "id": "Field_1un8xru"
+    },
+    {
+      "label": "customerId",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1sv9ojq",
+        "columns": 5
+      },
+      "id": "Field_1gym7t9",
+      "key": "customerId",
+      "description": "客户代码 - Customer ID"
+    },
+    {
+      "label": "customerStatus",
+      "values": [
+        {
+          "label": "customerStatus1",
+          "value": "草稿 - DRAFT"
+        },
+        {
+          "label": "customerStatus2",
+          "value": "待审批 - PENDING_APPROVAL"
+        },
+        {
+          "label": "customerStatus3",
+          "value": "激活 - ACTIVE"
+        },
+        {
+          "label": "customerStatus4",
+          "value": "冻结 - BLOCKED"
+        },
+        {
+          "label": "customerStatus5",
+          "value": "未激活 - INACTIVE"
+        }
+      ],
+      "type": "select",
+      "layout": {
+        "row": "Row_1sv9ojq",
+        "columns": null
+      },
+      "id": "Field_0qt9oh0",
+      "key": "customerStatus",
+      "description": "客户状态 - Customer Status"
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "createdDate",
+      "type": "datetime",
+      "layout": {
+        "row": "Row_0c55uuw",
+        "columns": null
+      },
+      "id": "Field_1kba83q",
+      "key": "createdDate",
+      "timeLabel": "createdTime",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "description": "=creationTime",
+      "use24h": true,
+      "validate": {
+        "required": false
+      }
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "modifiedDate",
+      "type": "datetime",
+      "layout": {
+        "row": "Row_0c55uuw",
+        "columns": null
+      },
+      "id": "Field_0fq1m76",
+      "key": "modifiedDate",
+      "conditional": {
+        "hide": "=lastModifiedTime"
+      },
+      "timeLabel": "modifiedTime",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "description": "=lastModifiedTime",
+      "use24h": true
+    },
+    {
+      "text": "# 常规数据 - General Data",
+      "type": "text",
+      "layout": {
+        "row": "Row_1v0rxi0",
+        "columns": null
+      },
+      "id": "Field_0dhnfxa"
+    },
+    {
+      "label": "客户公司基本信息 - Customer Basic Info",
+      "components": [
+        {
+          "label": "legalName",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_1szuxhx",
+            "columns": null
+          },
+          "id": "Field_14oq8t4",
+          "key": "legalName",
+          "description": "客户公司法定全称 - Customer Full Company Name",
+          "disabled": false,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "tradeName",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_1szuxhx",
+            "columns": 5
+          },
+          "id": "Field_0n1urv4",
+          "key": "tradeName",
+          "description": "常用商号/简称 - Customer Trade Name"
+        },
+        {
+          "label": "taxId",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_00vngxg",
+            "columns": null
+          },
+          "id": "Field_1bnf3ft",
+          "key": "taxId",
+          "description": "客户公司税号 - Customer Company Tax Number",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "customerIndustry",
+          "values": [
+            {
+              "label": "industry1",
+              "value": "汽车"
+            },
+            {
+              "label": "industry2",
+              "value": "工业控制"
+            },
+            {
+              "label": "industry3",
+              "value": "医疗"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_00vngxg",
+            "columns": null
+          },
+          "id": "Field_0i9mvok",
+          "key": "customerIndustry",
+          "description": "客户所属行业 - Customer Industry"
+        },
+        {
+          "label": "customerWebsite",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0o6oq0g",
+            "columns": null
+          },
+          "id": "Field_0qmsoqe",
+          "key": "customerWebsite",
+          "description": "客户公司网址 - Customer Website"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_0biht44",
+        "columns": null
+      },
+      "id": "Field_136pvcu",
+      "path": "customerBasicInfo"
+    },
+    {
+      "text": "# 合作属性/角色 - Partner Functions",
+      "type": "text",
+      "layout": {
+        "row": "Row_1nkb0se",
+        "columns": null
+      },
+      "id": "Field_0bjz10u"
+    },
+    {
+      "label": "合作属性/角色 - partnerFunctions",
+      "components": [
+        {
+          "label": "partnerRole",
+          "values": [
+            {
+              "label": "role1",
+              "value": "售达方 - SOLD_TO"
+            },
+            {
+              "label": "role2",
+              "value": "送达方 - SHIP_TO"
+            },
+            {
+              "label": "role3",
+              "value": "开票方 - BILL_TO"
+            },
+            {
+              "label": "role4",
+              "value": "付款方 - PAYER"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_0ies468",
+            "columns": null
+          },
+          "id": "Field_15x4hgi",
+          "key": "partnerRole",
+          "description": "合作角色 - Partner Role",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "partnerId",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_1d32lyu",
+            "columns": null
+          },
+          "id": "Field_0m6gehi",
+          "key": "partnerId",
+          "description": "合作方代码 - Partner ID"
+        },
+        {
+          "label": "partnerName",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_14cjx3o",
+            "columns": null
+          },
+          "id": "Field_139wv90",
+          "key": "partnerName",
+          "description": "合作方名称"
+        },
+        {
+          "label": "partnershipDescription",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_1hzdj4l",
+            "columns": null
+          },
+          "id": "Field_0hxck5i",
+          "key": "partnershipDescription",
+          "description": "合作描述 - Partnership Description"
+        }
+      ],
+      "showOutline": true,
+      "isRepeating": true,
+      "allowAddRemove": true,
+      "defaultRepetitions": 1,
+      "type": "dynamiclist",
+      "layout": {
+        "row": "Row_1a4vswx",
+        "columns": null
+      },
+      "id": "Field_0qj056q",
+      "path": "partnerFunctions",
+      "nonCollapsedItems": 1
+    },
+    {
+      "text": "# 地址信息 - Addresses",
+      "type": "text",
+      "layout": {
+        "row": "Row_0mzdnx0",
+        "columns": null
+      },
+      "id": "Field_0ajb5zg"
+    },
+    {
+      "label": "地址信息 - Addresses",
+      "components": [
+        {
+          "label": "autoInput",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_0whb8t3",
+            "columns": null
+          },
+          "id": "Field_0me28cf",
+          "key": "autoInput",
+          "description": "自动识别 - Auto Input"
+        },
+        {
+          "label": "addressType",
+          "values": [
+            {
+              "label": "addressType1",
+              "value": "总部 - HEADQUARTERS"
+            },
+            {
+              "label": "addressType2",
+              "value": "工厂 - PLANT"
+            },
+            {
+              "label": "addressType3",
+              "value": "仓库 - Warehouse"
+            },
+            {
+              "label": "addressType4",
+              "value": "账单 - Billing"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_1nuvvx6",
+            "columns": null
+          },
+          "id": "Field_1dperti",
+          "key": "addressType",
+          "description": "地址类型 - Address Type",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "defaultOptions",
+          "values": [
+            {
+              "label": "默认送货地址？ - isDefaultShipping",
+              "value": "value1"
+            },
+            {
+              "label": "默认账单地址？ - isDefaultBilling",
+              "value": "value2"
+            }
+          ],
+          "type": "checklist",
+          "layout": {
+            "row": "Row_1nuvvx6",
+            "columns": null
+          },
+          "id": "Field_139bco9",
+          "key": "defaultOptions"
+        },
+        {
+          "label": "detailAddress",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_16xbpqn",
+            "columns": null
+          },
+          "id": "Field_1glzxdj",
+          "key": "detailAddress",
+          "description": "详细地址 - Detail Address",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "location",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_16xbpqn",
+            "columns": 5
+          },
+          "id": "Field_1h31qig",
+          "key": "location",
+          "description": "归属地 - Location"
+        },
+        {
+          "label": "postalCode",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_16xbpqn",
+            "columns": 3
+          },
+          "id": "Field_0ydqv3t",
+          "key": "postalCode",
+          "description": "邮政编码 - Postal Code"
+        },
+        {
+          "label": "country",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_13cp2qe",
+            "columns": null
+          },
+          "id": "Field_1fgky08",
+          "key": "textfield_qjm0jn",
+          "description": "国家 - Country",
+          "defaultValue": "中国 - China"
+        },
+        {
+          "label": "province",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_13cp2qe",
+            "columns": 4
+          },
+          "id": "Field_0t8ob33",
+          "key": "textfield_9qigehr",
+          "description": "省 - Province"
+        },
+        {
+          "label": "city",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_13cp2qe",
+            "columns": null
+          },
+          "id": "Field_0sb1rke",
+          "key": "textfield_l6zlrj",
+          "description": "市 - city"
+        },
+        {
+          "label": "district",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_13cp2qe",
+            "columns": null
+          },
+          "id": "Field_0qtfeem",
+          "key": "textfield_7bec2",
+          "description": "区 - District"
+        }
+      ],
+      "showOutline": true,
+      "isRepeating": true,
+      "allowAddRemove": true,
+      "defaultRepetitions": 1,
+      "type": "dynamiclist",
+      "layout": {
+        "row": "Row_1wgzn23",
+        "columns": null
+      },
+      "id": "Field_1ujkgmq",
+      "path": "customerAddresses"
+    },
+    {
+      "text": "# 联系人信息 - Contacts",
+      "type": "text",
+      "layout": {
+        "row": "Row_10303dr",
+        "columns": null
+      },
+      "id": "Field_0rsfe9z"
+    },
+    {
+      "label": "客户联系人信息 - Customer Contacts",
+      "components": [
+        {
+          "label": "isPrimaryContact",
+          "type": "checkbox",
+          "layout": {
+            "row": "Row_05r9gme",
+            "columns": null
+          },
+          "id": "Field_0meh0xn",
+          "key": "isPrimaryContact",
+          "description": "第一联系人？ - Is Primary Contact"
+        },
+        {
+          "label": "contactName",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_05r9gme",
+            "columns": null
+          },
+          "id": "Field_0b5cbs6",
+          "key": "contactName",
+          "description": "联系人姓名 - Contact Name"
+        },
+        {
+          "label": "contactRole",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_05r9gme",
+            "columns": null
+          },
+          "id": "Field_0bujtoj",
+          "key": "contactRole",
+          "description": "联系人职务 - Contact Role"
+        },
+        {
+          "label": "contactDepartment",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_05r9gme",
+            "columns": null
+          },
+          "id": "Field_1jl0su2",
+          "key": "contactDepartment",
+          "description": "联系人部门 - Contact Department"
+        },
+        {
+          "label": "contactPhone",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0gkklv3",
+            "columns": null
+          },
+          "id": "Field_0ksc0us",
+          "key": "contactPhone",
+          "description": "联系人电话 - Contact Phone"
+        },
+        {
+          "label": "contactEmail",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0gkklv3",
+            "columns": null
+          },
+          "id": "Field_09eihey",
+          "key": "contactEmail",
+          "description": "联系人邮件 - Contact Email"
+        }
+      ],
+      "showOutline": true,
+      "isRepeating": true,
+      "allowAddRemove": true,
+      "defaultRepetitions": 1,
+      "type": "dynamiclist",
+      "layout": {
+        "row": "Row_1g9oti8",
+        "columns": null
+      },
+      "id": "Field_06xnyyu",
+      "path": "customerContacts"
+    },
+    {
+      "text": "# 销售数据 - Sales Data",
+      "type": "text",
+      "layout": {
+        "row": "Row_1m9vm2k",
+        "columns": null
+      },
+      "id": "Field_01ti2j5"
+    },
+    {
+      "label": "销售数据 - Sales Data",
+      "components": [
+        {
+          "label": "salesOrganization",
+          "values": [
+            {
+              "label": "Value",
+              "value": "value"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_1l98fcc",
+            "columns": null
+          },
+          "id": "Field_06zgt7c",
+          "key": "salesOrganization",
+          "description": "销售组织 - Sales Organization"
+        },
+        {
+          "label": "salesManagerName",
+          "values": [
+            {
+              "label": "Value",
+              "value": "value"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_1l98fcc",
+            "columns": null
+          },
+          "id": "Field_0navnf1",
+          "key": "accountManagerName",
+          "description": "业务员姓名 - Sales Manager Name"
+        },
+        {
+          "label": "salesAssistantName",
+          "values": [
+            {
+              "label": "Value",
+              "value": "value"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_1l98fcc",
+            "columns": null
+          },
+          "id": "Field_12eb06f",
+          "key": "salesAssistantName",
+          "description": "跟单员姓名 - Sales Assistant Name"
+        },
+        {
+          "label": "tradingCurrency",
+          "values": [
+            {
+              "label": "Value",
+              "value": "value"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_1qxpwze",
+            "columns": null
+          },
+          "id": "Field_18by28q",
+          "key": "tradingCurrency",
+          "description": "默认交易货币 - Trading Currency"
+        },
+        {
+          "label": "foreignTrade",
+          "components": [
+            {
+              "label": "primaryTradeCountry",
+              "values": [
+                {
+                  "label": "Value",
+                  "value": "value"
+                }
+              ],
+              "type": "select",
+              "layout": {
+                "row": "Row_0hlrnm7",
+                "columns": null
+              },
+              "id": "Field_1nrdmdz",
+              "key": "primaryTradeCountry",
+              "description": "主要贸易国 - Primary Trade Country"
+            },
+            {
+              "label": "incoterms",
+              "type": "textfield",
+              "layout": {
+                "row": "Row_0hlrnm7",
+                "columns": null
+              },
+              "id": "Field_0ja7stm",
+              "key": "incoterms",
+              "description": "国际贸易术语 - incoterms"
+            },
+            {
+              "label": "shippingConditions",
+              "type": "textfield",
+              "layout": {
+                "row": "Row_0hlrnm7",
+                "columns": null
+              },
+              "id": "Field_1sltyyl",
+              "key": "shippingConditions",
+              "description": "运输条件 - Shipping Conditions"
+            }
+          ],
+          "showOutline": true,
+          "type": "group",
+          "layout": {
+            "row": "Row_11xsxm8",
+            "columns": null
+          },
+          "id": "Field_19cula2",
+          "path": "foreignTrade"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_1dz1c11",
+        "columns": null
+      },
+      "id": "Field_0ru1zdk",
+      "path": "salesData"
+    }
+  ],
+  "type": "default",
+  "id": "Form_15rfdwi",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.41.0"
+  },
+  "schemaVersion": 19
+}

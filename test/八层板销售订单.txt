@@ -1,0 +1,51 @@
+{
+  "order_id": "SO-2024-002",
+  "customer_po": "CUST-PO-2024-5678",
+  "customer": "XYZ Technology Ltd.",
+  "order_date": "2024-01-19",
+  "delivery_date": "2024-02-16",
+  "ship_to": "上海市浦东新区张江高科技园区",
+  "bill_to": "上海市黄浦区南京东路123号",
+  "sales_rep": "李四",
+  "payment_terms": "50%预付，50%发货前",
+  
+  "order_lines": [
+    {
+      "line_no": 1,
+      "item_code": "PCB-8L-001",
+      "description": "八层PCB板 FR-4 Tg170 HDI",
+      "ordered_qty": 500,
+      "unit_price": 185.60,
+      "line_total": 92800.00,
+      "delivery_schedule": [
+        {
+          "schedule_no": 1,
+          "qty": 200,
+          "date": "2024-02-12"
+        },
+        {
+          "schedule_no": 2,
+          "qty": 300,
+          "date": "2024-02-16"
+        }
+      ]
+    }
+  ],
+  
+  "order_summary": {
+    "subtotal": 92800.00,
+    "tooling_charge": 8000.00,
+    "shipping_charge": 1500.00,
+    "tax": 0.00,
+    "total_amount": 102300.00,
+    "deposit_received": 51150.00,
+    "balance_due": 51150.00
+  },
+  
+  "special_instructions": [
+    "提供阻抗测试报告",
+    "做切片分析报告（每批次2片）",
+    "100% X-ray检查",
+    "真空包装+防潮剂"
+  ]
+}

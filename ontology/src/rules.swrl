@@ -1,0 +1,73 @@
+@prefix : <https://dierp.local/ontology/erp/v1#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix swrl: <http://www.w3.org/2003/11/swrl#> .
+@prefix swrlb: <http://www.w3.org/2003/11/swrlb#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SWRL 只做派生标记，不做断言检查（断言由 SHACL 负责）。
+# 每个 atom 必须使用 swrl:arguments 集合序列化。
+
+# 派生类（只用 rdfs:subClassOf，禁用 owl:equivalentClass）
+:ProcurementSuggestion a owl:Class ; rdfs:subClassOf :PlannedOrder .
+:BlockingException a owl:Class ; rdfs:subClassOf :MrpException .
+:MaterialConstrainedOrder a owl:Class ; rdfs:subClassOf :KittingResult .
+:ExecutableMpsEntry a owl:Class ; rdfs:subClassOf :MpsEntry .
+:FirmPlannedOrder a owl:Class ; rdfs:subClassOf :PlannedOrder .
+
+# R1 采购型计划订单 → 采购建议
+:ProcurementSuggestionRule a swrl:Imp ;
+    rdfs:label "R1 采购型计划订单派生为采购建议" ;
+    swrl:body (
+        [ a swrl:ClassAtom ; swrl:classPredicate :PlannedOrder ; swrl:arguments ( ?po ) ]
+        [ a swrl:DatavaluedPropertyAtom ; swrl:predicate :orderType ; swrl:arguments ( ?po "PURCHASE" ) ]
+    ) ;
+    swrl:head (
+        [ a swrl:ClassAtom ; swrl:classPredicate :ProcurementSuggestion ; swrl:arguments ( ?po ) ]
+    ) .
+
+# R2 严重短缺异常 → 阻断性异常
+:BlockingExceptionRule a swrl:Imp ;
+    rdfs:label "R2 严重短缺派生为阻断性异常" ;
+    swrl:body (
+        [ a swrl:ClassAtom ; swrl:classPredicate :MrpException ; swrl:arguments ( ?ex ) ]
+        [ a swrl:DatavaluedPropertyAtom ; swrl:predicate :severity ; swrl:arguments ( ?ex "CRITICAL" ) ]
+        [ a swrl:DatavaluedPropertyAtom ; swrl:predicate :exceptionType ; swrl:arguments ( ?ex "SHORTAGE" ) ]
+    ) ;
+    swrl:head (
+        [ a swrl:ClassAtom ; swrl:classPredicate :BlockingException ; swrl:arguments ( ?ex ) ]
+    ) .
+
+# R3 齐套短缺 → 物料受限对象
+:MaterialConstrainedRule a swrl:Imp ;
+    rdfs:label "R3 齐套短缺派生为物料受限对象" ;
+    swrl:body (
+        [ a swrl:ClassAtom ; swrl:classPredicate :KittingResult ; swrl:arguments ( ?k ) ]
+        [ a swrl:DatavaluedPropertyAtom ; swrl:predicate :kitStatus ; swrl:arguments ( ?k "SHORT" ) ]
+    ) ;
+    swrl:head (
+        [ a swrl:ClassAtom ; swrl:classPredicate :MaterialConstrainedOrder ; swrl:arguments ( ?k ) ]
+    ) .
+
+# R4 MPS 行动为 RELEASE → 可执行 MPS 行
+:ExecutableMpsRule a swrl:Imp ;
+    rdfs:label "R4 建议下达的 MPS 行派生为可执行行" ;
+    swrl:body (
+        [ a swrl:ClassAtom ; swrl:classPredicate :MpsEntry ; swrl:arguments ( ?e ) ]
+        [ a swrl:DatavaluedPropertyAtom ; swrl:predicate :plannerAction ; swrl:arguments ( ?e "RELEASE" ) ]
+    ) ;
+    swrl:head (
+        [ a swrl:ClassAtom ; swrl:classPredicate :ExecutableMpsEntry ; swrl:arguments ( ?e ) ]
+    ) .
+
+# R5 已确认计划订单 → 已确认标记
+:FirmPlannedOrderRule a swrl:Imp ;
+    rdfs:label "R5 FIRMED 计划订单派生为已确认计划订单" ;
+    swrl:body (
+        [ a swrl:ClassAtom ; swrl:classPredicate :PlannedOrder ; swrl:arguments ( ?po ) ]
+        [ a swrl:DatavaluedPropertyAtom ; swrl:predicate :status ; swrl:arguments ( ?po "FIRMED" ) ]
+    ) ;
+    swrl:head (
+        [ a swrl:ClassAtom ; swrl:classPredicate :FirmPlannedOrder ; swrl:arguments ( ?po ) ]
+    ) .

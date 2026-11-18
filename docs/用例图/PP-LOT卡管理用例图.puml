@@ -1,0 +1,64 @@
+@startuml PP-LOT卡管理用例图
+
+title PP模块 - LOT卡管理子模块用例图
+
+left to right direction
+
+actor 计划员 as planner
+actor 生产主管 as supervisor
+actor 产线工人 as worker
+actor 系统 as system
+
+rectangle "LOT卡管理" {
+  usecase "LOT卡生成\n(UC-PP-009A)" as UC009A
+  usecase "LOT卡查询\n(UC-PP-009B)" as UC009B
+  usecase "LOT卡列表\n(UC-PP-009C)" as UC009C
+  usecase "LOT卡详情查看\n(UC-PP-009D)" as UC009D
+  usecase "LOT卡编辑\n(UC-PP-009E)" as UC009E
+}
+
+system --> UC009A : 自动生成
+planner --> UC009B : 查询LOT卡
+planner --> UC009C : 查看列表
+planner --> UC009E : 编辑LOT卡
+
+supervisor --> UC009B : 查询LOT卡
+supervisor --> UC009C : 查看列表
+supervisor --> UC009D : 查看详情
+supervisor --> UC009E : 编辑LOT卡
+
+worker --> UC009B : 查询LOT卡
+worker --> UC009D : 查看详情
+
+UC009C ..> UC009D : <<include>>
+UC009C ..> UC009E : <<include>>
+UC009B ..> UC009C : <<include>>
+
+note right of UC009A
+  LOT卡生成
+  系统在创建生产订单/工单时
+  如果关联了MI，根据MI自动生成
+  一个生产订单/工单对应一个LOT卡
+  （1:1关系）
+end note
+
+note right of UC009B
+  LOT卡查询
+  支持按生产订单号、MI编号、
+  状态等条件查询
+end note
+
+note right of UC009D
+  LOT卡详情查看
+  包括LOT卡号、生产订单号、
+  MI编号、MI内容、报工记录等
+end note
+
+note right of UC009E
+  LOT卡编辑
+  可编辑MI内容（mi_content）
+  和备注（remarks）
+  支持JSON格式解析为列表编辑
+end note
+
+@enduml

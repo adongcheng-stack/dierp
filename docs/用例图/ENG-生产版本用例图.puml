@@ -1,0 +1,44 @@
+@startuml ENG-生产版本用例图
+
+title ENG模块 - 生产版本子模块用例图
+
+left to right direction
+
+actor 工程师 as engineer
+
+rectangle "生产版本管理" {
+  usecase "创建生产版本\n(UC-ENG-014)" as UC014
+  usecase "更新生产版本\n(UC-ENG-015)" as UC015
+  usecase "发布生产版本\n(UC-ENG-016)" as UC016
+}
+
+engineer --> UC014 : 创建生产版本
+engineer --> UC015 : 更新生产版本
+engineer --> UC016 : 发布生产版本
+
+UC014 ..> UC015 : <<extend>>
+UC014 ..> UC016 : <<extend>>
+
+note right of UC014
+  创建生产版本
+  将BOM和工艺路线组合
+  BOM和工艺路线准备可以并行进行
+  BOM和工艺路线是必选的
+  MI在创建时是可选的
+end note
+
+note right of UC015
+  更新生产版本
+  可更新有效期、备注等字段
+  若需替换BOM/工艺路线/MI
+  应通过创建新生产版本处理
+end note
+
+note right of UC016
+  发布生产版本
+  发布时需要MI已制作且已审核通过
+  发布后的生产版本可用于
+  生产订单/工单下达
+end note
+
+@enduml

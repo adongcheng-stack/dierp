@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - 报价转订单与返单下单界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .scenario-section {
+            margin-bottom: 60px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .scenario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .scenario-title {
+            color: #2980b9;
+            font-size: 22px;
+        }
+        
+        .scenario-tag {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .tag-new { background-color: #3498db; }
+        .tag-return { background-color: #e74c3c; }
+        
+        .ui-container {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            background-color: #fff;
+        }
+        
+        .ui-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .ui-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .select-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .select-dropdown select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-title i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-approved { background-color: #d4edda; color: #155724; }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-draft { background-color: #cce5ff; color: #004085; }
+        .status-converted { background-color: #d1ecf1; color: #0c5460; }
+        
+        .instructions {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .section-divider {
+            height: 2px;
+            background-color: #eee;
+            margin: 20px 0;
+        }
+        
+        .quote-details {
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .quote-details h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .quote-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .quote-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .quote-value {
+            color: #333;
+        }
+        
+        .history-order-table th, .history-order-table td {
+            text-align: center;
+        }
+        
+        .highlight-row {
+            background-color: #fff3cd !important;
+        }
+        
+        .selected-row {
+            background-color: #e8f4f8 !important;
+            border-left: 3px solid #3498db;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .workflow-steps::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 1;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+        
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-weight: bold;
+        }
+        
+        .step.active .step-circle {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .step.completed .step-circle {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .step.active .step-label {
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .step.completed .step-label {
+            color: #27ae60;
+        }
+        
+        .order-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .summary-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .summary-value.amount {
+            color: #27ae60;
+        }
+        
+        .alert-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .alert-info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            color: #0c5460;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #856404;
+            color: #856404;
+        }
+        
+        .customer-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .customer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .customer-info {
+            flex: 1;
+        }
+        
+        .customer-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .customer-details {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .customer-details span {
+            margin-right: 15px;
+        }
+        
+        .action-panel {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .icon-btn:hover {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>某某ERP系统 - 报价转订单与返单下单界面</h1>
+        
+        <div class="instructions">
+            <h3>业务流程说明</h3>
+            <ul>
+                <li><strong>新单流程:</strong> 客户询价 → 创建报价单 → 报价审核 → 客户确认 → 报价单转为销售订单</li>
+                <li><strong>返单流程:</strong> 客户重复下单 → 系统自动识别返单 → 跳过报价环节 → 直接基于历史订单创建销售订单</li>
+                <li>两种场景对应不同的操作界面和业务流程，确保订单创建效率和数据准确性</li>
+            </ul>
+        </div>
+        
+        <!-- 新单：报价单转销售订单界面 -->
+        <div class="scenario-section">
+            <div class="scenario-header">
+                <h2 class="scenario-title">新单场景：报价单转销售订单</h2>
+                <span class="scenario-tag tag-new">新客户/新产品</span>
+            </div>
+            
+            <div class="workflow-steps">
+                <div class="step completed">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">报价创建</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">报价审核</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">客户确认</div>
+                </div>
+                <div class="step active">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">转为订单</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">5</div>
+                    <div class="step-label">合同评审</div>
+                </div>
+            </div>
+            
+            <div class="ui-container">
+                <div class="ui-header">报价单转销售订单 - 报价单号: QT20251203-001</div>
+                <div class="ui-body">
+                    <div class="alert-box alert-info">
+                        <strong>提示:</strong> 此报价单已通过三级审核并获客户确认，可以转为销售订单。请核对以下信息并完成订单创建。
+                    </div>
+                    
+                    <div class="customer-card">
+                        <div class="customer-avatar">A</div>
+                        <div class="customer-info">
+                            <div class="customer-name">ABC电子有限公司</div>
+                            <div class="customer-details">
+                                <span>客户编号: AB01</span>
+                                <span>联系人: 张三 (采购经理)</span>
+                                <span>电话: 138****5678</span>
+                            </div>
+                        </div>
+                        <div class="action-panel">
+                            <button class="icon-btn" onclick="viewCustomerDetails()">查看客户档案</button>
+                            <button class="icon-btn" onclick="viewCreditInfo()">查看信用额度</button>
+                        </div>
+                    </div>
+                    
+                    <div class="quote-details">
+                        <h4>报价单详情</h4>
+                        <div class="quote-item">
+                            <span class="quote-label">报价单编号:</span>
+                            <span class="quote-value">QT20251203-001</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">产品编号:</span>
+                            <span class="quote-value">HS1004ENIGAB01</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">产品描述:</span>
+                            <span class="quote-value">标准四层板沉金工艺</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">报价数量:</span>
+                            <span class="quote-value">100 PCS</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">报价单价:</span>
+                            <span class="quote-value">¥85.00</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">报价金额:</span>
+                            <span class="quote-value" style="font-weight: bold; color: #27ae60;">¥8,500.00</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">承诺交期:</span>
+                            <span class="quote-value">2025-12-18</span>
+                        </div>
+                        <div class="quote-item">
+                            <span class="quote-label">标准交期:</span>
+                            <span class="quote-value">10个工作日</span>
+                        </div>
+                    </div>
+                    
+                    <div class="section-divider"></div>
+                    
+                    <div class="info-box">
+                        <div class="info-title">销售订单信息</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>订单编号</label>
+                                <input type="text" class="form-control" value="SO20251204-001" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>订单类型</label>
+                                <div class="select-dropdown">
+                                    <select>
+                                        <option>标准订单</option>
+                                        <option>加急订单</option>
+                                        <option>样品订单</option>
+                                        <option>试产订单</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>订单日期</label>
+                                <input type="date" class="form-control" value="2025-12-04">
+                            </div>
+                            <div class="form-group">
+                                <label>交货日期</label>
+                                <input type="date" class="form-control" value="2025-12-18">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>付款方式</label>
+                                <div class="select-dropdown">
+                                    <select>
+                                        <option>月结30天</option>
+                                        <option>货到付款</option>
+                                        <option>预付30%</option>
+                                        <option>预付50%</option>
+                                        <option>全额预付</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>运输方式</label>
+                                <div class="select-dropdown">
+                                    <select>
+                                        <option>客户自提</option>
+                                        <option>快递到付</option>
+                                        <option>快递预付</option>
+                                        <option>物流配送</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>订单备注</label>
+                            <textarea class="form-control" rows="3" placeholder="请输入订单特殊要求或备注信息...">此为四层板标准订单，按报价单QT20251203-001执行。</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>订单条款确认</label>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>条款类型</th>
+                                        <th>内容</th>
+                                        <th>报价单条款</th>
+                                        <th>订单条款</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>价格条款</td>
+                                        <td>产品单价</td>
+                                        <td>¥85.00/PCS</td>
+                                        <td>¥85.00/PCS</td>
+                                        <td><span class="status-badge status-approved">已同步</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>交付条款</td>
+                                        <td>交货日期</td>
+                                        <td>2025-12-18</td>
+                                        <td>2025-12-18</td>
+                                        <td><span class="status-badge status-approved">已同步</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>质量条款</td>
+                                        <td>验收标准</td>
+                                        <td>IPC-A-600G Class 2</td>
+                                        <td>IPC-A-600G Class 2</td>
+                                        <td><span class="status-badge status-approved">已同步</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>付款条款</td>
+                                        <td>付款方式</td>
+                                        <td>月结30天</td>
+                                        <td>
+                                            <div class="select-dropdown" style="width: 150px;">
+                                                <select>
+                                                    <option>月结30天</option>
+                                                    <option>货到付款</option>
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td><span class="status-badge status-pending">待确认</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="order-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">订单金额</div>
+                            <div class="summary-value amount">¥8,500.00</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">产品数量</div>
+                            <div class="summary-value">100 PCS</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">预计交期</div>
+                            <div class="summary-value">12个工作日</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">利润率</div>
+                            <div class="summary-value">15%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="convertToSalesOrder()">确认转为销售订单</button>
+                        <button class="btn btn-warning" onclick="modifyBeforeConvert()">修改后转订单</button>
+                        <button class="btn btn-secondary" onclick="printConversionReport()">打印转换报告</button>
+                        <button class="btn btn-secondary" onclick="cancelConversion()">取消</button>
+                    </div>
+                    
+                    <div class="timestamp">
+                        报价单创建时间: 2025-12-03 14:30:22 | 最后审核时间: 2025-12-04 09:15:33 | 客户确认时间: 2025-12-04 10:20:15
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 返单：销售下单界面 -->
+        <div class="scenario-section">
+            <div class="scenario-header">
+                <h2 class="scenario-title">返单场景：快速销售下单</h2>
+                <span class="scenario-tag tag-return">返单/重复订单</span>
+            </div>
+            
+            <div class="alert-box alert-warning">
+                <strong>系统检测到返单:</strong> 客户"ABC电子有限公司"曾于2025-11-15订购过相同产品"HS1004ENIGAB01"，系统已自动匹配历史订单信息。
+            </div>
+            
+            <div class="ui-container">
+                <div class="ui-header">返单快速下单 - 跳过报价环节</div>
+                <div class="ui-body">
+                    <div class="customer-card">
+                        <div class="customer-avatar">A</div>
+                        <div class="customer-info">
+                            <div class="customer-name">ABC电子有限公司</div>
+                            <div class="customer-details">
+                                <span>客户编号: AB01</span>
+                                <span>等级: A类客户</span>
+                                <span>信用额度: ¥100,000 (已用 ¥45,000)</span>
+                                <span>历史订单: 15笔</span>
+                            </div>
+                        </div>
+                        <div class="action-panel">
+                            <button class="icon-btn" onclick="viewCustomerHistory()">查看历史订单</button>
+                            <button class="icon-btn" onclick="copyLatestOrder()">复制最近订单</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>产品选择</label>
+                            <div class="select-dropdown">
+                                <select id="productSelect" onchange="loadProductHistory()">
+                                    <option value="">请选择产品...</option>
+                                    <option value="HS1004ENIGAB01" selected>HS1004ENIGAB01 - 标准四层板沉金工艺</option>
+                                    <option value="HS3008GOLDCI02">HS3008GOLDCI02 - 高速八层板镀金工艺</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>历史订单参考</label>
+                            <div class="select-dropdown">
+                                <select id="historyOrderSelect" onchange="loadOrderDetails()">
+                                    <option value="">选择历史订单作为参考...</option>
+                                    <option value="SO20251115-001" selected>SO20251115-001 (2025-11-15, 100PCS)</option>
+                                    <option value="SO20251010-002">SO20251010-002 (2025-10-10, 200PCS)</option>
+                                    <option value="SO20250905-003">SO20250905-003 (2025-09-05, 50PCS)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <div class="info-title">历史订单参考信息 - SO20251115-001</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>产品编号</label>
+                                <input type="text" class="form-control" value="HS1004ENIGAB01" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>产品描述</label>
+                                <input type="text" class="form-control" value="标准四层板沉金工艺" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>历史单价</label>
+                                <input type="text" class="form-control" value="¥85.00" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>历史交期</label>
+                                <input type="text" class="form-control" value="12个工作日" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>历史数量</label>
+                                <input type="text" class="form-control" value="100 PCS" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>付款方式</label>
+                                <input type="text" class="form-control" value="月结30天" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>质量要求</label>
+                                <input type="text" class="form-control" value="IPC-A-600G Class 2" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table history-order-table">
+                            <thead>
+                                <tr>
+                                    <th>选择</th>
+                                    <th>历史订单号</th>
+                                    <th>下单日期</th>
+                                    <th>产品</th>
+                                    <th>数量(PCS)</th>
+                                    <th>单价(¥)</th>
+                                    <th>交期(天)</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="selected-row">
+                                    <td><input type="radio" name="historyOrder" checked></td>
+                                    <td>SO20251115-001</td>
+                                    <td>2025-11-15</td>
+                                    <td>HS1004ENIGAB01</td>
+                                    <td>100</td>
+                                    <td>85.00</td>
+                                    <td>12</td>
+                                    <td><span class="status-badge status-approved">已完成</span></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="radio" name="historyOrder"></td>
+                                    <td>SO20251010-002</td>
+                                    <td>2025-10-10</td>
+                                    <td>HS1004ENIGAB01</td>
+                                    <td>200</td>
+                                    <td>83.50</td>
+                                    <td>15</td>
+                                    <td><span class="status-badge status-approved">已完成</span></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="radio" name="historyOrder"></td>
+                                    <td>SO20250905-003</td>
+                                    <td>2025-09-05</td>
+                                    <td>HS1004ENIGAB01</td>
+                                    <td>50</td>
+                                    <td>88.00</td>
+                                    <td>10</td>
+                                    <td><span class="status-badge status-approved">已完成</span></td>
+                                </tr>
+                                <tr>
+                                    <td><input type="radio" name="historyOrder"></td>
+                                    <td>SO20250812-004</td>
+                                    <td>2025-08-12</td>
+                                    <td>HS1004ENIGAB01</td>
+                                    <td>150</td>
+                                    <td>86.00</td>
+                                    <td>14</td>
+                                    <td><span class="status-badge status-approved">已完成</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="section-divider"></div>
+                    
+                    <div class="info-box">
+                        <div class="info-title">新订单信息</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>订单编号</label>
+                                <input type="text" class="form-control" value="SO20251204-002" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>订单日期</label>
+                                <input type="date" class="form-control" value="2025-12-04">
+                            </div>
+                            <div class="form-group">
+                                <label>订单类型</label>
+                                <div class="select-dropdown">
+                                    <select>
+                                        <option>返单</option>
+                                        <option>标准订单</option>
+                                        <option>加急订单</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>产品编号</label>
+                                <input type="text" class="form-control" value="HS1004ENIGAB01" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>产品描述</label>
+                                <input type="text" class="form-control" value="标准四层板沉金工艺" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>订单数量(PCS)</label>
+                                <input type="number" class="form-control" value="120" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label>销售单价(¥)</label>
+                                <input type="number" class="form-control" value="85.00" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>订单金额(¥)</label>
+                                <input type="text" class="form-control" value="10,200.00" readonly style="background-color: #f8f9fa; font-weight: bold;">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>要求交期</label>
+                                <input type="date" class="form-control" value="2025-12-20">
+                            </div>
+                            <div class="form-group">
+                                <label>预计交期</label>
+                                <input type="text" class="form-control" value="12个工作日" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>交期状态</label>
+                                <input type="text" class="form-control" value="可承诺" readonly style="background-color: #d4edda; color: #155724;">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>付款方式</label>
+                                <div class="select-dropdown">
+                                    <select>
+                                        <option selected>月结30天</option>
+                                        <option>货到付款</option>
+                                        <option>预付30%</option>
+                                        <option>预付50%</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>运输方式</label>
+                                <div class="select-dropdown">
+                                    <select>
+                                        <option selected>快递到付</option>
+                                        <option>客户自提</option>
+                                        <option>快递预付</option>
+                                        <option>物流配送</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>订单备注</label>
+                            <textarea class="form-control" rows="3" placeholder="请输入订单特殊要求或备注信息...">此为返单，参照历史订单SO20251115-001，交期要求与上次相同。</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="order-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">订单金额</div>
+                            <div class="summary-value amount">¥10,200.00</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">产品数量</div>
+                            <div class="summary-value">120 PCS</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">预计交期</div>
+                            <div class="summary-value">12个工作日</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">信用额度</div>
+                            <div class="summary-value">¥55,000可用</div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="createReturnOrder()">直接创建销售订单</button>
+                        <button class="btn btn-primary" onclick="saveAsDraft()">保存为草稿</button>
+                        <button class="btn btn-warning" onclick="checkPriceValidity()">价格校验</button>
+                        <button class="btn btn-secondary" onclick="resetForm()">重置</button>
+                    </div>
+                    
+                    <div class="timestamp">
+                        系统检测时间: 2025-12-04 11:30:15 | 最近历史订单: SO20251115-001 (2025-11-15) | 客户信用状态: 良好
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>业务流程对比</h3>
+            <ul>
+                <li><strong>新单转订单流程:</strong> 完整报价流程 → 客户确认 → 报价条款同步 → 创建销售订单</li>
+                <li><strong>返单下单流程:</strong> 系统自动识别返单 → 选择历史订单参考 → 快速创建销售订单 → 跳过报价环节</li>
+                <li><strong>效率提升:</strong> 返单流程比新单流程平均减少70%的处理时间，特别适用于重复性订单</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 新单转订单相关函数
+        function convertToSalesOrder() {
+            alert('报价单QT20251203-001已成功转为销售订单SO20251204-001！');
+            // 在实际系统中，这里会提交表单数据到后端处理
+            document.querySelector('.step:nth-child(4)').classList.remove('active');
+            document.querySelector('.step:nth-child(4)').classList.add('completed');
+            document.querySelector('.step:nth-child(5)').classList.add('active');
+        }
+        
+        function modifyBeforeConvert() {
+            alert('进入修改模式，您可以调整订单条款后再转为销售订单。');
+        }
+        
+        function printConversionReport() {
+            alert('正在生成报价转订单报告...');
+        }
+        
+        function cancelConversion() {
+            if (confirm('确定要取消报价单转订单操作吗？')) {
+                alert('操作已取消，返回报价单管理界面。');
+            }
+        }
+        
+        function viewCustomerDetails() {
+            alert('正在打开客户ABC电子有限公司的详细档案...');
+        }
+        
+        function viewCreditInfo() {
+            alert('客户信用额度: ¥100,000\n已使用额度: ¥45,000\n可用额度: ¥55,000\n信用等级: A级');
+        }
+        
+        // 返单相关函数
+        function viewCustomerHistory() {
+            alert('正在打开客户ABC电子有限公司的历史订单列表...');
+        }
+        
+        function copyLatestOrder() {
+            alert('已复制最近订单SO20251115-001的完整信息到表单中！');
+        }
+        
+        function loadProductHistory() {
+            const productSelect = document.getElementById('productSelect');
+            const selectedProduct = productSelect.value;
+            
+            if (selectedProduct) {
+                alert(`正在加载产品 ${selectedProduct} 的历史订单信息...`);
+            }
+        }
+        
+        function loadOrderDetails() {
+            const orderSelect = document.getElementById('historyOrderSelect');
+            const selectedOrder = orderSelect.value;
+            
+            if (selectedOrder) {
+                alert(`正在加载订单 ${selectedOrder} 的详细信息...`);
+            }
+        }
+        
+        function createReturnOrder() {
+            const quantity = document.querySelector('input[type="number"][value="120"]').value;
+            const price = document.querySelector('input[type="number"][value="85.00"]').value;
+            const amount = quantity * price;
+            
+            alert(`返单创建成功！\n订单号: SO20251204-002\n数量: ${quantity} PCS\n金额: ¥${amount.toFixed(2)}`);
+        }
+        
+        function saveAsDraft() {
+            alert('返单信息已保存为草稿，您可以在草稿箱中继续编辑。');
+        }
+        
+        function checkPriceValidity() {
+            const currentPrice = parseFloat(document.querySelector('input[type="number"][value="85.00"]').value);
+            const historyPrices = [85.00, 83.50, 88.00, 86.00];
+            const avgPrice = historyPrices.reduce((a, b) => a + b) / historyPrices.length;
+            const deviation = ((currentPrice - avgPrice) / avgPrice * 100).toFixed(2);
+            
+            if (Math.abs(deviation) > 10) {
+                alert(`⚠ 价格偏差警告: 当前价格¥${currentPrice}比历史平均价格¥${avgPrice.toFixed(2)}偏差${deviation}%，请确认！`);
+            } else {
+                alert(`✓ 价格校验通过: 当前价格在历史价格合理范围内（偏差${deviation}%）。`);
+            }
+        }
+        
+        function resetForm() {
+            if (confirm('确定要重置表单吗？所有修改将丢失。')) {
+                document.querySelector('input[type="number"][value="120"]').value = 100;
+                document.querySelector('input[type="number"][value="85.00"]').value = 85.00;
+                document.querySelector('textarea').value = '此为返单，参照历史订单SO20251115-001，交期要求与上次相同。';
+                alert('表单已重置为默认值。');
+            }
+        }
+        
+        // 实时计算订单金额
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.querySelector('input[type="number"][value="120"]');
+            const priceInput = document.querySelector('input[type="number"][value="85.00"]');
+            const amountInput = document.querySelector('input[value="10,200.00"]');
+            
+            function calculateOrderAmount() {
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                const amount = quantity * price;
+                
+                // 格式化金额显示
+                amountInput.value = '¥' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                
+                // 更新订单汇总
+                const summaryAmount = document.querySelector('.order-summary .summary-value.amount');
+                if (summaryAmount) {
+                    summaryAmount.textContent = '¥' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                }
+                
+                // 更新数量汇总
+                const summaryQuantity = document.querySelectorAll('.order-summary .summary-value')[1];
+                if (summaryQuantity) {
+                    summaryQuantity.textContent = quantity + ' PCS';
+                }
+            }
+            
+            if (quantityInput && priceInput) {
+                quantityInput.addEventListener('input', calculateOrderAmount);
+                priceInput.addEventListener('input', calculateOrderAmount);
+            }
+            
+            // 历史订单选择
+            const historyOrderRadios = document.querySelectorAll('input[name="historyOrder"]');
+            historyOrderRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        const row = this.closest('tr');
+                        
+                        // 移除所有行的选中样式
+                        document.querySelectorAll('tr').forEach(r => {
+                            r.classList.remove('selected-row');
+                        });
+                        
+                        // 添加当前行的选中样式
+                        row.classList.add('selected-row');
+                        
+                        // 获取选中行的数据
+                        const price = row.cells[5].textContent;
+                        const quantity = row.cells[4].textContent;
+                        const orderNumber = row.cells[1].textContent;
+                        
+                        // 更新表单数据
+                        if (priceInput) priceInput.value = price;
+                        if (quantityInput) quantityInput.value = quantity;
+                        
+                        // 更新历史订单选择下拉框
+                        const historySelect = document.getElementById('historyOrderSelect');
+                        if (historySelect) {
+                            historySelect.value = orderNumber;
+                        }
+                        
+                        // 重新计算金额
+                        calculateOrderAmount();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

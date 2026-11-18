@@ -1,0 +1,153 @@
+{
+  "system_name": "某某ERP系统MVP版本",
+  "module_name": "MM模块 - 物料管理",
+  "interface_name": "物料主数据管理",
+  "interface_elements": [
+    {
+      "type": "form_section",
+      "title": "物料主数据管理",
+      "elements": [
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "物料编码",
+              "input_type": "text",
+              "current_value": "MAT-FR4-1.2",
+              "placeholder": "",
+              "required": false
+            },
+            {
+              "type": "input_field",
+              "label": "物料名称",
+              "input_type": "text",
+              "current_value": "FR4板材1.2mm",
+              "placeholder": "",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "dropdown",
+              "label": "物料分类",
+              "options": ["原材料/基材", "辅材", "化工材料", "成品"],
+              "current_value": "原材料/基材",
+              "required": false
+            },
+            {
+              "type": "dropdown",
+              "label": "计量单位",
+              "options": ["张", "卷", "公斤", "个"],
+              "current_value": "张",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": "input_field",
+          "label": "规格型号",
+          "input_type": "text",
+          "current_value": "FR4 TG130 1.2mm",
+          "placeholder": "",
+          "required": false,
+          "full_width": true
+        },
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "品牌/厂家",
+              "input_type": "text",
+              "current_value": "生益科技",
+              "placeholder": "",
+              "required": false
+            },
+            {
+              "type": "input_field",
+              "label": "最小包装",
+              "input_type": "text",
+              "current_value": "10张/箱",
+              "placeholder": "",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "当前库存",
+              "input_type": "number",
+              "current_value": "125",
+              "placeholder": "",
+              "required": false
+            },
+            {
+              "type": "input_field",
+              "label": "安全库存",
+              "input_type": "number",
+              "current_value": "50",
+              "placeholder": "",
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "button_group",
+      "buttons": [
+        {
+          "type": "primary_button",
+          "text": "保存",
+          "action": "save",
+          "class": "btn-primary"
+        },
+        {
+          "type": "success_button",
+          "text": "新建",
+          "action": "create_new",
+          "class": "btn-success"
+        },
+        {
+          "type": "secondary_button",
+          "text": "复制",
+          "action": "copy",
+          "class": "btn-secondary"
+        },
+        {
+          "type": "secondary_button",
+          "text": "导出",
+          "action": "export",
+          "class": "btn-secondary"
+        }
+      ]
+    }
+  ],
+  "ui_styles": {
+    "container_style": "ui-container",
+    "header_style": "ui-header",
+    "body_style": "ui-body",
+    "form_group_style": "form-group",
+    "form_control_style": "form-control",
+    "form_row_style": "form-row",
+    "button_group_style": "btn-group"
+  },
+  "instructions": {
+    "full_page_screenshot": "按F12打开开发者工具，按Ctrl+Shift+P，输入'screenshot'，选择'Capture full size screenshot'",
+    "partial_screenshot": "使用浏览器插件(如Nimbus Screenshot)或系统截图工具(Windows: Win+Shift+S, Mac: Shift+Cmd+4)",
+    "print_to_pdf": "按Ctrl+P，选择'另存为PDF'，可生成完整PDF文档",
+    "module_screenshot": "调整浏览器窗口大小，使模块完整显示在屏幕上，然后截图"
+  },
+  "metadata": {
+    "extraction_date": "2025-12-06",
+    "source_file": "某某ERP系统MVP界面需求1.3 - 物料主数据.html",
+    "version": "1.3"
+  }
+}

@@ -1,0 +1,363 @@
+{
+  "system_name": "某某ERP系统",
+  "module_name": "MM模块 - 生产领料",
+  "interface_name": "生产领料单创建",
+  "interface_type": "form_and_table",
+  "interface_elements": [
+    {
+      "type": "info_section",
+      "title": "领料单基本信息",
+      "style": "info-box",
+      "elements": [
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "领料单号",
+              "input_type": "text",
+              "current_value": "LL20251204001",
+              "readonly": true
+            },
+            {
+              "type": "dropdown",
+              "label": "生产订单",
+              "options": [
+                "PO20251204001 - HS1004ENIGAB01 (100PCS)",
+                "PO20251204002 - HS3008GOLDCI02 (50PCS)"
+              ],
+              "current_value": "PO20251204001 - HS1004ENIGAB01 (100PCS)"
+            }
+          ]
+        },
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "领料部门",
+              "input_type": "text",
+              "current_value": "生产部",
+              "readonly": true
+            },
+            {
+              "type": "input_field",
+              "label": "领料人",
+              "input_type": "text",
+              "current_value": "张三"
+            },
+            {
+              "type": "input_field",
+              "label": "领料日期",
+              "input_type": "date",
+              "current_value": "2025-12-04"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "data_table",
+      "label": "领料明细",
+      "style": "material-table",
+      "columns": [
+        "序号",
+        "物料编码",
+        "物料名称",
+        "规格型号",
+        "单位",
+        "需求数量",
+        "当前库存",
+        "安全库存",
+        "实际发放",
+        "差异"
+      ],
+      "rows": [
+        {
+          "row_index": 1,
+          "cells": [
+            "1",
+            "MAT-FR4-1.2",
+            "FR4板材1.2mm",
+            "FR4 TG130",
+            "张",
+            "25",
+            "125",
+            "50",
+            {
+              "type": "input_number",
+              "value": 25,
+              "min": 0,
+              "max": 125,
+              "editable": true
+            },
+            {
+              "type": "status_text",
+              "text": "0",
+              "style": "color: green"
+            }
+          ],
+          "row_style": "normal"
+        },
+        {
+          "row_index": 2,
+          "cells": [
+            "2",
+            "MAT-CU-1OZ",
+            "铜箔1oz",
+            "电解铜箔",
+            "卷",
+            "2",
+            "42",
+            "20",
+            {
+              "type": "input_number",
+              "value": 2,
+              "min": 0,
+              "max": 42,
+              "editable": true
+            },
+            {
+              "type": "status_text",
+              "text": "0",
+              "style": "color: green"
+            }
+          ],
+          "row_style": "normal"
+        },
+        {
+          "row_index": 3,
+          "cells": [
+            "3",
+            "MAT-PP-2116",
+            "半固化片2116",
+            "2116",
+            "张",
+            "30",
+            "87",
+            "40",
+            {
+              "type": "input_number",
+              "value": 30,
+              "min": 0,
+              "max": 87,
+              "editable": true
+            },
+            {
+              "type": "status_text",
+              "text": "0",
+              "style": "color: green"
+            }
+          ],
+          "row_style": "normal"
+        },
+        {
+          "row_index": 4,
+          "cells": [
+            "4",
+            "MAT-DRYFILM",
+            "干膜",
+            "25μm",
+            "卷",
+            "5",
+            {
+              "type": "warning_text",
+              "text": "15",
+              "style": "color: #e74c3c; font-weight: bold"
+            },
+            "20",
+            {
+              "type": "input_number",
+              "value": 5,
+              "min": 0,
+              "max": 15,
+              "editable": true,
+              "style": "background-color: #fff3cd"
+            },
+            {
+              "type": "warning_text",
+              "text": "库存不足",
+              "style": "color: #e74c3c"
+            }
+          ],
+          "row_style": "highlight-row",
+          "note": "库存低于安全库存"
+        },
+        {
+          "row_index": 5,
+          "cells": [
+            "5",
+            "MAT-SOLDER",
+            "阻焊油墨",
+            "绿色",
+            "公斤",
+            "15",
+            "23",
+            "10",
+            {
+              "type": "input_number",
+              "value": 15,
+              "min": 0,
+              "max": 23,
+              "editable": true
+            },
+            {
+              "type": "status_text",
+              "text": "0",
+              "style": "color: green"
+            }
+          ],
+          "row_style": "normal"
+        }
+      ],
+      "table_note": "注: 红色标记表示库存低于安全库存"
+    },
+    {
+      "type": "textarea",
+      "label": "领料备注",
+      "rows": 3,
+      "placeholder": "请输入领料备注信息...",
+      "current_value": "内层图形转移工序专用物料，需注意干膜库存不足，已申请紧急采购。"
+    },
+    {
+      "type": "section_divider",
+      "style": "section-divider"
+    },
+    {
+      "type": "form_section",
+      "label": "领料确认信息",
+      "elements": [
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "发料人",
+              "input_type": "text",
+              "current_value": "李四"
+            },
+            {
+              "type": "input_field",
+              "label": "发料时间",
+              "input_type": "datetime-local",
+              "current_value": "2025-12-04T09:30"
+            }
+          ]
+        },
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "input_field",
+              "label": "审核人",
+              "input_type": "text",
+              "current_value": "王主管"
+            },
+            {
+              "type": "dropdown",
+              "label": "审核状态",
+              "options": ["待审核", "审核通过", "审核驳回"],
+              "current_value": "待审核"
+            }
+          ]
+        },
+        {
+          "type": "form_row",
+          "elements": [
+            {
+              "type": "dropdown",
+              "label": "领料仓库",
+              "options": [
+                "原料仓 (A区)",
+                "辅料仓 (B区)",
+                "化工仓 (C区)",
+                "成品仓 (D区)"
+              ],
+              "current_value": "原料仓 (A区)"
+            },
+            {
+              "type": "input_field",
+              "label": "库位信息",
+              "input_type": "text",
+              "current_value": "A-01-01, A-02-03, B-01-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "button_group": {
+    "buttons": [
+      {
+        "type": "success_button",
+        "text": "保存草稿",
+        "action": "save_draft",
+        "class": "btn-success"
+      },
+      {
+        "type": "primary_button",
+        "text": "提交审核",
+        "action": "submit_for_review",
+        "class": "btn-primary"
+      },
+      {
+        "type": "secondary_button",
+        "text": "打印领料单",
+        "action": "print_picking_list",
+        "class": "btn-secondary"
+      },
+      {
+        "type": "warning_button",
+        "text": "生成缺料单",
+        "action": "generate_shortage_list",
+        "class": "btn-warning"
+      },
+      {
+        "type": "secondary_button",
+        "text": "取消",
+        "action": "cancel",
+        "class": "btn-secondary"
+      }
+    ],
+    "style": "btn-group"
+  },
+  "timestamp_info": {
+    "text": "领料单创建时间: 2025-12-04 09:15:33 | 创建人: 张三 (生产部)",
+    "style": "timestamp"
+  },
+  "ui_styles": {
+    "container_style": "ui-container",
+    "header_style": "ui-header",
+    "body_style": "ui-body",
+    "form_group_style": "form-group",
+    "form_control_style": "form-control",
+    "form_row_style": "form-row",
+    "select_dropdown_style": "select-dropdown",
+    "table_container_style": "table-container",
+    "data_table_style": "data-table"
+  },
+  "function_features": [
+    "基于生产订单自动生成领料需求",
+    "实时显示物料库存和安全库存",
+    "库存不足时自动预警",
+    "支持部分领料和缺料单生成"
+  ],
+  "interactive_features": [
+    {
+      "name": "库存检查",
+      "description": "输入实际发放数量时自动检查库存限制并更新差异状态",
+      "trigger": "input_number_change"
+    },
+    {
+      "name": "保存功能",
+      "description": "保存草稿时更新最后保存时间戳",
+      "trigger": "save_button_click"
+    }
+  ],
+  "metadata": {
+    "extraction_date": "2025-12-06",
+    "source_file": "某某ERP系统MVP界面需求1.3 - 生产领料.html",
+    "version": "1.3",
+    "interface_purpose": "用于仓库管理员处理生产订单的物料发放"
+  }
+}

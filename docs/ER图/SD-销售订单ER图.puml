@@ -1,0 +1,100 @@
+@startuml SD-销售订单ER图
+skinparam linetype ortho
+
+title SD模块 - 销售订单子模块ER图
+
+entity customers {
+    customer_id VARCHAR <<PK>>
+    customer_status ENUM
+}
+
+entity quotations {
+    quotation_number VARCHAR <<PK>>
+    status ENUM
+}
+
+entity sales_orders {
+    id SERIAL <<PK>>
+    order_number VARCHAR <<UK>>
+    quotation_number VARCHAR <<FK>>
+    customer_id VARCHAR <<FK>>
+    factory_product_number VARCHAR
+    product_number VARCHAR
+    material_code VARCHAR <<FK>>
+    production_version_id VARCHAR <<FK>>
+    quantity NUMERIC
+    sales_unit VARCHAR
+    production_quantity NUMERIC
+    production_unit VARCHAR
+    conversion_factor NUMERIC
+    delivery_date DATE
+    status ENUM
+    is_return_order BOOLEAN
+    review_status VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity contract_reviews {
+    id SERIAL <<PK>>
+    sales_order_number VARCHAR <<FK>>
+    review_node VARCHAR
+    reviewer_role VARCHAR
+    reviewer VARCHAR
+    review_result VARCHAR
+    review_comment VARCHAR
+    reviewed_at TIMESTAMP
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity materials {
+    material_code VARCHAR <<PK>>
+}
+
+entity production_versions {
+    production_version_id VARCHAR <<PK>>
+}
+
+entity production_orders {
+    order_number VARCHAR <<PK>>
+    sales_order_number VARCHAR <<FK>>
+}
+
+' 关系定义
+customers ||--o{ sales_orders : orders
+quotations ||--o{ sales_orders : converts_to
+sales_orders ||--o{ contract_reviews : has
+sales_orders }o--|| materials : references
+sales_orders }o--|| production_versions : uses
+sales_orders ||--o{ production_orders : creates
+
+note right of sales_orders
+    销售订单
+    主键：id
+    业务主键：order_number（唯一）
+    状态：DRAFT, PENDING_REVIEW, REVIEWING, APPROVED,
+    REJECTED, IN_PRODUCTION, COMPLETED, SHIPPED,
+    DELIVERED, RECONCILED, CLOSED, CANCELLED
+    多部门评审流程（串行）：
+    销售 → 工程 → 物料 → 财务
+    创建订单时，如果输入的14位本厂编号不存在
+    对应的产品主数据，SD模块调用ENG模块的产品
+    主数据创建API自动创建产品主数据。自动创建
+    的产品主数据不需要审核
+end note
+
+note right of contract_reviews
+    订单评审记录
+    记录每个部门的评审结果
+    评审节点：SALES_REVIEW, ENGINEERING_REVIEW,
+    WAREHOUSE_REVIEW, FINANCE_REVIEW
+end note
+
+@enduml

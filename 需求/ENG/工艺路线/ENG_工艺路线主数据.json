@@ -1,0 +1,757 @@
+{
+  "system": "某某ERP系统",
+  "version": "MVP 1.3",
+  "module": "工艺路线主数据管理",
+  "interface_elements": {
+    "页面头部": {
+      "标题": {
+        "type": "page_header",
+        "icon": "fa-industry",
+        "text": "工艺路线管理 - {routing_id}",
+        "dynamic": true
+      },
+      "操作按钮": [
+        {
+          "id": "save",
+          "label": "保存",
+          "type": "primary",
+          "icon": "fa-save",
+          "action": "save_routing"
+        },
+        {
+          "id": "publish",
+          "label": "发布",
+          "type": "success",
+          "icon": "fa-check-circle",
+          "action": "publish_routing"
+        },
+        {
+          "id": "obsolete",
+          "label": "废弃",
+          "type": "warning",
+          "icon": "fa-archive",
+          "action": "obsolete_routing"
+        },
+        {
+          "id": "export_json",
+          "label": "导出JSON",
+          "type": "secondary",
+          "icon": "fa-file-export",
+          "action": "export_routing_json"
+        },
+        {
+          "id": "import_json",
+          "label": "导入JSON",
+          "type": "secondary",
+          "icon": "fa-file-import",
+          "action": "import_routing_json"
+        },
+        {
+          "id": "version_compare",
+          "label": "版本对比",
+          "type": "secondary",
+          "icon": "fa-code-compare",
+          "action": "compare_routing_versions"
+        }
+      ]
+    },
+    "工艺路线基本信息": {
+      "卡片标题": {
+        "icon": "fa-info-circle",
+        "text": "工艺路线基本信息"
+      },
+      "信息字段": [
+        {
+          "field": "工艺路线ID",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "RT-2023-PCB-8801"
+        },
+        {
+          "field": "版本",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "A01"
+        },
+        {
+          "field": "物料ID",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "PN-PCB-Motherboard-V3"
+        },
+        {
+          "field": "描述",
+          "type": "text",
+          "readonly": false,
+          "required": false,
+          "sample_value": "主板1-4层压合后制程"
+        },
+        {
+          "field": "工厂",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "SZ-FACTORY-01"
+        },
+        {
+          "field": "状态",
+          "type": "status_badge",
+          "options": [
+            {
+              "value": "RELEASED",
+              "css_class": "status-released",
+              "background": "#f6ffed",
+              "color": "#52c41a",
+              "border": "#b7eb8f"
+            },
+            {
+              "value": "DRAFT",
+              "css_class": "status-draft",
+              "background": "#fffbe6",
+              "color": "#faad14",
+              "border": "#ffe58f"
+            },
+            {
+              "value": "OBSOLETE",
+              "css_class": "status-obsolete",
+              "background": "#fff2f0",
+              "color": "#ff4d4f",
+              "border": "#ffccc7"
+            }
+          ]
+        },
+        {
+          "field": "有效期",
+          "type": "date_range",
+          "readonly": false,
+          "required": true,
+          "sample_value": "2023-10-01 → 9999-12-31"
+        }
+      ]
+    },
+    "生产基础信息": {
+      "卡片标题": {
+        "icon": "fa-cogs",
+        "text": "生产基础信息"
+      },
+      "信息字段": [
+        {
+          "field": "基础单位",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "PNL (Panel)"
+        },
+        {
+          "field": "基数",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "1 Panel"
+        },
+        {
+          "field": "每Panel单元数",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "sample_value": 12,
+          "unit": "Units"
+        },
+        {
+          "field": "Panel尺寸",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "sample_value": "18x24 INCH"
+        }
+      ]
+    },
+    "工序列表管理": {
+      "卡片标题": {
+        "icon": "fa-list-ol",
+        "text": "工序列表 ({count})",
+        "dynamic": true
+      },
+      "操作按钮": [
+        {
+          "id": "add_operation",
+          "label": "新增工序",
+          "type": "primary",
+          "icon": "fa-plus",
+          "action": "open_add_operation_modal"
+        },
+        {
+          "id": "batch_import",
+          "label": "批量导入",
+          "type": "secondary",
+          "icon": "fa-upload",
+          "action": "batch_import_operations"
+        },
+        {
+          "id": "reorder",
+          "label": "重新排序",
+          "type": "secondary",
+          "icon": "fa-sort",
+          "action": "reorder_operations"
+        }
+      ],
+      "表格结构": {
+        "columns": [
+          {
+            "field": "drag_handle",
+            "label": "",
+            "width": "40px",
+            "type": "drag_indicator",
+            "sortable": false
+          },
+          {
+            "field": "operation_no",
+            "label": "序号",
+            "width": "80px",
+            "type": "text",
+            "sortable": true
+          },
+          {
+            "field": "operation_name",
+            "label": "工序名称",
+            "type": "text",
+            "sortable": true
+          },
+          {
+            "field": "operation_type",
+            "label": "类型",
+            "width": "100px",
+            "type": "operation_type_badge",
+            "options": [
+              {
+                "value": "internal",
+                "label": "内部",
+                "css_class": "type-internal",
+                "color": "#1677ff"
+              },
+              {
+                "value": "external",
+                "label": "外协",
+                "css_class": "type-external",
+                "color": "#fa8c16"
+              },
+              {
+                "value": "quality",
+                "label": "质检",
+                "css_class": "type-quality",
+                "color": "#73d13d"
+              }
+            ]
+          },
+          {
+            "field": "work_center",
+            "label": "工作中心",
+            "type": "text",
+            "sortable": true
+          },
+          {
+            "field": "cost_relevant",
+            "label": "成本相关",
+            "width": "100px",
+            "type": "boolean_icon",
+            "true_icon": "fa-check-circle",
+            "true_color": "#52c41a"
+          },
+          {
+            "field": "scheduling_relevant",
+            "label": "排程相关",
+            "width": "100px",
+            "type": "boolean_icon",
+            "true_icon": "fa-check-circle",
+            "true_color": "#52c41a"
+          },
+          {
+            "field": "actions",
+            "label": "操作",
+            "width": "120px",
+            "type": "action_buttons",
+            "actions": [
+              {
+                "id": "edit",
+                "label": "编辑",
+                "icon": "fa-edit",
+                "action": "open_edit_modal"
+              },
+              {
+                "id": "view_sop",
+                "label": "",
+                "icon": "fa-external-link-alt",
+                "action": "view_sop_document"
+              }
+            ]
+          }
+        ],
+        "drag_and_drop": true,
+        "row_hover": true
+      }
+    },
+    "审计追踪": {
+      "卡片标题": {
+        "icon": "fa-history",
+        "text": "审计追踪"
+      },
+      "信息字段": [
+        {
+          "field": "创建人",
+          "type": "text",
+          "sample_value": "User_007"
+        },
+        {
+          "field": "创建时间",
+          "type": "date",
+          "sample_value": "2023-09-28"
+        },
+        {
+          "field": "最后修改人",
+          "type": "text",
+          "sample_value": "User_009"
+        },
+        {
+          "field": "关联变更单",
+          "type": "link_button",
+          "sample_value": "ECN-2023-889",
+          "icon": "fa-external-link-alt"
+        }
+      ]
+    },
+    "模态窗口": {
+      "内部工序编辑": {
+        "title": "编辑工序 - {operation_no}: {operation_name}",
+        "sections": [
+          {
+            "title": "基本信息",
+            "icon": "fa-info-circle",
+            "fields": [
+              {
+                "field": "工序号",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "0010"
+              },
+              {
+                "field": "工序代码",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "DRL-001"
+              },
+              {
+                "field": "工序名称",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "CNC钻孔 / 数控钻孔"
+              },
+              {
+                "field": "工作中心",
+                "type": "dropdown",
+                "required": true,
+                "options": ["WC-DRL-CNC-A", "WC-DRL-CNC-B", "WC-DRL-CNC-C"]
+              },
+              {
+                "field": "SOP文档链接",
+                "type": "text_input",
+                "required": false,
+                "sample_value": "http://docs.factory/sop/drl-v3.pdf"
+              }
+            ]
+          },
+          {
+            "title": "控制逻辑",
+            "icon": "fa-sliders-h",
+            "fields": [
+              {
+                "field": "类型",
+                "type": "radio_group",
+                "required": true,
+                "options": [
+                  {"label": "内部", "value": "internal"},
+                  {"label": "外协", "value": "external"},
+                  {"label": "质检", "value": "quality"}
+                ],
+                "default": "internal"
+              },
+              {
+                "field": "逻辑开关",
+                "type": "checkbox_group",
+                "options": [
+                  {"label": "成本相关", "default": true},
+                  {"label": "排程相关", "default": true},
+                  {"label": "需报工", "default": true},
+                  {"label": "自动倒扣料", "default": false},
+                  {"label": "触发质检", "default": false}
+                ]
+              }
+            ]
+          },
+          {
+            "title": "时间参数（单位：分钟）",
+            "icon": "fa-clock",
+            "fields": [
+              {
+                "field": "调机时间",
+                "type": "number_input",
+                "required": true,
+                "step": 0.1,
+                "sample_value": 30.0
+              },
+              {
+                "field": "机器时间",
+                "type": "number_input",
+                "required": true,
+                "step": 0.1,
+                "sample_value": 120.0
+              },
+              {
+                "field": "人工时间",
+                "type": "number_input",
+                "required": true,
+                "step": 0.1,
+                "sample_value": 30.0
+              },
+              {
+                "field": "排队缓冲",
+                "type": "number_input",
+                "required": false,
+                "step": 0.1,
+                "sample_value": 0.0
+              }
+            ]
+          }
+        ],
+        "footer_buttons": [
+          {"id": "cancel", "label": "取消", "type": "secondary", "action": "close_modal"},
+          {"id": "save", "label": "保存", "type": "primary", "icon": "fa-save", "action": "save_operation"},
+          {"id": "copy", "label": "复制为新工序", "type": "secondary", "icon": "fa-copy", "action": "copy_operation"}
+        ]
+      },
+      "外协工序编辑": {
+        "title": "编辑工序 - {operation_no}: {operation_name}",
+        "sections": [
+          {
+            "title": "基本信息",
+            "icon": "fa-info-circle",
+            "fields": [
+              {
+                "field": "工序号",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "0020"
+              },
+              {
+                "field": "工序代码",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "SFIN-ENIG"
+              },
+              {
+                "field": "工序名称",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "Surface Finish ENIG / 沉金"
+              },
+              {
+                "field": "工作中心",
+                "type": "dropdown",
+                "required": true,
+                "options": ["WC-EXT-GENERAL"]
+              }
+            ]
+          },
+          {
+            "title": "控制逻辑",
+            "icon": "fa-sliders-h",
+            "fields": [
+              {
+                "field": "类型",
+                "type": "radio_group",
+                "required": true,
+                "options": [
+                  {"label": "内部", "value": "internal"},
+                  {"label": "外协", "value": "external"},
+                  {"label": "质检", "value": "quality"}
+                ],
+                "default": "external"
+              },
+              {
+                "field": "逻辑开关",
+                "type": "checkbox_group",
+                "options": [
+                  {"label": "成本相关", "default": true},
+                  {"label": "排程相关", "default": true},
+                  {"label": "需收货确认", "default": true},
+                  {"label": "生成采购申请", "default": true}
+                ]
+              }
+            ]
+          },
+          {
+            "title": "外协参数",
+            "icon": "fa-handshake",
+            "fields": [
+              {
+                "field": "服务代码",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "SRV-ENIG-01"
+              },
+              {
+                "field": "计划交期",
+                "type": "number_with_unit",
+                "required": true,
+                "unit": "天",
+                "step": 0.1,
+                "sample_value": 2.0
+              },
+              {
+                "field": "预估单价",
+                "type": "number_with_currency",
+                "required": true,
+                "currencies": ["CNY", "USD"],
+                "default_currency": "CNY",
+                "unit": "/ Unit",
+                "step": 0.01,
+                "sample_value": 15.5
+              },
+              {
+                "field": "建议供应商",
+                "type": "dropdown",
+                "required": false,
+                "options": ["请选择", "VEN-FOXCONN", "VEN-PCBMASTER"]
+              }
+            ]
+          }
+        ],
+        "footer_buttons": [
+          {"id": "cancel", "label": "取消", "type": "secondary", "action": "close_modal"},
+          {"id": "save", "label": "保存", "type": "primary", "icon": "fa-save", "action": "save_operation"},
+          {"id": "test_procurement", "label": "测试采购流程", "type": "secondary", "icon": "fa-shopping-cart", "action": "test_procurement_flow"}
+        ]
+      },
+      "质检工序编辑": {
+        "title": "编辑工序 - {operation_no}: {operation_name}",
+        "sections": [
+          {
+            "title": "基本信息",
+            "icon": "fa-info-circle",
+            "fields": [
+              {
+                "field": "工序号",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "0030"
+              },
+              {
+                "field": "工序代码",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "QC-AOI"
+              },
+              {
+                "field": "工序名称",
+                "type": "text_input",
+                "required": true,
+                "sample_value": "AOI Inspection / 光学检测"
+              },
+              {
+                "field": "工作中心",
+                "type": "dropdown",
+                "required": true,
+                "options": ["WC-QA-AOI-01", "WC-QA-AOI-02"]
+              }
+            ]
+          },
+          {
+            "title": "控制逻辑",
+            "icon": "fa-sliders-h",
+            "fields": [
+              {
+                "field": "类型",
+                "type": "radio_group",
+                "required": true,
+                "options": [
+                  {"label": "内部", "value": "internal"},
+                  {"label": "外协", "value": "external"},
+                  {"label": "质检", "value": "quality"}
+                ],
+                "default": "quality"
+              },
+              {
+                "field": "逻辑开关",
+                "type": "checkbox_group",
+                "options": [
+                  {"label": "成本相关", "default": true},
+                  {"label": "排程相关", "default": true},
+                  {"label": "触发生成检验单", "default": true}
+                ]
+              },
+              {
+                "field": "质检逻辑",
+                "type": "dropdown",
+                "required": false,
+                "options": ["BLOCK_ON_FAIL", "CONTINUE_ON_FAIL", "AUTO_REWORK"]
+              }
+            ]
+          },
+          {
+            "title": "时间参数（单位：分钟）",
+            "icon": "fa-clock",
+            "fields": [
+              {
+                "field": "调机时间",
+                "type": "number_input",
+                "required": true,
+                "step": 0.1,
+                "sample_value": 10.0
+              },
+              {
+                "field": "机器时间",
+                "type": "number_input",
+                "required": true,
+                "step": 0.1,
+                "sample_value": 60.0
+              },
+              {
+                "field": "人工时间",
+                "type": "number_input",
+                "required": true,
+                "step": 0.1,
+                "sample_value": 60.0
+              }
+            ]
+          },
+          {
+            "title": "质检参数",
+            "icon": "fa-clipboard-check",
+            "fields": [
+              {
+                "field": "检验计划",
+                "type": "dropdown",
+                "required": true,
+                "options": ["QP-PCB-LEVEL2", "QP-PCB-LEVEL1"]
+              },
+              {
+                "field": "抽样率",
+                "type": "number_with_unit",
+                "required": true,
+                "unit": "%",
+                "step": 0.1,
+                "sample_value": 100.0
+              },
+              {
+                "field": "检验类型",
+                "type": "radio_group",
+                "required": false,
+                "options": [
+                  {"label": "全检", "value": "full"},
+                  {"label": "抽检", "value": "sample"},
+                  {"label": "免检", "value": "skip"}
+                ],
+                "default": "full"
+              }
+            ]
+          }
+        ],
+        "footer_buttons": [
+          {"id": "cancel", "label": "取消", "type": "secondary", "action": "close_modal"},
+          {"id": "save", "label": "保存", "type": "primary", "icon": "fa-save", "action": "save_operation"},
+          {"id": "view_inspection_plan", "label": "查看检验计划", "type": "secondary", "icon": "fa-eye", "action": "view_inspection_plan"}
+        ]
+      }
+    }
+  },
+  "sample_data": {
+    "routing_info": {
+      "工艺路线ID": "RT-2023-PCB-8801",
+      "版本": "A01",
+      "物料ID": "PN-PCB-Motherboard-V3",
+      "描述": "主板1-4层压合后制程",
+      "工厂": "SZ-FACTORY-01",
+      "状态": "RELEASED",
+      "有效期": "2023-10-01 → 9999-12-31"
+    },
+    "production_info": {
+      "基础单位": "PNL (Panel)",
+      "基数": "1 Panel",
+      "每Panel单元数": 12,
+      "Panel尺寸": "18x24 INCH"
+    },
+    "operations": [
+      {
+        "operation_id": "0010",
+        "operation_no": "0010",
+        "operation_name": "CNC钻孔 / 数控钻孔",
+        "operation_type": "internal",
+        "work_center": "WC-DRL-CNC-A",
+        "cost_relevant": true,
+        "scheduling_relevant": true,
+        "sop_url": "http://docs.factory/sop/drl-v3.pdf"
+      },
+      {
+        "operation_id": "0020",
+        "operation_no": "0020",
+        "operation_name": "Surface Finish ENIG / 沉金",
+        "operation_type": "external",
+        "work_center": "WC-EXT-GENERAL",
+        "cost_relevant": true,
+        "scheduling_relevant": true
+      },
+      {
+        "operation_id": "0030",
+        "operation_no": "0030",
+        "operation_name": "AOI Inspection / 光学检测",
+        "operation_type": "quality",
+        "work_center": "WC-QA-AOI-01",
+        "cost_relevant": true,
+        "scheduling_relevant": true
+      }
+    ],
+    "audit_trail": {
+      "创建人": "User_007",
+      "创建时间": "2023-09-28",
+      "最后修改人": "User_009",
+      "关联变更单": "ECN-2023-889"
+    }
+  },
+  "ui_specifications": {
+    "design_system": {
+      "primary_color": "#1677ff",
+      "success_color": "#52c41a",
+      "warning_color": "#faad14",
+      "error_color": "#ff4d4f",
+      "external_color": "#fa8c16",
+      "quality_color": "#73d13d",
+      "text_primary": "#000000e0",
+      "text_secondary": "#00000073",
+      "border_color": "#d9d9d9",
+      "background_light": "#f5f5f5",
+      "card_background": "#ffffff",
+      "shadow_light": "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)",
+      "shadow_medium": "0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)",
+      "border_radius": "8px",
+      "transition": "all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1)"
+    },
+    "layout": {
+      "responsive_breakpoints": {
+        "mobile": "768px",
+        "tablet": "992px"
+      },
+      "form_layout": "grid_responsive",
+      "card_based_design": true
+    },
+    "interaction": {
+      "drag_and_drop": true,
+      "modal_overlay": true,
+      "row_hover_effects": true,
+      "click_outside_to_close_modal": true
+    },
+    "icon_library": "Font Awesome 6.4.0",
+    "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+  }
+}

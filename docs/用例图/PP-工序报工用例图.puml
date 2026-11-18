@@ -1,0 +1,38 @@
+@startuml PP-工序报工用例图
+
+title PP模块 - 工序报工子模块用例图
+
+left to right direction
+
+actor 生产人员 as production
+actor 系统 as system
+
+rectangle "工序报工" {
+  usecase "创建工序报工\n(UC-PP-005)" as UC005
+  usecase "更新工序报工\n(UC-PP-006)" as UC006
+}
+
+production --> UC005 : 创建报工
+production --> UC006 : 更新报工
+
+system --> UC005 : 自动查询LOT卡
+
+UC005 ..> UC006 : <<extend>>
+
+note right of UC005
+  创建工序报工
+  记录工序完成情况
+  系统根据生产订单/工单号
+  自动查询关联的LOT卡（1:1关系）
+  自动填充LOT卡号（只读）
+  如果找不到LOT卡，不允许保存报工
+end note
+
+note right of UC006
+  更新工序报工
+  在PENDING/IN_REVIEW状态下
+  可更新报工数量、工时、缺陷等信息
+  已完结/审核通过的报工不可直接修改
+end note
+
+@enduml

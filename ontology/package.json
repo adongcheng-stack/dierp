@@ -1,0 +1,15 @@
+{
+  "name": "dierp-ontology",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DIERP 制造 ERP 领域本体：OWL + SHACL + SWRL + 枚举同步校验",
+  "scripts": {
+    "generate:types": "python scripts/generate-types.py",
+    "check": "node scripts/validate-type-sync.js && python scripts/validate-consistency.py",
+    "check:node": "node scripts/validate-type-sync.js",
+    "check:python": "python scripts/validate-consistency.py"
+  },
+  "devDependencies": {
+    "n3": "^1.17.2"
+  }
+}

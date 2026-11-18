@@ -1,0 +1,126 @@
+@startuml SD-客户管理ER图
+skinparam linetype ortho
+
+title SD模块 - 客户管理子模块ER图
+
+entity customers {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<UK>>
+    legal_name VARCHAR
+    trade_name VARCHAR
+    tax_id VARCHAR
+    customer_industry VARCHAR
+    customer_website VARCHAR
+    customer_status ENUM
+    credit_limit NUMERIC
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity customer_addresses {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<FK>>
+    address_type VARCHAR
+    detail_address VARCHAR
+    location VARCHAR
+    postal_code VARCHAR
+    country VARCHAR
+    province VARCHAR
+    city VARCHAR
+    district VARCHAR
+    is_default_shipping BOOLEAN
+    is_default_billing BOOLEAN
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity customer_contacts {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<FK>>
+    is_primary_contact BOOLEAN
+    contact_name VARCHAR
+    contact_role VARCHAR
+    contact_department VARCHAR
+    contact_phone VARCHAR
+    contact_email VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity customer_partner_functions {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<FK>>
+    partner_function_type VARCHAR
+    partner_start_date DATE
+    partner_name VARCHAR
+    partnership_description VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity customer_sales_data {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<FK>>
+    sales_organization VARCHAR
+    account_manager_name VARCHAR
+    sales_assistant_name VARCHAR
+    trading_currency VARCHAR
+    primary_trade_country VARCHAR
+    incoterms VARCHAR
+    shipping_conditions VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity factory_product_mappings {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<FK>>
+    factory_product_number VARCHAR
+    material_code VARCHAR <<FK>>
+    production_version_id VARCHAR <<FK>>
+    is_default BOOLEAN
+    effective_date TIMESTAMP
+    expiry_date TIMESTAMP
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+' 关系定义
+customers ||--o{ customer_addresses : has
+customers ||--o{ customer_contacts : has
+customers ||--o{ customer_partner_functions : has
+customers ||--o{ customer_sales_data : has
+customers ||--o{ factory_product_mappings : has
+
+note right of customers
+    客户主数据
+    主键：id
+    业务主键：customer_id（唯一）
+    状态：DRAFT, PENDING_APPROVAL, ACTIVE, BLOCKED, INACTIVE
+end note
+
+note right of factory_product_mappings
+    本厂编号映射
+    将客户的本厂编号映射到内部物料编码和生产版本
+    14位本厂编号，同客户下唯一
+end note
+
+@enduml

@@ -1,0 +1,66 @@
+@startuml ENG-MI管理ER图
+skinparam linetype ortho
+
+title ENG模块 - MI管理子模块ER图
+
+entity materials {
+    material_code VARCHAR <<PK>>
+    material_name VARCHAR
+}
+
+entity routings {
+    routing_id VARCHAR <<PK>>
+    status ENUM
+}
+
+entity mis {
+    id SERIAL <<PK>>
+    mi_number VARCHAR <<UK>>
+    version VARCHAR
+    material_code VARCHAR <<FK>>
+    description VARCHAR
+    status ENUM
+    effective_date DATE
+    expiry_date DATE
+    content TEXT
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity production_versions {
+    production_version_id VARCHAR <<PK>>
+    mi_number VARCHAR <<FK>>
+}
+
+entity production_orders {
+    order_number VARCHAR <<PK>>
+    lot_number VARCHAR
+    mi_number VARCHAR
+}
+
+' 关系定义
+materials ||--o{ mis : has
+routings ||--o{ mis : generates
+mis ||--o{ production_versions : used_in
+mis ||--o{ production_orders : generates
+
+note right of mis
+    MI（制造指令）
+    主键：id
+    业务主键：mi_number（唯一）
+    状态：DRAFT, REVIEWING, APPROVED, RELEASED, OBSOLETE
+    content字段：JSON格式，含工艺参数与指令集列表
+    可以基于工艺路线自动生成MI草稿
+    发布后的MI可用于生产版本发布和生产订单/工单下达
+end note
+
+note right of routings
+    工艺路线
+    基于工艺路线可以自动生成MI草稿
+    预填指令集列表
+end note
+
+@enduml

@@ -1,0 +1,95 @@
+@startuml SD-销售订单类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title SD模块 - 销售订单子模块类图
+
+package "销售订单管理 (Sales Order Management)" {
+    
+    class Customer {
+        +String customer_id
+        +Enum customer_status
+    }
+    
+    class Quotation {
+        +String quotation_number
+        +Enum status
+    }
+    
+    class SalesOrder {
+        +Integer id
+        +String order_number
+        +String quotation_number
+        +String customer_id
+        +String factory_product_number
+        +String material_code
+        +String production_version_id
+        +BigDecimal quantity
+        +String sales_unit
+        +BigDecimal production_quantity
+        +String production_unit
+        +BigDecimal conversion_factor
+        +Date delivery_date
+        +Enum status
+        +Boolean is_return_order
+        +String review_status
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class ContractReview {
+        +Integer id
+        +String sales_order_number
+        +String review_node
+        +String reviewer_id
+        +String reviewer_role
+        +Enum review_status
+        +String review_comment
+        +Timestamp reviewed_at
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class Material {
+        +String material_code
+    }
+    
+    class ProductionVersion {
+        +String production_version_id
+    }
+    
+    ' 关系定义
+    Customer "1" --> "*" SalesOrder : orders
+    Quotation "1" --> "*" SalesOrder : converts_to
+    SalesOrder "1" *-- "*" ContractReview : has
+    SalesOrder --> Material : references
+    SalesOrder --> ProductionVersion : uses
+    
+    note right of SalesOrder
+        销售订单
+        状态：DRAFT, PENDING_REVIEW, REVIEWING, APPROVED,
+        REJECTED, IN_PRODUCTION, COMPLETED, SHIPPED,
+        DELIVERED, RECONCILED, CLOSED, CANCELLED
+        多部门评审流程（串行）：
+        销售 → 工程 → 物料 → 财务
+        创建订单时，如果输入的14位本厂编号不存在
+        对应的产品主数据，SD模块调用ENG模块的产品
+        主数据创建API自动创建产品主数据。自动创建
+        的产品主数据不需要审核
+    end note
+    
+    note right of ContractReview
+        订单评审记录
+        记录每个部门的评审结果
+        评审节点：SALES_REVIEW, ENGINEERING_REVIEW,
+        WAREHOUSE_REVIEW, FINANCE_REVIEW
+    end note
+}
+
+@enduml

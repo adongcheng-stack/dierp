@@ -1,0 +1,52 @@
+@startuml PP-工序报工状态机
+
+title PP模块 - 工序报工子模块状态机
+
+[*] --> PENDING : 创建报工记录
+
+PENDING --> IN_PROGRESS : 开始报工\n(生产人员)
+
+IN_PROGRESS --> COMPLETED : 完成报工\n(生产人员)
+IN_PROGRESS --> REJECTED : 拒绝报工\n(生产人员/质检)
+
+REJECTED --> IN_PROGRESS : 重新报工\n(生产人员)
+
+COMPLETED --> [*] : 完成
+
+note right of PENDING
+  待报工
+  工序报工记录创建，等待报工
+  系统根据生产订单/工单号
+  自动查询关联的LOT卡（1:1关系）
+  自动填充LOT卡号（只读）
+end note
+
+note right of IN_PROGRESS
+  进行中
+  正在报工
+  记录报工开始时间
+  记录报工人
+end note
+
+note right of COMPLETED
+  已完成
+  报工完成
+  验证报工数量（良品、报废）
+  验证报工时间（调机、机器、人工时间）
+  记录报工完成时间
+  更新生产进度
+  如果工序配置了自动倒扣料
+  则扣减物料库存
+end note
+
+note right of REJECTED
+  已拒绝
+  报工被拒绝（如质检不合格）
+  记录拒绝原因
+  记录拒绝人和拒绝时间
+  如果触发质检，记录质检结果
+  在PENDING/IN_REVIEW状态下
+  可更新报工
+end note
+
+@enduml

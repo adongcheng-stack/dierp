@@ -1,0 +1,72 @@
+@startuml PP-工作中心ER图
+skinparam linetype ortho
+
+title PP模块 - 工作中心子模块ER图
+
+entity work_centers {
+    id SERIAL <<PK>>
+    work_center_id VARCHAR <<UK>>
+    description VARCHAR
+    work_center_type VARCHAR
+    plant_id VARCHAR
+    status ENUM
+    parent_work_center_id VARCHAR <<FK>>
+    hierarchy_level INTEGER
+    work_center_category VARCHAR
+    usage VARCHAR
+    standard_value_key VARCHAR
+    control_key VARCHAR
+    queue_time NUMERIC
+    wait_time NUMERIC
+    move_time NUMERIC
+    capacity_category VARCHAR
+    factory_calendar_id VARCHAR
+    shift_start_time VARCHAR
+    shift_finish_time VARCHAR
+    break_time NUMERIC
+    capacity_utilization NUMERIC
+    number_of_capacities INTEGER
+    capacity_formula_setup VARCHAR
+    capacity_formula_processing VARCHAR
+    capacity_formula_teardown VARCHAR
+    cost_center_id VARCHAR
+    activity_types VARCHAR
+    process_category VARCHAR
+    technical_attributes TEXT
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity routing_operations {
+    id SERIAL <<PK>>
+    routing_id VARCHAR <<FK>>
+    operation_no VARCHAR
+    work_center_id VARCHAR <<FK>>
+}
+
+entity operation_reports {
+    id SERIAL <<PK>>
+    report_number VARCHAR <<UK>>
+    work_center_id VARCHAR <<FK>>
+}
+
+' 关系定义
+work_centers ||--o{ work_centers : parent
+work_centers ||--o{ routing_operations : used_by
+work_centers ||--o{ operation_reports : reports_to
+
+note right of work_centers
+    工作中心
+    主键：id
+    业务主键：work_center_id（唯一）
+    类型：MACHINE, MACHINE_GROUP, LABOR, PRODUCTION_LINE
+    状态：ACTIVE, INACTIVE, IN_MAINTENANCE
+    支持层级结构（父工作中心）
+    供工艺路线和排产使用
+    包含PCB行业特定数据（工艺类别、技术属性）
+end note
+
+@enduml

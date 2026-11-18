@@ -1,0 +1,97 @@
+@startuml MM-物料主数据ER图
+skinparam linetype ortho
+
+title MM模块 - 物料主数据子模块ER图
+
+entity materials {
+    id SERIAL <<PK>>
+    material_code VARCHAR <<UK>>
+    material_name VARCHAR
+    material_type VARCHAR
+    category VARCHAR
+    status VARCHAR
+    base_unit VARCHAR
+    production_unit VARCHAR
+    conversion_factor NUMERIC
+    layer_count INTEGER
+    board_thickness NUMERIC
+    copper_weight NUMERIC
+    surface_finish VARCHAR
+    solder_mask_color VARCHAR
+    silkscreen_color VARCHAR
+    impedance_control BOOLEAN
+    unit_length NUMERIC
+    unit_width NUMERIC
+    panel_length NUMERIC
+    panel_width NUMERIC
+    units_per_panel INTEGER
+    procurement_type VARCHAR
+    mrp_controller VARCHAR
+    lead_time_days INTEGER
+    valuation_method VARCHAR
+    standard_price NUMERIC
+    currency VARCHAR
+    current_stock NUMERIC
+    safety_stock NUMERIC
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity material_transactions {
+    id SERIAL <<PK>>
+    transaction_number VARCHAR <<UK>>
+    material_code VARCHAR <<FK>>
+    transaction_type VARCHAR
+    quantity NUMERIC
+    unit VARCHAR
+    reference_number VARCHAR
+    reference_type VARCHAR
+    warehouse VARCHAR
+    transaction_date TIMESTAMP
+    operator VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity bom_items {
+    id SERIAL <<PK>>
+    bom_number VARCHAR <<FK>>
+    material_code VARCHAR <<FK>>
+}
+
+entity material_issues {
+    id SERIAL <<PK>>
+    issue_number VARCHAR <<UK>>
+    material_code VARCHAR <<FK>>
+}
+
+' 关系定义
+materials ||--o{ material_transactions : transacted
+materials ||--o{ bom_items : used_in
+materials ||--o{ material_issues : issued
+
+note right of materials
+    物料主数据
+    主键：id
+    业务主键：material_code（唯一）
+    物料类型：RAW（原材料）、SEMI（半成品）
+    不显示FG类型（FG类型在产品主数据管理中显示）
+    支持PCB专有属性
+    支持单位转换
+    包含库存信息（current_stock, safety_stock）
+end note
+
+note right of material_transactions
+    物料事务
+    记录库存进出、调整明细
+    事务类型：ISSUE, RETURN, RECEIPT, ADJUSTMENT等
+    用于物料事务历史查询
+end note
+
+@enduml

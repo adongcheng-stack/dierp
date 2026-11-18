@@ -1,0 +1,53 @@
+{
+  "quotation_id": "QTN-2024-PCB-001",
+  "customer": "ABC Electronics Co., Ltd.",
+  "customer_code": "CUST-ABC-001",
+  "date": "2024-01-15",
+  "valid_until": "2024-02-15",
+  "sales_rep": "张三",
+  
+  "items": [
+    {
+      "item_no": "PCB-4L-001",
+      "description": "四层PCB板 FR-4 Tg150",
+      "specifications": {
+        "size": "100mm × 80mm × 1.6mm",
+        "layers": 4,
+        "material": "FR-4 Tg150",
+        "copper_weight": "外层1oz/内层1oz",
+        "surface_finish": "ENIG",
+        "min_trace": "0.15mm",
+        "min_spacing": "0.15mm",
+        "min_hole": "0.3mm"
+      },
+      "quantity": 1000,
+      "unit_price": 45.80,
+      "currency": "CNY",
+      "moq": 500,
+      "delivery_weeks": 3,
+      
+      "cost_breakdown": {
+        "material_cost": 18.50,
+        "labor_cost": 12.30,
+        "overhead": 8.20,
+        "profit_margin": 6.80,
+        "total_unit_cost": 45.80
+      },
+      
+      "tooling_charges": {
+        "nre": 1500.00,
+        "tooling": 800.00,
+        "testing": 1200.00,
+        "total_tooling": 3500.00
+      }
+    }
+  ],
+  
+  "terms_and_conditions": [
+    "报价有效期30天",
+    "预付款30%，发货前付清余款",
+    "最小订单量500片",
+    "允许±10%数量偏差",
+    "标准包装：真空包装，防静电袋"
+  ]
+}

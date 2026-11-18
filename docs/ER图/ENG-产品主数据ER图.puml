@@ -1,0 +1,84 @@
+@startuml ENG-产品主数据ER图
+skinparam linetype ortho
+
+title ENG模块 - 产品主数据子模块ER图
+
+entity materials {
+    id SERIAL <<PK>>
+    material_code VARCHAR <<UK>>
+    material_name VARCHAR
+    material_type VARCHAR
+    category VARCHAR
+    status VARCHAR
+    base_unit VARCHAR
+    production_unit VARCHAR
+    conversion_factor NUMERIC
+    layer_count INTEGER
+    board_thickness NUMERIC
+    copper_weight NUMERIC
+    surface_finish VARCHAR
+    solder_mask_color VARCHAR
+    silkscreen_color VARCHAR
+    impedance_control BOOLEAN
+    unit_length NUMERIC
+    unit_width NUMERIC
+    panel_length NUMERIC
+    panel_width NUMERIC
+    units_per_panel INTEGER
+    procurement_type VARCHAR
+    mrp_controller VARCHAR
+    lead_time_days INTEGER
+    valuation_method VARCHAR
+    standard_price NUMERIC
+    currency VARCHAR
+    current_stock NUMERIC
+    safety_stock NUMERIC
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity factory_product_mappings {
+    id SERIAL <<PK>>
+    customer_id VARCHAR <<FK>>
+    factory_product_number VARCHAR
+    material_code VARCHAR <<FK>>
+    production_version_id VARCHAR <<FK>>
+    is_default BOOLEAN
+    effective_date TIMESTAMP
+    expiry_date TIMESTAMP
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+' 关系定义
+materials ||--o{ factory_product_mappings : mapped_by
+
+note right of materials
+    产品主数据（Material）
+    material_type = 'FG'（成品）
+    产品主数据以本厂编号作为唯一标识
+    本厂编号同时作为产品编码（material_code）
+    只显示成品（FG类型）的物料
+    产品主数据由工程管理模块统一管理
+    ENG模块拥有完整CRUD权限
+    SD模块可创建（自动创建）、查询、引用
+    但不能修改、删除
+    在报价单/订单创建时，如果本厂编号不存在，
+    SD模块调用ENG模块的产品主数据创建API自动创建
+    产品主数据（产品编码为本厂编号，产品类型为成品FG，
+    物料分类为成品）。自动创建的产品主数据不需要审核
+end note
+
+note right of factory_product_mappings
+    本厂编号映射
+    将客户的本厂编号映射到产品主数据
+    用于销售订单快速引用
+end note
+
+@enduml

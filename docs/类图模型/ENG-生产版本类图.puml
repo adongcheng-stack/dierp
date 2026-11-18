@@ -1,0 +1,87 @@
+@startuml ENG-生产版本类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title ENG模块 - 生产版本子模块类图
+
+package "生产版本管理 (Production Version Management)" {
+    
+    class Material {
+        +String material_code
+        +String material_name
+    }
+    
+    class BOM {
+        +String bom_number
+        +Enum status
+    }
+    
+    class Routing {
+        +String routing_id
+        +Enum status
+    }
+    
+    class MI {
+        +String mi_number
+        +Enum status
+    }
+    
+    class ProductionVersion {
+        +Integer id
+        +String production_version_id
+        +String version
+        +String material_code
+        +String bom_number
+        +String routing_id
+        +String mi_number
+        +String status
+        +Date effective_date
+        +Date expiry_date
+        +String description
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class ProductionOrder {
+        +String order_number
+        +String production_version_id
+    }
+    
+    ' 关系定义
+    Material "1" --> "*" ProductionVersion : has
+    BOM "1" --> "*" ProductionVersion : used_in
+    Routing "1" --> "*" ProductionVersion : used_in
+    MI "1" --> "*" ProductionVersion : used_in
+    ProductionVersion "1" --> "*" ProductionOrder : uses
+    
+    note right of ProductionVersion
+        生产版本
+        将BOM、工艺路线和MI组合
+        状态：ACTIVE, RELEASED
+        BOM和工艺路线是必选的
+        MI在创建时是可选的，但在发布时是必选的
+        只有RELEASED状态的BOM和工艺路线才能用于生产版本
+        发布时需要MI已关联且状态为RELEASED
+    end note
+    
+    note right of BOM
+        BOM
+        必须为RELEASED状态
+    end note
+    
+    note right of Routing
+        工艺路线
+        必须为RELEASED状态
+    end note
+    
+    note right of MI
+        MI
+        发布时MI是必选的
+        必须为RELEASED状态
+    end note
+}
+
+@enduml

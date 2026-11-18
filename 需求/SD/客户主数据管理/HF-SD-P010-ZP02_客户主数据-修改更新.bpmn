@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:collaboration id="Collaboration_0ti9p8s">
+    <bpmn:participant id="HF-SD-P010-ZP02P" name="客户主数据修改 HF-SD-P010-ZP02" processRef="Process_1pkbtc0" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1pkbtc0" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_0disvxx">
+      <bpmn:lane id="Lane_1yudni5" name="应收会计 - 财务部 / 主数据维护">
+        <bpmn:flowNodeRef>HF-SD-P010-ZP02-S030</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P010-ZP02-S040</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_1jgafb6" name="业务员 - 市场部">
+        <bpmn:flowNodeRef>HF-SD-P010-ZP02-S010</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0f9pgkv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P010-ZP02-S011</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P010-ZP02-S050</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1x2ypqd</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_0aexc5w" name="销售总监 / 销售管理">
+        <bpmn:flowNodeRef>HF-SD-P010-ZP02-S020</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>P010-ZP02-S020-Gateway_approval_check</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:manualTask id="HF-SD-P010-ZP02-S010" name="010: 提出修改申请">
+      <bpmn:documentation>业务在OA中提变更需求，包含：修改、冻结、解冻；
+提交的资料包括《客户信息维护申请表》、《客户登记评价表》、《
+客户等级登记表》。
+
+[角色]: 业务员
+[线下操作]: 业务员填写《客户信息维护申请表》或《客户登记评价表》或《客户等级登记表》。
+[业务规则]:</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1r0mex9</bpmn:incoming>
+      <bpmn:outgoing>Flow_0rtyk2q</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:startEvent id="Event_0f9pgkv" name="开始">
+      <bpmn:documentation>适用范围：客户资料更新（客户名称/客户地址/开票方/送达方/付款条件/付款期限/贸易条件、客户等级，以及客户冻结、解冻流程。
+（授信额度变更除外，走额度变更流程）</bpmn:documentation>
+      <bpmn:outgoing>Flow_1r0mex9</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="HF-SD-P010-ZP02-S020" name="020: 客户变更审批">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0rtyk2q</bpmn:incoming>
+      <bpmn:outgoing>Flow_1nipgj1</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="P010-ZP02-S020-Gateway_approval_check" name="Gateway_Approval_Check">
+      <bpmn:incoming>Flow_1nipgj1</bpmn:incoming>
+      <bpmn:outgoing>SD-P010-ZP02-S020-Rejected</bpmn:outgoing>
+      <bpmn:outgoing>SD-P010-ZP02-S020-Approved</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:dataObjectReference id="HF-SD-P010-ZP02-D01-10" name="客户资料变更表" dataObjectRef="DataObject_0qwh8zy">
+      <bpmn:documentation>例：《客户信息维护申请表》、《新客户授信额度申请表》、《客户登记评价表》、《客户等级登记表》</bpmn:documentation>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_0qwh8zy" />
+    <bpmn:manualTask id="HF-SD-P010-ZP02-S011" name="011: 更新/补充客户资料">
+      <bpmn:documentation>业务员收集创建新客户需要的相关资料，并在XX系统中提交审批</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SD-P010-ZP02-S020-Rejected</bpmn:incoming>
+    </bpmn:manualTask>
+    <bpmn:userTask id="HF-SD-P010-ZP02-S030" name="030: 修改客户主数据">
+      <bpmn:documentation>应收会计/主数据维护岗统一修改客户主数据</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SD-P010-ZP02-S020-Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_1s9sz9s</bpmn:outgoing>
+      <bpmn:property id="Property_0ehxlfj" name="__targetRef_placeholder" />
+      <bpmn:dataInputAssociation id="DataInputAssociation_0w3hw3x">
+        <bpmn:sourceRef>HF-SD-P010-ZP02-D01-01</bpmn:sourceRef>
+        <bpmn:targetRef>Property_0ehxlfj</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1hkjh5q">
+        <bpmn:targetRef>HF-MDM-010-SD</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:dataObjectReference id="HF-SD-P010-ZP02-D01-01" name="客户资料变更表" dataObjectRef="DataObject_0qw46ck">
+      <bpmn:documentation>例：《客户信息维护申请表》、《新客户授信额度申请表》、《客户登记评价表》、《客户等级登记表》</bpmn:documentation>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_0qw46ck" />
+    <bpmn:dataStoreReference id="HF-MDM-010-SD" name="客户主数据">
+      <bpmn:documentation>！！！主数据的表单设计
+属性和状态？</bpmn:documentation>
+    </bpmn:dataStoreReference>
+    <bpmn:userTask id="HF-SD-P010-ZP02-S040" name="040: 财务经理复核">
+      <bpmn:documentation>财务经理复核</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1s9sz9s</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ao5wwl</bpmn:outgoing>
+      <bpmn:property id="Property_07cp6wh" name="__targetRef_placeholder" />
+    </bpmn:userTask>
+    <bpmn:userTask id="HF-SD-P010-ZP02-S050" name="050: 业务员复核">
+      <bpmn:documentation>业务员复核系统录入信息</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1ao5wwl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0le9oyz</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_1x2ypqd" name="结束">
+      <bpmn:incoming>Flow_0le9oyz</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1r0mex9" sourceRef="Event_0f9pgkv" targetRef="HF-SD-P010-ZP02-S010" />
+    <bpmn:sequenceFlow id="Flow_0rtyk2q" sourceRef="HF-SD-P010-ZP02-S010" targetRef="HF-SD-P010-ZP02-S020" />
+    <bpmn:sequenceFlow id="Flow_1nipgj1" sourceRef="HF-SD-P010-ZP02-S020" targetRef="P010-ZP02-S020-Gateway_approval_check" />
+    <bpmn:sequenceFlow id="SD-P010-ZP02-S020-Rejected" name="No" sourceRef="P010-ZP02-S020-Gateway_approval_check" targetRef="HF-SD-P010-ZP02-S011">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SD-P010-ZP02-S020-Approved" name="Yes" sourceRef="P010-ZP02-S020-Gateway_approval_check" targetRef="HF-SD-P010-ZP02-S030">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1s9sz9s" sourceRef="HF-SD-P010-ZP02-S030" targetRef="HF-SD-P010-ZP02-S040" />
+    <bpmn:sequenceFlow id="Flow_1ao5wwl" sourceRef="HF-SD-P010-ZP02-S040" targetRef="HF-SD-P010-ZP02-S050" />
+    <bpmn:sequenceFlow id="Flow_0le9oyz" sourceRef="HF-SD-P010-ZP02-S050" targetRef="Event_1x2ypqd" />
+    <bpmn:dataObjectReference id="HF-SD-P010-ZP02-D01-00" name="客户资料变更表……" dataObjectRef="DataObject_0otizk9">
+      <bpmn:documentation>例：《客户信息维护申请表》、《新客户授信额度申请表》、《客户登记评价表》、《客户等级登记表》</bpmn:documentation>
+    </bpmn:dataObjectReference>
+    <bpmn:dataObject id="DataObject_0otizk9" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0ti9p8s">
+      <bpmndi:BPMNShape id="BPMNShape_0j70x7p" bpmnElement="HF-SD-P010-ZP02P" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1000" height="640" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0yxi39x" bpmnElement="Lane_1yudni5" isHorizontal="true">
+        <dc:Bounds x="190" y="505" width="970" height="215" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0demasx" bpmnElement="Lane_1jgafb6" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="970" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1oqlgbn" bpmnElement="Lane_0aexc5w" isHorizontal="true">
+        <dc:Bounds x="190" y="330" width="970" height="175" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1hmthxp" bpmnElement="HF-SD-P010-ZP02-S010" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="329" y="100" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_03rzjw3" bpmnElement="Event_0f9pgkv">
+        <dc:Bounds x="241" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="248" y="165" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0w2x7lh_di" bpmnElement="HF-SD-P010-ZP02-S020">
+        <dc:Bounds x="329" y="380" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1nh53m2" bpmnElement="P010-ZP02-S020-Gateway_approval_check" isMarkerVisible="true">
+        <dc:Bounds x="505" y="395" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="488" y="365" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1tnv71a" bpmnElement="HF-SD-P010-ZP02-D01-10">
+        <dc:Bounds x="542" y="215" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="522" y="272" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1vpyugh" bpmnElement="HF-SD-P010-ZP02-S011">
+        <dc:Bounds x="600" y="140" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_00haoez" bpmnElement="HF-SD-P010-ZP02-S030" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="480" y="570" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1av96bc" bpmnElement="HF-SD-P010-ZP02-D01-01">
+        <dc:Bounds x="412" y="535" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="392" y="592" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_17t8lnc" bpmnElement="HF-MDM-010-SD" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="405" y="635" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="402" y="611" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_00825rs" bpmnElement="HF-SD-P010-ZP02-S040" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="710" y="570" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1ijo4d8" bpmnElement="HF-SD-P010-ZP02-S050" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="890" y="200" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1x2ypqd_di" bpmnElement="Event_1x2ypqd">
+        <dc:Bounds x="1042" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1049" y="265" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_11b8lsr" bpmnElement="HF-SD-P010-ZP02-D01-00" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="412" y="215" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="393" y="272" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_1kyf2ad" bpmnElement="Flow_1r0mex9">
+        <di:waypoint x="277" y="140" />
+        <di:waypoint x="329" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rtyk2q_di" bpmnElement="Flow_0rtyk2q">
+        <di:waypoint x="379" y="180" />
+        <di:waypoint x="379" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1nipgj1_di" bpmnElement="Flow_1nipgj1">
+        <di:waypoint x="429" y="420" />
+        <di:waypoint x="505" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0y5bi2e" bpmnElement="SD-P010-ZP02-S020-Rejected">
+        <di:waypoint x="555" y="420" />
+        <di:waypoint x="650" y="420" />
+        <di:waypoint x="650" y="220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="631" y="313" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1v9rovk" bpmnElement="SD-P010-ZP02-S020-Approved">
+        <di:waypoint x="530" y="445" />
+        <di:waypoint x="530" y="570" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="536" y="507" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1hyrvyh" bpmnElement="Flow_1s9sz9s">
+        <di:waypoint x="580" y="610" />
+        <di:waypoint x="710" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ao5wwl_di" bpmnElement="Flow_1ao5wwl">
+        <di:waypoint x="810" y="610" />
+        <di:waypoint x="940" y="610" />
+        <di:waypoint x="940" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0le9oyz_di" bpmnElement="Flow_0le9oyz">
+        <di:waypoint x="990" y="240" />
+        <di:waypoint x="1042" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0pziium" bpmnElement="DataInputAssociation_0w3hw3x">
+        <di:waypoint x="448" y="572" />
+        <di:waypoint x="480" y="603" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_045erab" bpmnElement="DataOutputAssociation_1hkjh5q">
+        <di:waypoint x="480" y="640" />
+        <di:waypoint x="455" y="653" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

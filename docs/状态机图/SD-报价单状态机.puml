@@ -1,0 +1,76 @@
+@startuml SD-报价单状态机
+
+title SD模块 - 报价单子模块状态机
+
+[*] --> DRAFT : 创建报价单
+
+DRAFT --> PENDING_SALES : 提交审批\n(销售员)
+PENDING_SALES --> PENDING_ENGINEER : 一级审核通过\n(销售经理)
+PENDING_SALES --> REJECTED : 一级审核拒绝\n(销售经理)
+
+PENDING_ENGINEER --> PENDING_ACCOUNT_MANAGER : 二级审核通过\n(工程师)
+PENDING_ENGINEER --> REJECTED : 二级审核拒绝\n(工程师)
+
+PENDING_ACCOUNT_MANAGER --> APPROVED : 三级审核通过\n(客户经理/总经理)
+PENDING_ACCOUNT_MANAGER --> REJECTED : 三级审核拒绝\n(客户经理/总经理)
+
+REJECTED --> DRAFT : 退回草稿\n(系统自动)
+DRAFT --> PENDING_SALES : 重新提交\n(销售员)
+
+APPROVED --> CUSTOMER_CONFIRMED : 客户确认\n(销售员代客户操作)
+APPROVED --> CANCELLED : 取消报价单\n(销售员/销售经理)
+
+CUSTOMER_CONFIRMED --> LINKED : 创建销售订单\n(销售员)
+CUSTOMER_CONFIRMED --> DRAFT : 客户不确认\n(销售员)
+CUSTOMER_CONFIRMED --> CANCELLED : 取消报价单\n(销售员/销售经理)
+
+DRAFT --> CANCELLED : 取消报价单\n(销售员/销售经理)
+REJECTED --> CANCELLED : 取消报价单\n(销售员/销售经理)
+
+LINKED --> [*] : 完成
+CANCELLED --> [*] : 完成
+
+note right of DRAFT
+  草稿状态
+  报价单创建但未提交
+end note
+
+note right of PENDING_SALES
+  待一级审核
+  等待销售经理（SALES_MANAGER）审核
+end note
+
+note right of PENDING_ENGINEER
+  待二级审核
+  等待工程师（ENGINEER）审核
+end note
+
+note right of PENDING_ACCOUNT_MANAGER
+  待三级审核
+  等待客户经理（ACCOUNT_MANAGER）
+  或总经理（GENERAL_MANAGER）审核
+end note
+
+note right of APPROVED
+  已审批
+  所有三级审批通过
+end note
+
+note right of REJECTED
+  已拒绝
+  任一审批节点被拒绝
+  自动退回草稿状态
+end note
+
+note right of CUSTOMER_CONFIRMED
+  客户已确认
+  客户确认报价单
+  （销售员代客户操作）
+end note
+
+note right of LINKED
+  已关联
+  已关联到销售订单
+end note
+
+@enduml

@@ -1,0 +1,47 @@
+@startuml SD-客户管理状态机
+
+title SD模块 - 客户管理子模块状态机
+
+[*] --> DRAFT : 创建客户
+
+DRAFT --> PENDING_APPROVAL : 提交审批\n(销售员)
+PENDING_APPROVAL --> ACTIVE : 审批通过\n(销售经理)
+PENDING_APPROVAL --> DRAFT : 审批拒绝\n(销售经理)
+
+ACTIVE --> BLOCKED : 冻结客户\n(销售经理/管理员)
+ACTIVE --> INACTIVE : 停用客户\n(销售经理/管理员)
+
+BLOCKED --> ACTIVE : 解冻客户\n(销售经理/管理员)
+INACTIVE --> ACTIVE : 激活客户\n(销售经理/管理员)
+
+DRAFT --> [*] : 删除草稿
+INACTIVE --> [*] : 删除客户
+
+note right of DRAFT
+  草稿状态
+  客户信息创建但未提交审批
+end note
+
+note right of PENDING_APPROVAL
+  待审批状态
+  已提交审批，等待审批人审批
+end note
+
+note right of ACTIVE
+  激活状态
+  审批通过，客户处于激活状态
+  只有ACTIVE状态的客户才能
+  创建报价单和销售订单
+end note
+
+note right of BLOCKED
+  冻结状态
+  客户被冻结，不能进行业务操作
+end note
+
+note right of INACTIVE
+  未激活状态
+  客户处于未激活状态
+end note
+
+@enduml

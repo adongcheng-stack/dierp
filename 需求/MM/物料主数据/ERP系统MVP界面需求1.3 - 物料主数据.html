@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - 物料主数据管理</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --primary-light: #3498db;
+            --secondary-color: #7f8c8d;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --background-light: #f5f7fa;
+            --border-color: #d1d8e0;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 顶部导航 */
+        .app-header {
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .logo i {
+            color: var(--primary-light);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* 选项卡导航 */
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover {
+            color: var(--primary-color);
+        }
+        
+        .tab.active {
+            color: var(--primary-light);
+            border-bottom-color: var(--primary-light);
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        /* 卡片样式 */
+        .material-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .material-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-obsolete {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-draft {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        /* 网格布局 */
+        .info-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .grid-2-col {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .grid-3-col {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .grid-4-col {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 8px 0;
+        }
+        
+        .info-value strong {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--background-light);
+        }
+        
+        /* PCB属性标签 */
+        .pcb-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .tag-layer {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .tag-finish {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .tag-material {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .tag-impedance {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        /* 物料类型指示器 */
+        .material-type-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .type-fg {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .type-raw {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .type-semi {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        /* 统计信息 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        /* 搜索和筛选 */
+        .search-filter {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* 表单样式 */
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+        
+        /* 物料详情页布局 */
+        .material-detail-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .material-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 尺寸信息 */
+        .dimension-box {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .dimension-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .dimension-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .app-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .tabs {
+                overflow-x: auto;
+            }
+            
+            .tab {
+                white-space: nowrap;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .grid-2-col,
+            .grid-3-col,
+            .grid-4-col {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-filter {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                flex-wrap: wrap;
+            }
+            
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+        
+        /* 模态窗口 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-label.required::after {
+            content: " *";
+            color: var(--danger-color);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fas fa-industry"></i>
+                <span>某某ERP - 物料主数据管理系统</span>
+            </div>
+            <div class="user-info">
+                <span>当前用户: 工程师_张工</span>
+                <button class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </button>
+            </div>
+        </header>
+        
+        <!-- 选项卡导航 -->
+        <nav class="tabs">
+            <button class="tab">
+                <i class="fas fa-sitemap"></i>
+                BOM管理
+            </button>
+            <button class="tab active">
+                <i class="fas fa-cube"></i>
+                物料主数据
+            </button>
+            <button class="tab">
+                <i class="fas fa-project-diagram"></i>
+                工艺路线
+            </button>
+            <button class="tab">
+                <i class="fas fa-chart-bar"></i>
+                成本分析
+            </button>
+            <button class="tab">
+                <i class="fas fa-file-export"></i>
+                数据导出
+            </button>
+        </nav>
+        
+        <!-- 统计信息 -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">4,238</div>
+                <div class="stat-label">物料总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">1,850</div>
+                <div class="stat-label">活跃物料</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">320</div>
+                <div class="stat-label">PCB专用物料</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">15</div>
+                <div class="stat-label">今日更新</div>
+            </div>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="search-filter">
+            <div class="search-box">
+                <input type="text" class="form-control" placeholder="搜索物料编码、名称或描述...">
+            </div>
+            <div class="filter-group">
+                <select class="form-control" style="width: 150px;">
+                    <option value="">所有物料类型</option>
+                    <option value="FG">成品</option>
+                    <option value="RAW">原材料</option>
+                    <option value="SEMI">半成品</option>
+                </select>
+                <select class="form-control" style="width: 150px;">
+                    <option value="">所有状态</option>
+                    <option value="ACTIVE">活跃</option>
+                    <option value="OBSOLETE">报废/呆滞</option>
+                    <option value="DRAFT">工程研发中</option>
+                </select>
+                <button class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    搜索
+                </button>
+                <button class="btn btn-success" onclick="openAddMaterialModal()">
+                    <i class="fas fa-plus"></i>
+                    新建物料
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- 物料详情视图 -->
+            <div class="material-detail-grid">
+                <!-- 左侧基本信息卡片 -->
+                <div class="material-card" style="position: sticky; top: 20px; height: fit-content;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-box-open"></i>
+                            物料基本信息
+                        </div>
+                        <span class="material-status status-active">ACTIVE</span>
+                    </div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">物料编码</div>
+                            <div class="info-value"><strong>MAT-PCB-23001</strong></div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">物料名称</div>
+                            <div class="info-value">Server Mainboard V2.0 / 服务器主板 V2</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">物料类型</div>
+                            <div class="info-value">
+                                <span class="material-type-indicator type-fg">
+                                    <i class="fas fa-check-circle"></i>
+                                    FG (成品)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">版本</div>
+                            <div class="info-value">B.1</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">描述</div>
+                            <div class="info-value">Dell服务器主板，生益 S1000-2 覆铜板</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">基础计量单位</div>
+                            <div class="info-value">PCS (个)</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">生产计量单位</div>
+                            <div class="info-value">PNL (拼板)</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">单位转换</div>
+                            <div class="info-value">1 PNL = 6 PCS</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" style="flex: 1;" onclick="openEditMaterialModal()">
+                            <i class="fas fa-edit"></i>
+                            编辑物料信息
+                        </button>
+                        <button class="btn btn-outline" onclick="exportMaterial()">
+                            <i class="fas fa-file-export"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 右侧详细信息 -->
+                <div>
+                    <!-- PCB专有属性卡片 -->
+                    <div class="material-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-microchip"></i>
+                                PCB专有工程属性
+                            </div>
+                        </div>
+                        
+                        <div class="info-grid grid-3-col">
+                            <div class="info-item">
+                                <div class="info-label">层数</div>
+                                <div class="info-value">8层</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">板厚</div>
+                                <div class="info-value">1.6 mm</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">厚度公差</div>
+                                <div class="info-value">+/-0.1</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">铜厚</div>
+                                <div class="info-value">1oz</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">材料等级</div>
+                                <div class="info-value">FR4-Tg170</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">表面处理</div>
+                                <div class="info-value">
+                                    <span class="pcb-tag tag-finish">ENIG (沉金)</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">阻焊颜色</div>
+                                <div class="info-value">GREEN</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">丝印颜色</div>
+                                <div class="info-value">WHITE</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">阻抗控制</div>
+                                <div class="info-value">
+                                    <span class="pcb-tag tag-impedance">
+                                        <i class="fas fa-bolt"></i>
+                                        有阻抗控制
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">最小线距</div>
+                                <div class="info-value">0.075 mm</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">最小孔径</div>
+                                <div class="info-value">0.2 mm</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">工艺等级</div>
+                                <div class="info-value">高精密</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 尺寸信息 -->
+                        <div style="margin-top: 20px;">
+                            <div class="info-label" style="margin-bottom: 10px;">尺寸信息</div>
+                            <div class="dimension-box">
+                                <div class="dimension-item">
+                                    <span>单元长度</span>
+                                    <strong>150.0 mm</strong>
+                                </div>
+                                <div class="dimension-item">
+                                    <span>单元宽度</span>
+                                    <strong>80.0 mm</strong>
+                                </div>
+                                <div class="dimension-item">
+                                    <span>拼板长度</span>
+                                    <strong>500.0 mm</strong>
+                                </div>
+                                <div class="dimension-item">
+                                    <span>拼板宽度</span>
+                                    <strong>400.0 mm</strong>
+                                </div>
+                                <div class="dimension-item">
+                                    <span>每拼板单元数</span>
+                                    <strong>10 units</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 供应链计划参数卡片 -->
+                    <div class="material-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-shipping-fast"></i>
+                                供应链计划参数
+                            </div>
+                        </div>
+                        
+                        <div class="info-grid grid-4-col">
+                            <div class="info-item">
+                                <div class="info-label">采购类型</div>
+                                <div class="info-value">MAKE (自制)</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">MRP控制器</div>
+                                <div class="info-value">PLANNER-A</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">交货周期</div>
+                                <div class="info-value">12 天</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">安全库存</div>
+                                <div class="info-value">200 PCS</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">最大批量</div>
+                                <div class="info-value">5,000 PCS</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">最小订货量</div>
+                                <div class="info-value">100 PCS</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">订货倍数</div>
+                                <div class="info-value">10 PCS</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">ABC分类</div>
+                                <div class="info-value">A类物料</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 库存管理与财务成本卡片 -->
+                    <div class="material-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-warehouse"></i>
+                                库存管理与财务成本
+                            </div>
+                        </div>
+                        
+                        <div class="info-grid grid-2-col">
+                            <div>
+                                <div class="info-label" style="margin-bottom: 10px;">库存管理</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">保质期</div>
+                                        <div class="info-value">365 天</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">默认库位</div>
+                                        <div class="info-value">WH-FG-01</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">存储条件</div>
+                                        <div class="info-value">VACUUM_PACK (真空包装)</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">批次管理</div>
+                                        <div class="info-value">启用批次追踪</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="info-label" style="margin-bottom: 10px;">财务成本</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">计价方法</div>
+                                        <div class="info-value">STANDARD (标准成本)</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">标准价格</div>
+                                        <div class="info-value">¥ 85.50</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">货币</div>
+                                        <div class="info-value">CNY (人民币)</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">最后成本更新</div>
+                                        <div class="info-value">2023-10-01</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑物料模态窗口 -->
+    <div class="modal-overlay" id="editMaterialModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    编辑物料信息
+                </div>
+                <button class="modal-close" onclick="closeModal('editMaterialModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">物料编码</label>
+                        <input type="text" class="form-control" value="MAT-PCB-23001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">物料名称</label>
+                        <input type="text" class="form-control" value="Server Mainboard V2.0 / 服务器主板 V2">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">物料类型</label>
+                        <select class="form-control">
+                            <option value="FG" selected>成品 (FG)</option>
+                            <option value="RAW">原材料 (RAW)</option>
+                            <option value="SEMI">半成品 (SEMI)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">版本</label>
+                        <input type="text" class="form-control" value="B.1">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" rows="2">Dell服务器主板，生益 S1000-2 覆铜板</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">状态</label>
+                        <select class="form-control">
+                            <option value="ACTIVE" selected>活跃 (ACTIVE)</option>
+                            <option value="OBSOLETE">报废/呆滞 (OBSOLETE)</option>
+                            <option value="DRAFT">工程研发中 (DRAFT)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">基础计量单位</label>
+                        <select class="form-control">
+                            <option value="PCS" selected>个 (PCS)</option>
+                            <option value="PNL">拼板 (PNL)</option>
+                            <option value="KG">公斤 (KG)</option>
+                            <option value="SHT">张 (SHT)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">生产计量单位</label>
+                        <select class="form-control">
+                            <option value="PNL" selected>拼板 (PNL)</option>
+                            <option value="PCS">个 (PCS)</option>
+                            <option value="SET">套 (SET)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">单位转换</label>
+                        <input type="number" class="form-control" value="6" placeholder="1 PNL = ? PCS">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editMaterialModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveMaterial()">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加物料模态窗口 -->
+    <div class="modal-overlay" id="addMaterialModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-plus"></i>
+                    新建物料
+                </div>
+                <button class="modal-close" onclick="closeModal('addMaterialModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">物料编码</label>
+                        <input type="text" class="form-control" placeholder="例如: MAT-PCB-23001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">物料名称</label>
+                        <input type="text" class="form-control" placeholder="物料名称">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">物料类型</label>
+                        <select class="form-control">
+                            <option value="">请选择</option>
+                            <option value="FG">成品 (FG)</option>
+                            <option value="RAW">原材料 (RAW)</option>
+                            <option value="SEMI">半成品 (SEMI)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">版本</label>
+                        <input type="text" class="form-control" placeholder="例如: A.0, B.1">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" rows="2" placeholder="物料描述信息"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">状态</label>
+                        <select class="form-control">
+                            <option value="ACTIVE" selected>活跃 (ACTIVE)</option>
+                            <option value="DRAFT">工程研发中 (DRAFT)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">基础计量单位</label>
+                        <select class="form-control">
+                            <option value="">请选择</option>
+                            <option value="PCS">个 (PCS)</option>
+                            <option value="PNL">拼板 (PNL)</option>
+                            <option value="KG">公斤 (KG)</option>
+                            <option value="SHT">张 (SHT)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">是否为PCB专用物料</label>
+                        <select class="form-control">
+                            <option value="NO" selected>否</option>
+                            <option value="YES">是</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addMaterialModal')">取消</button>
+                <button class="btn btn-success" onclick="addNewMaterial()">
+                    <i class="fas fa-save"></i>
+                    创建物料
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 模态窗口控制
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function openEditMaterialModal() {
+            openModal('editMaterialModal');
+        }
+        
+        function openAddMaterialModal() {
+            openModal('addMaterialModal');
+        }
+        
+        // 保存物料
+        function saveMaterial() {
+            alert('物料信息已保存');
+            closeModal('editMaterialModal');
+        }
+        
+        function addNewMaterial() {
+            alert('新物料已创建');
+            closeModal('addMaterialModal');
+        }
+        
+        // 导出物料
+        function exportMaterial() {
+            alert('物料数据已导出');
+        }
+        
+        // 选项卡切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 如果是BOM管理选项卡，跳转到BOM管理页面
+                if (this.textContent.includes('BOM管理')) {
+                    window.location.href = '某某ERP系统MVP界面需求1.3 - BOM管理.html';
+                }
+            });
+        });
+        
+        // 点击模态窗口外部关闭
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+        
+        // 搜索功能
+        document.querySelector('.search-filter .btn-primary').addEventListener('click', function() {
+            const searchText = document.querySelector('.search-box input').value;
+            const typeFilter = document.querySelector('.filter-group select:first-child').value;
+            const statusFilter = document.querySelector('.filter-group select:nth-child(2)').value;
+            
+            alert(`搜索条件:\n关键词: ${searchText || "空"}\n物料类型: ${typeFilter || "全部"}\n状态: ${statusFilter || "全部"}`);
+        });
+    </script>
+</body>
+</html>

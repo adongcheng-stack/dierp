@@ -1,0 +1,72 @@
+@startuml PP-工作中心类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title PP模块 - 工作中心子模块类图
+
+package "工作中心管理 (Work Center Management)" {
+    
+    class WorkCenter {
+        +Integer id
+        +String work_center_id
+        +String description
+        +String work_center_type
+        +String plant_id
+        +Enum status
+        +String parent_work_center_id
+        +Integer hierarchy_level
+        +String work_center_category
+        +String usage
+        +String standard_value_key
+        +String control_key
+        +BigDecimal queue_time
+        +BigDecimal wait_time
+        +BigDecimal move_time
+        +String capacity_category
+        +String factory_calendar_id
+        +String shift_start_time
+        +String shift_finish_time
+        +BigDecimal break_time
+        +BigDecimal capacity_utilization
+        +Integer number_of_capacities
+        +String capacity_formula_setup
+        +String capacity_formula_processing
+        +String capacity_formula_teardown
+        +String cost_center_id
+        +String activity_types
+        +String process_category
+        +String technical_attributes
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class RoutingOperation {
+        +String routing_id
+        +String operation_no
+        +String work_center_id
+    }
+    
+    class OperationReport {
+        +String report_number
+        +String work_center_id
+    }
+    
+    ' 关系定义
+    WorkCenter "1" --> "*" WorkCenter : parent
+    WorkCenter "1" --> "*" RoutingOperation : used_by
+    WorkCenter "1" --> "*" OperationReport : reports_to
+    
+    note right of WorkCenter
+        工作中心
+        类型：MACHINE, MACHINE_GROUP, LABOR, PRODUCTION_LINE
+        状态：ACTIVE, INACTIVE, IN_MAINTENANCE
+        支持层级结构（父工作中心）
+        供工艺路线和排产使用
+        包含PCB行业特定数据（工艺类别、技术属性）
+    end note
+}
+
+@enduml

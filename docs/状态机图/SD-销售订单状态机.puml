@@ -1,0 +1,91 @@
+@startuml SD-销售订单状态机
+
+title SD模块 - 销售订单子模块状态机
+
+[*] --> DRAFT : 创建销售订单
+
+DRAFT --> PENDING_REVIEW : 提交评审\n(销售员)
+PENDING_REVIEW --> REVIEWING : 开始评审\n(系统自动)
+
+REVIEWING --> APPROVED : 所有部门评审通过\n(系统自动)\n串行：销售→工程→物料→财务
+REVIEWING --> REJECTED : 任一部门评审拒绝\n(各部门评审人)
+
+REJECTED --> DRAFT : 退回草稿\n(系统自动)
+DRAFT --> PENDING_REVIEW : 重新提交\n(销售员)
+
+APPROVED --> IN_PRODUCTION : 创建生产订单\n(计划员/生产人员)
+
+IN_PRODUCTION --> COMPLETED : 生产完成\n(系统自动)
+
+COMPLETED --> SHIPPED : 发货\n(销售员)
+SHIPPED --> DELIVERED : 客户签收\n(销售员)
+DELIVERED --> RECONCILED : 财务对账\n(财务人员)
+RECONCILED --> CLOSED : 关闭订单\n(销售员/财务人员)
+
+DRAFT --> CANCELLED : 取消订单\n(销售员/销售经理)
+PENDING_REVIEW --> CANCELLED : 取消订单\n(销售员/销售经理)
+REJECTED --> CANCELLED : 取消订单\n(销售员/销售经理)
+
+CLOSED --> [*] : 完成
+CANCELLED --> [*] : 完成
+
+note right of DRAFT
+  草稿状态
+  销售订单创建但未提交
+end note
+
+note right of PENDING_REVIEW
+  待评审
+  已提交，等待订单评审
+end note
+
+note right of REVIEWING
+  评审中
+  正在进行多部门评审
+  串行流程：销售→工程→物料→财务
+end note
+
+note right of APPROVED
+  已审批
+  所有部门评审通过
+end note
+
+note right of REJECTED
+  已拒绝
+  任一部门评审拒绝
+  自动退回草稿状态
+end note
+
+note right of IN_PRODUCTION
+  生产中
+  已创建生产订单，正在生产
+end note
+
+note right of COMPLETED
+  已完成
+  生产完成
+end note
+
+note right of SHIPPED
+  已发货
+  货物已发出
+end note
+
+note right of DELIVERED
+  已交付
+  客户已签收
+end note
+
+note right of RECONCILED
+  已对账
+  财务已对账
+end note
+
+note right of CLOSED
+  已关闭
+  订单流程结束
+  关闭时会同时关闭
+  关联的生产订单/工单
+end note
+
+@enduml

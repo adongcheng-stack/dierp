@@ -1,0 +1,42 @@
+@startuml SD-客户管理用例图
+
+title SD模块 - 客户管理子模块用例图
+
+left to right direction
+
+actor 销售员 as sales
+actor 销售经理 as salesManager
+actor 工程师 as engineer
+
+rectangle "客户管理" {
+  usecase "创建客户\n(UC-SD-001)" as UC001
+  usecase "审批客户\n(UC-SD-002)" as UC002
+  usecase "创建本厂编号映射\n(UC-SD-003)" as UC003
+}
+
+sales --> UC001 : 创建新客户
+sales --> UC003 : 创建映射
+engineer --> UC003 : 创建映射
+salesManager --> UC002 : 审批客户
+
+note right of UC001
+  创建客户主数据
+  包含基本信息、合作属性、
+  地址、联系人、销售数据
+  状态：DRAFT
+end note
+
+note right of UC002
+  审批客户资料
+  状态转换：
+  PENDING_APPROVAL → ACTIVE
+  或退回DRAFT
+end note
+
+note right of UC003
+  建立本厂编号与产品主数据映射
+  用于销售订单快速引用
+  14位本厂编号，同客户下唯一
+end note
+
+@enduml

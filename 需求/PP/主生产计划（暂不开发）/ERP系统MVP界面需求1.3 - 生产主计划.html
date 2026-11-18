@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统MVP版本界面可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .module-section {
+            margin-bottom: 50px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .module-title {
+            color: #2980b9;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 22px;
+        }
+        
+        .ui-container {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            background-color: #fff;
+        }
+        
+        .ui-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .ui-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-new { background-color: #d4edda; color: #155724; }
+        .status-reviewing { background-color: #fff3cd; color: #856404; }
+        .status-producing { background-color: #cce5ff; color: #004085; }
+        .status-completed { background-color: #d1ecf1; color: #0c5460; }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 5px 0 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .select-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .select-dropdown select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        .gantt-chart {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .gantt-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .gantt-label {
+            width: 120px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .gantt-track {
+            flex: 1;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+            position: relative;
+        }
+        
+        .gantt-task {
+            position: absolute;
+            height: 100%;
+            background-color: #3498db;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dashboard-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .dashboard-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .dashboard-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3498db;
+        }
+        
+        .dashboard-subtext {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .instructions {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>某某ERP系统MVP版本 - 模块界面可视化</h1>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li>此页面展示了ERP系统MVP版本的主要模块界面</li>
+                <li>您可以使用浏览器的截图功能保存为图片</li>
+                <li>按Ctrl+P可以打印页面，选择"另存为PDF"可生成PDF文档</li>
+                <li>每个模块界面都是响应式设计，支持不同屏幕尺寸</li>
+            </ul>
+        </div>
+        
+        <!-- PP模块界面 -->
+        <div class="module-section">
+            <h2 class="module-title">PP模块 - 生产计划与控制</h2>
+            
+            <div class="ui-container">
+                <div class="ui-header">主生产计划 - 计划周期: 2025年12月</div>
+                <div class="ui-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>计划开始</label>
+                            <input type="date" class="form-control" value="2025-12-05">
+                        </div>
+                        <div class="form-group">
+                            <label>计划结束</label>
+                            <input type="date" class="form-control" value="2025-12-31">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>产能策略</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>均衡生产</option>
+                                    <option>按需生产</option>
+                                    <option>最大化产能</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>排程方式</label>
+                            <div class="select-dropdown">
+                                <select>
+                                    <option>顺排</option>
+                                    <option>倒排</option>
+                                    <option>瓶颈优先</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="gantt-chart">
+                        <div class="gantt-row">
+                            <div class="gantt-label">WC01开料</div>
+                            <div class="gantt-track">
+                                <div class="gantt-task" style="left: 5%; width: 15%;">订单1</div>
+                                <div class="gantt-task" style="left: 25%; width: 10%;">订单2</div>
+                            </div>
+                        </div>
+                        <div class="gantt-row">
+                            <div class="gantt-label">WC02内层</div>
+                            <div class="gantt-track">
+                                <div class="gantt-task" style="left: 15%; width: 20%; background-color: #e74c3c;">订单1</div>
+                                <div class="gantt-task" style="left: 40%; width: 10%; background-color: #e74c3c;">订单2</div>
+                            </div>
+                        </div>
+                        <div class="gantt-row">
+                            <div class="gantt-label">WC03蚀刻</div>
+                            <div class="gantt-track">
+                                <div class="gantt-task" style="left: 35%; width: 12%; background-color: #f39c12;">订单1</div>
+                                <div class="gantt-task" style="left: 50%; width: 10%; background-color: #f39c12;">订单2</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>订单号</th>
+                                    <th>产品</th>
+                                    <th>数量</th>
+                                    <th>计划开始</th>
+                                    <th>计划完成</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>PO20251204001</td>
+                                    <td>HS1004ENIGAB01</td>
+                                    <td>100PCS</td>
+                                    <td>12/05</td>
+                                    <td>12/15</td>
+                                    <td><span class="status-badge status-completed">已排程</span></td>
+                                </tr>
+                                <tr>
+                                    <td>PO20251204002</td>
+                                    <td>HS3008GOLDCI02</td>
+                                    <td>50PCS</td>
+                                    <td>12/07</td>
+                                    <td>12/20</td>
+                                    <td><span class="status-badge status-completed">已排程</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="dashboard-item">
+                        <div class="dashboard-title">产能负荷分析</div>
+                        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                            <div>
+                                <div class="dashboard-value">75%</div>
+                                <div class="dashboard-subtext">WC01开料</div>
+                            </div>
+                            <div>
+                                <div class="dashboard-value" style="color: #e74c3c;">85%</div>
+                                <div class="dashboard-subtext">WC02内层</div>
+                            </div>
+                            <div>
+                                <div class="dashboard-value">60%</div>
+                                <div class="dashboard-subtext">WC03蚀刻</div>
+                            </div>
+                            <div>
+                                <div class="dashboard-value">45%</div>
+                                <div class="dashboard-subtext">WC04棕化</div>
+                            </div>
+                        </div>
+                        <div style="color: #e74c3c; font-size: 12px; margin-top: 10px;">
+                            ⚠ 预警: WC02内层负荷超过80%，建议调整排程
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary">自动排程</button>
+                        <button class="btn btn-success">手工调整</button>
+                        <button class="btn btn-secondary">锁定计划</button>
+                        <button class="btn btn-secondary">发布计划</button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <div class="instructions">
+            <h3>截图保存方法</h3>
+            <ul>
+                <li><strong>整页截图:</strong> 按F12打开开发者工具，按Ctrl+Shift+P，输入"screenshot"，选择"Capture full size screenshot"</li>
+                <li><strong>区域截图:</strong> 使用浏览器插件(如Nimbus Screenshot)或系统截图工具(Windows: Win+Shift+S, Mac: Shift+Cmd+4)</li>
+                <li><strong>打印为PDF:</strong> 按Ctrl+P，选择"另存为PDF"，可生成完整PDF文档</li>
+                <li><strong>单个模块截图:</strong> 调整浏览器窗口大小，使模块完整显示在屏幕上，然后截图</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

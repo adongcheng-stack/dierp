@@ -1,0 +1,37 @@
+@startuml ENG-生产版本状态机
+
+title ENG模块 - 生产版本子模块状态机
+
+[*] --> ACTIVE : 创建生产版本
+
+ACTIVE --> RELEASED : 发布生产版本\n(工程师)
+
+RELEASED --> [*] : 完成
+
+note right of ACTIVE
+  激活状态
+  生产版本已创建，处于激活状态
+  创建时BOM和工艺路线是必选的
+  MI在创建时是可选的
+end note
+
+note right of RELEASED
+  已发布
+  生产版本已发布
+  可用于生产订单/工单下达
+  发布时需要：
+  - BOM状态为RELEASED
+  - 工艺路线状态为RELEASED
+  - MI已关联且状态为RELEASED
+  （发布时MI是必选的）
+end note
+
+note right of [*]
+  特殊说明：
+  - 若需替换BOM/工艺路线/MI
+    应通过创建新生产版本处理
+  - 只有RELEASED状态的BOM和
+    工艺路线才能用于生产版本
+end note
+
+@enduml

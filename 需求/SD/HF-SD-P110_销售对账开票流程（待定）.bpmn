@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0">
+  <bpmn:collaboration id="Collaboration_0j2mbgv">
+    <bpmn:participant id="Participant_019emkc" name="销售对账开票" processRef="HF-SD-P110" />
+    <bpmn:textAnnotation id="TextAnnotation_0btarur">
+      <bpmn:text>财务系统中开发票</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1ucohsk" associationDirection="None" sourceRef="HF-SD-P110-Z01-090" targetRef="TextAnnotation_0btarur" />
+  </bpmn:collaboration>
+  <bpmn:process id="HF-SD-P110" name="内外销对账开票流程" isExecutable="true">
+    <bpmn:documentation>适用范围: 内外销对账开票流程</bpmn:documentation>
+    <bpmn:extensionElements>
+      <zeebe:versionTag value="0.1" />
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Merchandiser" name="跟单员">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_HF-SD-P070</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P110-Z01-020</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_030</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P110-Z01-010</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P110-Z01-040</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Finance" name="应收会计/财务经理">
+        <bpmn:flowNodeRef>Task_070</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_080</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_Payment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P110-Z01-050</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P110-Z01-060</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF-SD-P110-Z01-090</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="开始">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:callActivity id="SubProcess_HF-SD-P070" name="销售签收流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 承接销售签收流程</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="HF_SD_P070" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:userTask id="HF-SD-P110-Z01-020" name="020: 发对账单给客户确认">
+      <bpmn:documentation>任务类型: 用户任务
+操作: 跟单员将对账单发给客户确认</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="userTask" />
+        <zeebe:assignmentDefinition assignee="${merchandiserAssignee}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_030" name="客户确认对账单?">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Return</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_070" name="070: 财务经理复核">
+      <bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="userTask" />
+          <zeebe:assignmentDefinition assignee="${financeManagerAssignee}" />
+        </bpmn:extensionElements>
+任务类型: 用户任务
+系统: SAP系统
+      
+操作: 财务经理复核      </bpmn:documentation>
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_080" name="是否内销?">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="SubProcess_Payment" name="客户(预)收款流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 承接客户(预)收款流程</bpmn:documentation>
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_1" name="结束">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="HF-SD-P110-Z01-010" name="010: 勾选出货明细 生成对账单">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+输出文件: 对账单
+操作: 跟单员根据出货明细勾选出本期需对账明细生成对账单，对账单统一格式</bpmn:documentation>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:incoming>Flow_Return</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="HF-SD-P110-Z01-050" name="050: 核对对账单">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+输入文件: 对账单、客户订单
+操作: 财务核对对账单</bpmn:documentation>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="HF-SD-P110-Z01-060" name="060: 应收会计系统开票">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+操作: 财务开系统发票，产生应收。开票分两步走，会计开票，组长审批</bpmn:documentation>
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="HF-SD-P110-Z01-090" name="090: 开金税发票">
+      <bpmn:documentation>任务类型: 服务任务
+系统: 金税系统
+操作: 如果是内销，需要开金税发票，金税开票可能需要修改产品描述、适用客户料号开票等，按客户要求开票</bpmn:documentation>
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:userTask id="HF-SD-P110-Z01-040" name="040: 提交对账单">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+操作: 提交对账单给财务确认</bpmn:documentation>
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="SubProcess_HF-SD-P070" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="SubProcess_HF-SD-P070" targetRef="HF-SD-P110-Z01-010" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="HF-SD-P110-Z01-010" targetRef="HF-SD-P110-Z01-020" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="HF-SD-P110-Z01-020" targetRef="Gateway_030" />
+    <bpmn:sequenceFlow id="Flow_5" name="是" sourceRef="Gateway_030" targetRef="HF-SD-P110-Z01-040">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${customerConfirmed == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Return" name="否" sourceRef="Gateway_030" targetRef="HF-SD-P110-Z01-010">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${customerConfirmed == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="HF-SD-P110-Z01-060" targetRef="Task_070" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_070" targetRef="Gateway_080" />
+    <bpmn:sequenceFlow id="Flow_10" name="是" sourceRef="Gateway_080" targetRef="HF-SD-P110-Z01-090">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isDomesticSales == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_11" name="否" sourceRef="Gateway_080" targetRef="SubProcess_Payment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isDomesticSales == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="HF-SD-P110-Z01-090" targetRef="SubProcess_Payment" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="SubProcess_Payment" targetRef="EndEvent_1" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="HF-SD-P110-Z01-040" targetRef="HF-SD-P110-Z01-050" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="HF-SD-P110-Z01-050" targetRef="HF-SD-P110-Z01-060" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0j2mbgv">
+      <bpmndi:BPMNShape id="Participant_019emkc_di" bpmnElement="Participant_019emkc" isHorizontal="true">
+        <dc:Bounds x="160" y="50" width="2030" height="600" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Finance_di" bpmnElement="Lane_Finance" isHorizontal="true">
+        <dc:Bounds x="190" y="350" width="2000" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Merchandiser_di" bpmnElement="Lane_Merchandiser" isHorizontal="true">
+        <dc:Bounds x="190" y="50" width="2000" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="282" y="179" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="289" y="222" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_SalesReceipt" bpmnElement="SubProcess_HF-SD-P070">
+        <dc:Bounds x="390" y="157" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Task_020" bpmnElement="HF-SD-P110-Z01-020">
+        <dc:Bounds x="720" y="157" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_030" bpmnElement="Gateway_030" isMarkerVisible="true">
+        <dc:Bounds x="872" y="172" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="855" y="229" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Task_070" bpmnElement="Task_070">
+        <dc:Bounds x="1470" y="457" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_080" bpmnElement="Gateway_080" isMarkerVisible="true">
+        <dc:Bounds x="1632" y="472" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1622" y="529" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_Payment" bpmnElement="SubProcess_Payment">
+        <dc:Bounds x="1910" y="457" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_EndEvent_2" bpmnElement="EndEvent_1">
+        <dc:Bounds x="2072" y="479" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2078" y="455" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1o364j8_di" bpmnElement="HF-SD-P110-Z01-010">
+        <dc:Bounds x="550" y="157" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0oknlv1_di" bpmnElement="HF-SD-P110-Z01-050">
+        <dc:Bounds x="1150" y="457" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1erhvdr_di" bpmnElement="HF-SD-P110-Z01-060">
+        <dc:Bounds x="1310" y="457" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0mlsyzq_di" bpmnElement="HF-SD-P110-Z01-090">
+        <dc:Bounds x="1750" y="457" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1oed6m0_di" bpmnElement="HF-SD-P110-Z01-040">
+        <dc:Bounds x="990" y="157" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="318" y="197" />
+        <di:waypoint x="390" y="197" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="490" y="197" />
+        <di:waypoint x="550" y="197" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="650" y="197" />
+        <di:waypoint x="720" y="197" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="820" y="197" />
+        <di:waypoint x="872" y="197" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="922" y="197" />
+        <di:waypoint x="990" y="197" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="934" y="179" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Return_di" bpmnElement="Flow_Return">
+        <di:waypoint x="897" y="170" />
+        <di:waypoint x="897" y="120" />
+        <di:waypoint x="600" y="120" />
+        <di:waypoint x="600" y="157" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="864" y="105" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1410" y="497" />
+        <di:waypoint x="1470" y="497" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1570" y="497" />
+        <di:waypoint x="1632" y="497" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1682" y="497" />
+        <di:waypoint x="1750" y="497" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1714" y="479" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1657" y="522" />
+        <di:waypoint x="1657" y="600" />
+        <di:waypoint x="1960" y="600" />
+        <di:waypoint x="1960" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1667" y="561" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1850" y="497" />
+        <di:waypoint x="1910" y="497" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="2010" y="497" />
+        <di:waypoint x="2072" y="497" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1090" y="197" />
+        <di:waypoint x="1200" y="197" />
+        <di:waypoint x="1200" y="457" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1250" y="497" />
+        <di:waypoint x="1310" y="497" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0btarur_di" bpmnElement="TextAnnotation_0btarur">
+        <dc:Bounds x="1850" y="380" width="100" height="41" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1ucohsk_di" bpmnElement="Association_1ucohsk">
+        <di:waypoint x="1839" y="457" />
+        <di:waypoint x="1875" y="421" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

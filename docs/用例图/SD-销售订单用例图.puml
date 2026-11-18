@@ -1,0 +1,79 @@
+@startuml SD-销售订单用例图
+
+title SD模块 - 销售订单子模块用例图
+
+left to right direction
+
+actor 销售员 as sales
+actor 销售经理 as salesManager
+actor 工程师 as engineer
+actor 物料管理员 as warehouse
+actor 财务人员 as finance
+
+rectangle "销售订单管理" {
+  usecase "创建销售订单\n(UC-SD-010)" as UC010
+  usecase "提交销售订单评审\n(UC-SD-011)" as UC011
+  usecase "销售部门评审订单\n(UC-SD-012)" as UC012
+  usecase "工程部门评审订单\n(UC-SD-013)" as UC013
+  usecase "物料部门评审订单\n(UC-SD-014)" as UC014
+  usecase "财务部门评审订单\n(UC-SD-015)" as UC015
+  usecase "拒绝销售订单\n(UC-SD-016)" as UC016
+  usecase "销售发货\n(UC-SD-017)" as UC017
+  usecase "销售签收\n(UC-SD-018)" as UC018
+  usecase "对账\n(UC-SD-019)" as UC019
+  usecase "关闭销售订单\n(UC-SD-020)" as UC020
+}
+
+sales --> UC010 : 创建订单
+sales --> UC011 : 提交评审
+sales --> UC017 : 发货
+sales --> UC018 : 签收
+sales --> UC020 : 关闭订单
+
+salesManager --> UC012 : 销售部门评审
+sales --> UC012 : 销售部门评审
+engineer --> UC013 : 工程部门评审
+warehouse --> UC014 : 物料部门评审
+finance --> UC015 : 财务部门评审
+finance --> UC019 : 对账
+finance --> UC020 : 关闭订单
+
+salesManager --> UC016 : 拒绝
+sales --> UC016 : 拒绝
+engineer --> UC016 : 拒绝
+warehouse --> UC016 : 拒绝
+finance --> UC016 : 拒绝
+
+UC010 ..> UC011 : <<extend>>
+UC011 ..> UC012 : <<extend>>
+UC012 ..> UC013 : <<extend>>
+UC013 ..> UC014 : <<extend>>
+UC014 ..> UC015 : <<extend>>
+UC012 ..> UC016 : <<extend>>
+UC013 ..> UC016 : <<extend>>
+UC014 ..> UC016 : <<extend>>
+UC015 ..> UC016 : <<extend>>
+UC015 ..> UC017 : <<extend>>
+UC017 ..> UC018 : <<extend>>
+UC018 ..> UC019 : <<extend>>
+UC019 ..> UC020 : <<extend>>
+
+note right of UC010
+  创建销售订单
+  可选择关联报价单或直接创建
+  返单可选择历史报价单并修改数量
+  新单只能选择已批准且未关联的报价单
+  系统自动查找FactoryProductMapping
+end note
+
+note right of UC011
+  多部门评审流程（串行）
+  销售 → 工程 → 物料 → 财务
+end note
+
+note right of UC020
+  关闭销售订单时
+  会同时关闭关联的生产订单/工单
+end note
+
+@enduml

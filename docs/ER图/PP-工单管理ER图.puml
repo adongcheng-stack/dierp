@@ -1,0 +1,104 @@
+@startuml PP-工单管理ER图
+skinparam linetype ortho
+
+title PP模块 - 工单管理子模块ER图
+
+entity sales_orders {
+    order_number VARCHAR <<PK>>
+    status ENUM
+}
+
+entity materials {
+    material_code VARCHAR <<PK>>
+    material_name VARCHAR
+}
+
+entity production_versions {
+    production_version_id VARCHAR <<PK>>
+    bom_number VARCHAR
+    routing_id VARCHAR
+    mi_number VARCHAR
+}
+
+entity production_orders {
+    id SERIAL <<PK>>
+    order_number VARCHAR <<UK>>
+    sales_order_number VARCHAR <<FK>>
+    material_code VARCHAR <<FK>>
+    production_version_id VARCHAR <<FK>>
+    quantity NUMERIC
+    unit VARCHAR
+    sales_quantity NUMERIC
+    sales_unit VARCHAR
+    conversion_factor NUMERIC
+    planned_start_date DATE
+    planned_finish_date DATE
+    actual_start_date DATE
+    actual_finish_date DATE
+    status ENUM
+    lot_number VARCHAR
+    remarks TEXT
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity operation_reports {
+    id SERIAL <<PK>>
+    report_number VARCHAR <<UK>>
+    production_order_number VARCHAR <<FK>>
+}
+
+entity material_issues {
+    id SERIAL <<PK>>
+    issue_number VARCHAR <<UK>>
+    production_order_number VARCHAR <<FK>>
+}
+
+entity lot_cards {
+    lot_number VARCHAR <<PK>>
+    production_order_number VARCHAR <<FK>>
+    mi_number VARCHAR <<FK>>
+    material_code VARCHAR <<FK>>
+}
+
+entity mis {
+    mi_number VARCHAR <<PK>>
+    status ENUM
+}
+
+' 关系定义
+sales_orders ||--o{ production_orders : creates
+materials ||--o{ production_orders : produces
+production_versions ||--o{ production_orders : uses
+production_orders ||--o| lot_cards : "关联(1:1)"
+mis ||--o{ lot_cards : "生成"
+production_orders ||--o{ operation_reports : generates
+production_orders ||--o{ material_issues : generates
+
+note right of production_orders
+    生产订单/工单
+    主键：id
+    业务主键：order_number（唯一）
+    在实现中同时承担"生产订单"和"工单"的职责
+    状态：DRAFT, RELEASED, IN_PRODUCTION, COMPLETED, CLOSED, CANCELLED
+    在生产订单/工单创建时，如果关联了MI，
+    系统根据MI自动生成LOT卡（1:1关系）
+    系统自动复制MI内容到LOT卡
+    系统将lot_number写回生产订单/工单
+    如果MI不存在，不允许创建生产订单/工单
+    或提示用户先创建MI
+    工单状态与生产订单状态一致
+end note
+
+note right of lot_cards
+    LOT卡（生产批次卡）
+    一个生产订单/工单对应一个LOT卡（1:1关系）
+    由MI自动生成，关联生产订单/工单
+    包含MI内容、数量、单位、状态等信息
+    是工序报工的批次依据
+end note
+
+@enduml

@@ -1,0 +1,87 @@
+@startuml MM-生产领料类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title MM模块 - 生产领料子模块类图
+
+package "生产领料 (Material Issue)" {
+    
+    class ProductionOrder {
+        +String order_number
+        +String material_code
+        +Enum status
+    }
+    
+    class Material {
+        +String material_code
+        +String material_name
+        +BigDecimal current_stock
+    }
+    
+    class BOM {
+        +String bom_number
+        +String parent_material_code
+    }
+    
+    class BOMItem {
+        +String bom_number
+        +String material_code
+        +BigDecimal quantity
+        +String unit
+    }
+    
+    class MaterialIssue {
+        +Integer id
+        +String issue_number
+        +String production_order_number
+        +String material_code
+        +BigDecimal quantity
+        +String unit
+        +String warehouse
+        +String issued_by
+        +Timestamp issued_at
+        +String remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class MaterialTransaction {
+        +String transaction_number
+        +String material_code
+        +String transaction_type
+        +BigDecimal quantity
+        +String reference_number
+        +String reference_type
+    }
+    
+    ' 关系定义
+    ProductionOrder "1" --> "*" MaterialIssue : generates
+    Material "1" --> "*" MaterialIssue : issued
+    ProductionOrder --> BOM : uses
+    BOM "1" *-- "*" BOMItem : contains
+    MaterialIssue --> MaterialTransaction : creates
+    
+    note right of MaterialIssue
+        生产领料（领料单）
+        系统根据生产订单/工单关联的BOM自动生成领料需求
+        实时显示库存信息（当前库存、在途量、可用量）
+        当库存不足时，可生成缺料单
+        领料后自动更新物料库存
+        创建MaterialTransaction记录
+    end note
+    
+    note right of ProductionOrder
+        生产订单/工单
+        生产订单状态为RELEASED或IN_PRODUCTION时才能创建领料单
+    end note
+    
+    note right of BOM
+        BOM（物料清单）
+        系统根据BOM自动生成领料需求
+    end note
+}
+
+@enduml

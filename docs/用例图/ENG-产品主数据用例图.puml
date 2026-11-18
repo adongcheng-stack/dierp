@@ -1,0 +1,39 @@
+@startuml ENG-产品主数据用例图
+
+title ENG模块 - 产品主数据子模块用例图
+
+left to right direction
+
+actor 工程师 as engineer
+actor 系统 as system
+
+rectangle "产品主数据管理" {
+  usecase "产品主数据管理\n(UC-ENG-001)" as UC001
+  usecase "产品列表查询\n(UC-ENG-001A)" as UC001A
+}
+
+engineer --> UC001 : 创建/更新/删除产品
+engineer --> UC001A : 查询产品列表
+
+system --> UC001 : 自动创建（SD调用）
+
+UC001 ..> UC001A : <<include>>
+
+note right of UC001
+  产品主数据管理
+  以本厂编号作为唯一标识
+  本厂编号同时作为产品编码(material_code)
+  只显示成品(FG类型)的物料
+  ENG模块拥有完整CRUD权限
+  SD模块可创建（自动创建）、查询、引用
+  但不能修改、删除
+end note
+
+note right of UC001A
+  产品列表查询
+  支持按本厂编号、产品名称、
+  产品系列等条件筛选和分页
+  只显示成品(FG类型)
+end note
+
+@enduml

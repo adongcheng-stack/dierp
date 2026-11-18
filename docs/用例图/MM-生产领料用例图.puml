@@ -1,0 +1,38 @@
+@startuml MM-生产领料用例图
+
+title MM模块 - 生产领料子模块用例图
+
+left to right direction
+
+actor 物料管理员 as warehouse
+actor 系统 as system
+
+rectangle "生产领料" {
+  usecase "创建生产领料单\n(UC-MM-001)" as UC001
+  usecase "查看物料库存\n(UC-MM-002)" as UC002
+}
+
+warehouse --> UC001 : 创建领料单
+warehouse --> UC002 : 查看库存
+
+system --> UC001 : 自动生成领料需求
+system --> UC001 : 实时显示库存
+
+UC001 ..> UC002 : <<include>>
+
+note right of UC001
+  创建生产领料单
+  根据生产订单/工单关联的BOM
+  自动生成领料需求
+  实时显示库存信息
+  当库存不足时，可生成缺料单
+  领料后自动更新物料库存
+end note
+
+note right of UC002
+  查看物料库存
+  查询当前库存、在途量、可用量
+  支持按物料编码、仓库等条件筛选
+end note
+
+@enduml

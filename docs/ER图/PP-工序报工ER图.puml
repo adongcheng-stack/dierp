@@ -1,0 +1,88 @@
+@startuml PP-工序报工ER图
+skinparam linetype ortho
+
+title PP模块 - 工序报工子模块ER图
+
+entity production_orders {
+    order_number VARCHAR <<PK>>
+    lot_number VARCHAR
+    status ENUM
+}
+
+entity routing_operations {
+    id SERIAL <<PK>>
+    routing_id VARCHAR <<FK>>
+    operation_no VARCHAR
+    operation_code VARCHAR
+    operation_name VARCHAR
+    operation_type VARCHAR
+    work_center_id VARCHAR <<FK>>
+}
+
+entity work_centers {
+    work_center_id VARCHAR <<PK>>
+    description VARCHAR
+}
+
+entity operation_reports {
+    id SERIAL <<PK>>
+    report_number VARCHAR <<UK>>
+    production_order_number VARCHAR <<FK>>
+    lot_number VARCHAR
+    routing_operation_id INTEGER <<FK>>
+    work_center_id VARCHAR <<FK>>
+    operation_no VARCHAR
+    operation_name VARCHAR
+    lot_number VARCHAR <<FK>>
+    reported_quantity NUMERIC
+    good_quantity NUMERIC
+    defective_quantity NUMERIC
+    actual_hours NUMERIC
+    report_date TIMESTAMP
+    reported_by VARCHAR
+    reported_at TIMESTAMP
+    status ENUM
+    rejection_reason VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity lot_cards {
+    lot_number VARCHAR <<PK>>
+    production_order_number VARCHAR <<FK>>
+}
+
+' 关系定义
+production_orders ||--o{ operation_reports : generates
+lot_cards ||--o{ operation_reports : "关联"
+routing_operations ||--o{ operation_reports : reported_for
+work_centers ||--o{ operation_reports : reports_to
+
+note right of operation_reports
+    工序报工/报工单
+    主键：id
+    业务主键：report_number（唯一）
+    状态：PENDING, IN_PROGRESS, COMPLETED, REJECTED
+    系统根据生产订单/工单号自动查询关联的LOT卡（1:1关系）
+    系统自动读取LOT卡号并填充到报工单中，LOT卡号不可修改
+    如果找不到LOT卡，不允许保存报工
+    记录完成数量、良品数量、不良品数量、工时等
+    如果工序配置了自动倒扣料，则扣减物料库存
+end note
+
+note right of production_orders
+    生产订单/工单
+    一个生产订单/工单对应一个LOT卡（1:1关系）
+    lot_number字段存储LOT卡号
+end note
+
+note right of lot_cards
+    LOT卡
+    系统根据生产订单/工单号自动查询关联的LOT卡
+    用于工序报工
+end note
+
+@enduml

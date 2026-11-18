@@ -1,0 +1,44 @@
+@startuml ENG-BOM管理用例图
+
+title ENG模块 - BOM管理子模块用例图
+
+left to right direction
+
+actor 工程师 as engineer
+
+rectangle "BOM管理" {
+  usecase "创建BOM\n(UC-ENG-003)" as UC003
+  usecase "更新BOM\n(UC-ENG-004)" as UC004
+  usecase "发布BOM\n(UC-ENG-005)" as UC005
+}
+
+engineer --> UC003 : 创建BOM
+engineer --> UC004 : 更新BOM
+engineer --> UC005 : 发布BOM
+
+UC003 ..> UC004 : <<extend>>
+UC003 ..> UC005 : <<extend>>
+UC004 ..> UC005 : <<extend>>
+
+note right of UC003
+  创建物料清单
+  定义产品的物料组成结构
+  父项为产品主数据
+  产品编码为本厂编号
+  包含多个BOM明细项
+end note
+
+note right of UC004
+  更新BOM
+  只能在NEW或REVIEWING状态下更新
+  RELEASED状态需创建新版本
+end note
+
+note right of UC005
+  发布BOM
+  状态转换：REVIEWING → RELEASED
+  只有RELEASED状态的BOM
+  才能用于生产版本
+end note
+
+@enduml

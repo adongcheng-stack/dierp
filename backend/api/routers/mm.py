@@ -1,0 +1,534 @@
+"""
+MM模块路由 - 物料管理
+"""
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from pydantic import BaseModel
+from datetime import datetime
+from decimal import Decimal
+from backend.common.database.base import get_db
+from backend.common.models.user import User
+from backend.api.routers.auth import get_current_user
+from backend.common.models.mm import Material, MaterialIssue, MaterialTransaction
+
+router = APIRouter()
+
+
+# Pydantic模型
+class MaterialCreate(BaseModel):
+    material_code: str
+    material_name: str
+    category: str
+    specification: Optional[str] = None
+    unit: str
+    brand: Optional[str] = None
+    min_package: Optional[str] = None
+    current_stock: float = 0
+    safety_stock: float = 0
+    description: Optional[str] = None
+    material_type: Optional[str] = None
+    status: Optional[str] = None
+    version: Optional[str] = None
+    base_unit: Optional[str] = None
+    production_unit: Optional[str] = None
+    conversion_factor: Optional[float] = None
+    layer_count: Optional[int] = None
+    board_thickness: Optional[float] = None
+    thickness_tolerance: Optional[str] = None
+    copper_weight: Optional[str] = None
+    material_grade: Optional[str] = None
+    surface_finish: Optional[str] = None
+    solder_mask_color: Optional[str] = None
+    silkscreen_color: Optional[str] = None
+    impedance_control: Optional[bool] = None
+    min_line_space: Optional[float] = None
+    min_hole_size: Optional[float] = None
+    unit_length: Optional[float] = None
+    unit_width: Optional[float] = None
+    panel_length: Optional[float] = None
+    panel_width: Optional[float] = None
+    units_per_panel: Optional[int] = None
+    procurement_type: Optional[str] = None
+    mrp_controller: Optional[str] = None
+    lead_time_days: Optional[int] = None
+    max_lot_size: Optional[int] = None
+    min_order_quantity: Optional[int] = None
+    order_multiple: Optional[int] = None
+    abc_class: Optional[str] = None
+    shelf_life_days: Optional[int] = None
+    default_location: Optional[str] = None
+    storage_condition: Optional[str] = None
+    batch_tracking: Optional[bool] = None
+    valuation_method: Optional[str] = None
+    standard_price: Optional[float] = None
+    currency: Optional[str] = None
+    last_cost_update: Optional[datetime] = None
+
+
+class MaterialUpdate(MaterialCreate):
+    pass
+
+
+class MaterialResponse(BaseModel):
+    id: int
+    material_code: str
+    material_name: str
+    category: str
+    specification: Optional[str] = None
+    unit: str
+    brand: Optional[str] = None
+    min_package: Optional[str] = None
+    current_stock: float
+    safety_stock: float
+    description: Optional[str] = None
+    material_type: Optional[str] = None
+    status: Optional[str] = None
+    version: Optional[str] = None
+    base_unit: Optional[str] = None
+    production_unit: Optional[str] = None
+    conversion_factor: Optional[float] = None
+    layer_count: Optional[int] = None
+    board_thickness: Optional[float] = None
+    thickness_tolerance: Optional[str] = None
+    copper_weight: Optional[str] = None
+    material_grade: Optional[str] = None
+    surface_finish: Optional[str] = None
+    solder_mask_color: Optional[str] = None
+    silkscreen_color: Optional[str] = None
+    impedance_control: Optional[bool] = None
+    min_line_space: Optional[float] = None
+    min_hole_size: Optional[float] = None
+    unit_length: Optional[float] = None
+    unit_width: Optional[float] = None
+    panel_length: Optional[float] = None
+    panel_width: Optional[float] = None
+    units_per_panel: Optional[int] = None
+    procurement_type: Optional[str] = None
+    mrp_controller: Optional[str] = None
+    lead_time_days: Optional[int] = None
+    max_lot_size: Optional[int] = None
+    min_order_quantity: Optional[int] = None
+    order_multiple: Optional[int] = None
+    abc_class: Optional[str] = None
+    shelf_life_days: Optional[int] = None
+    default_location: Optional[str] = None
+    storage_condition: Optional[str] = None
+    batch_tracking: Optional[bool] = None
+    valuation_method: Optional[str] = None
+    standard_price: Optional[float] = None
+    currency: Optional[str] = None
+    last_cost_update: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class MaterialIssueCreate(BaseModel):
+    production_order_number: str
+    material_code: str
+    quantity: float
+    unit: str
+    warehouse: Optional[str] = None
+    remarks: Optional[str] = None
+
+
+class MaterialIssueResponse(BaseModel):
+    id: int
+    issue_number: str
+    production_order_number: str
+    material_code: str
+    quantity: float
+    issued_by: str
+    
+    class Config:
+        from_attributes = True
+
+
+# 物料主数据管理
+@router.post("/materials", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)
+async def create_material(
+    material: MaterialCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """创建物料"""
+    # 检查物料编码是否已存在
+    existing = db.query(Material).filter(Material.material_code == material.material_code).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"物料编码已存在: {material.material_code}"
+        )
+    
+    db_material = Material(
+        material_code=material.material_code,
+        material_name=material.material_name,
+        category=material.category,
+        specification=material.specification,
+        unit=material.unit,
+        brand=material.brand,
+        min_package=material.min_package,
+        current_stock=material.current_stock,
+        safety_stock=material.safety_stock,
+        description=material.description,
+        material_type=material.material_type,
+        status=material.status,
+        version=material.version,
+        base_unit=material.base_unit,
+        production_unit=material.production_unit,
+        conversion_factor=material.conversion_factor,
+        layer_count=material.layer_count,
+        board_thickness=material.board_thickness,
+        thickness_tolerance=material.thickness_tolerance,
+        copper_weight=material.copper_weight,
+        material_grade=material.material_grade,
+        surface_finish=material.surface_finish,
+        solder_mask_color=material.solder_mask_color,
+        silkscreen_color=material.silkscreen_color,
+        impedance_control=material.impedance_control,
+        min_line_space=material.min_line_space,
+        min_hole_size=material.min_hole_size,
+        unit_length=material.unit_length,
+        unit_width=material.unit_width,
+        panel_length=material.panel_length,
+        panel_width=material.panel_width,
+        units_per_panel=material.units_per_panel,
+        procurement_type=material.procurement_type,
+        mrp_controller=material.mrp_controller,
+        lead_time_days=material.lead_time_days,
+        max_lot_size=material.max_lot_size,
+        min_order_quantity=material.min_order_quantity,
+        order_multiple=material.order_multiple,
+        abc_class=material.abc_class,
+        shelf_life_days=material.shelf_life_days,
+        default_location=material.default_location,
+        storage_condition=material.storage_condition,
+        batch_tracking=material.batch_tracking,
+        valuation_method=material.valuation_method,
+        standard_price=material.standard_price,
+        currency=material.currency,
+        last_cost_update=material.last_cost_update,
+        created_by=current_user.username
+    )
+    db.add(db_material)
+    db.commit()
+    db.refresh(db_material)
+    return db_material
+
+
+@router.get("/materials", response_model=List[MaterialResponse])
+async def list_materials(
+    skip: int = 0,
+    limit: int = 100,
+    category: Optional[str] = None,
+    material_code: Optional[str] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """获取物料列表（优化：只加载必要字段，不加载关联数据）"""
+    
+    query = db.query(Material).filter(Material.is_deleted == False)
+    if category:
+        query = query.filter(Material.category == category)
+    if material_code:
+        query = query.filter(Material.material_code.like(f"%{material_code}%"))
+    if status:
+        query = query.filter(Material.status == status)
+    
+    # 列表查询不需要加载关联数据，手动构建响应避免Pydantic序列化时触发延迟加载
+    # Material模型没有定义关系，但为了安全起见，我们手动构建响应
+    materials = query.order_by(Material.material_code).offset(skip).limit(limit).all()
+    
+    # 手动构建响应，确保字段正确序列化
+    result = []
+    for material in materials:
+        material_dict = {
+            "id": material.id,
+            "material_code": material.material_code,
+            "material_name": material.material_name,
+            "category": material.category,
+            "specification": material.specification,
+            "unit": material.unit,
+            "brand": material.brand,
+            "min_package": material.min_package,
+            "current_stock": float(material.current_stock) if material.current_stock else 0.0,
+            "safety_stock": float(material.safety_stock) if material.safety_stock else 0.0,
+            "description": material.description,
+            "material_type": material.material_type,
+            "status": material.status if material.status else "ACTIVE",
+            "version": material.version,
+            "base_unit": material.base_unit,
+            "production_unit": material.production_unit,
+            "created_at": material.created_at,
+            "updated_at": material.updated_at,
+            "created_by": material.created_by,
+            "updated_by": material.updated_by
+        }
+        result.append(material_dict)
+    
+    return result
+
+
+@router.get("/materials/{material_code}", response_model=MaterialResponse)
+async def get_material(
+    material_code: str,
+    db: Session = Depends(get_db)
+):
+    """获取物料详情"""
+    material = db.query(Material).filter(
+        Material.material_code == material_code,
+        Material.is_deleted == False
+    ).first()
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"物料不存在: {material_code}"
+        )
+    return material
+
+
+@router.put("/materials/{material_code}", response_model=MaterialResponse)
+async def update_material(
+    material_code: str,
+    material: MaterialUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """更新物料"""
+    db_material = db.query(Material).filter(
+        Material.material_code == material_code,
+        Material.is_deleted == False
+    ).first()
+    if not db_material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"物料不存在: {material_code}"
+        )
+    # 更新字段
+    for field in material.dict(exclude_unset=True):
+        setattr(db_material, field, material.dict()[field])
+    db_material.updated_by = current_user.username
+    db.commit()
+    db.refresh(db_material)
+    return db_material
+
+
+# 生产领料
+@router.post("/material-issues", response_model=MaterialIssueResponse, status_code=status.HTTP_201_CREATED)
+async def create_material_issue(
+    issue: MaterialIssueCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """创建生产领料单"""
+    try:
+        # 检查物料是否存在
+        material = db.query(Material).filter(Material.material_code == issue.material_code).first()
+        if not material:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"物料不存在: {issue.material_code}"
+            )
+        
+        # 验证单位是否与物料单位一致
+        if issue.unit != material.unit:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"单位不匹配: 物料的单位为 {material.unit}，但领料单的单位为 {issue.unit}。领料单应使用物料的单位。"
+            )
+        
+        # 检查库存是否充足（确保类型一致）
+        issue_quantity_decimal = Decimal(str(issue.quantity))
+        if material.current_stock < issue_quantity_decimal:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"库存不足: 当前库存 {material.current_stock} {material.unit}, 需要 {issue.quantity} {material.unit}"
+            )
+        
+        # 检查生产订单是否存在
+        from backend.common.models.pp import ProductionOrder, ProductionOrderStatus
+        production_order = db.query(ProductionOrder).filter(
+            ProductionOrder.order_number == issue.production_order_number
+        ).first()
+        if not production_order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"生产订单不存在: {issue.production_order_number}"
+            )
+        
+        # 验证生产订单状态：不能是已完成或已关闭状态
+        if production_order.status in [ProductionOrderStatus.COMPLETED, ProductionOrderStatus.CLOSED]:
+            from backend.common.exceptions import ValidationException, ErrorCodes
+            raise ValidationException(
+                error_code=ErrorCodes.PRODUCTION_ORDER_STATUS_INVALID,
+                detail=f"生产订单状态不允许领料: 当前状态为 {production_order.status}，已完成或已关闭的订单不能创建领料单",
+                field="production_order_status",
+                value=production_order.status
+            )
+        
+        # 验证物料编码是否与生产订单匹配（可选，但建议验证）
+        if production_order.material_code != issue.material_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"物料编码不匹配: 生产订单的物料编码为 {production_order.material_code}，但领料单的物料编码为 {issue.material_code}"
+            )
+        
+        # 生成领料单号（确保唯一性）
+        order_suffix = issue.production_order_number[-4:] if len(issue.production_order_number) >= 4 else issue.production_order_number
+        issue_number_base = f"MI-{datetime.now().strftime('%Y%m%d')}-{order_suffix}"
+        issue_number = issue_number_base
+        
+        # 检查领料单号是否已存在，如果存在则添加序号
+        counter = 0
+        while db.query(MaterialIssue).filter(MaterialIssue.issue_number == issue_number).first():
+            counter += 1
+            issue_number = f"{issue_number_base}-{counter}"
+            if counter > 100:  # 防止无限循环
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="无法生成唯一的领料单号"
+                )
+        
+        db_issue = MaterialIssue(
+            issue_number=issue_number,
+            production_order_number=issue.production_order_number,
+            material_code=issue.material_code,
+            quantity=issue.quantity,
+            unit=issue.unit,
+            issued_by=current_user.username,
+            issued_at=datetime.utcnow(),
+            warehouse=issue.warehouse,
+            remarks=issue.remarks,
+            created_by=current_user.username
+        )
+        db.add(db_issue)
+        
+        # 扣减库存（确保类型一致，使用 Decimal）
+        material.current_stock -= issue_quantity_decimal
+        material.updated_by = current_user.username
+        
+        # 记录库存事务
+        transaction_number_base = f"TR-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        transaction_number = transaction_number_base
+        counter = 0
+        while db.query(MaterialTransaction).filter(MaterialTransaction.transaction_number == transaction_number).first():
+            counter += 1
+            transaction_number = f"{transaction_number_base}-{counter}"
+            if counter > 100:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="无法生成唯一的事务编号"
+                )
+        
+        # 记录库存事务
+        try:
+            transaction = MaterialTransaction(
+                transaction_number=transaction_number,
+                material_code=issue.material_code,
+                transaction_type="ISSUE",
+                quantity=-issue_quantity_decimal,  # 使用 Decimal 类型，负数表示出库
+                unit=issue.unit,
+                reference_number=issue_number,
+                reference_type="MATERIAL_ISSUE",
+                warehouse=issue.warehouse if issue.warehouse else None,  # 确保 None 而不是空字符串
+                transaction_date=datetime.utcnow(),
+                operator=current_user.username,
+                remarks=f"生产领料: {issue.production_order_number}" if issue.production_order_number else None,
+                created_by=current_user.username  # 添加创建人
+            )
+            db.add(transaction)
+            db.flush()  # 先 flush 以检查是否有错误
+        except Exception as trans_e:
+            print(f"创建库存事务记录错误: {type(trans_e).__name__}: {trans_e}")
+            import traceback
+            traceback.print_exc()
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"创建库存事务记录失败: {str(trans_e)}。请检查后端控制台日志获取详细信息。"
+            )
+        
+        try:
+            db.commit()
+            db.refresh(db_issue)
+            return db_issue
+        except Exception as commit_e:
+            print(f"提交事务错误: {type(commit_e).__name__}: {commit_e}")
+            import traceback
+            traceback.print_exc()
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"提交事务失败: {str(commit_e)}"
+            )
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"创建生产领料单错误: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"创建生产领料单失败: {str(e)}"
+        )
+
+
+@router.get("/material-issues", response_model=List[MaterialIssueResponse])
+async def list_material_issues(
+    skip: int = 0,
+    limit: int = 100,
+    production_order_number: Optional[str] = None,
+    material_code: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """获取生产领料列表（已优化：预加载关联数据）"""
+    from sqlalchemy.orm import joinedload
+    
+    query = db.query(MaterialIssue)
+    if production_order_number:
+        query = query.filter(MaterialIssue.production_order_number == production_order_number)
+    if material_code:
+        query = query.filter(MaterialIssue.material_code == material_code)
+    
+    # 预加载关联数据，避免N+1查询
+    # 注意：MaterialIssue.production_order 关系被注释掉了，所以只加载 material
+    query = query.options(
+        joinedload(MaterialIssue.material)
+    )
+    
+    issues = query.offset(skip).limit(limit).all()
+    return issues
+
+
+# 库存查询
+@router.get("/inventory")
+async def get_inventory(
+    material_code: Optional[str] = None,
+    category: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """获取库存信息"""
+    query = db.query(Material).filter(Material.is_deleted == False)
+    if material_code:
+        query = query.filter(Material.material_code.like(f"%{material_code}%"))
+    if category:
+        query = query.filter(Material.category == category)
+    
+    materials = query.all()
+    
+    return [
+        {
+            "material_code": m.material_code,
+            "material_name": m.material_name,
+            "category": m.category,
+            "unit": m.unit,
+            "current_stock": float(m.current_stock),
+            "safety_stock": float(m.safety_stock),
+            "stock_status": "充足" if m.current_stock >= m.safety_stock else "不足"
+        }
+        for m in materials
+    ]
+

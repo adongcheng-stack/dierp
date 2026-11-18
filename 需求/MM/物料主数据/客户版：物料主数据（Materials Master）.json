@@ -1,0 +1,64 @@
+{
+  "materialHeader": {
+    "materialId": "MAT-PCB-23001",
+    "materialName": "Server Mainboard V2.0 / 服务器主板 V2",
+    "description": "Dell服务器主板，生益 S1000-2 覆铜板"
+    "materialType": "FG", // Finished Goods，RAW (原材料: 铜球, 油墨)，SEMI (半成品: 芯板)，FG (成品: 最终发货PCB)
+    "status": "ACTIVE", //ACTIVE (正常)，OBSOLETE (报废/呆滞)，DRAFT (工程研发中)
+    "version": "B.1",
+  }
+  // 基础计量单位
+  "unitOfMeasure": {
+    "base": "PCS", // PCS, SET and PNL，PCS (个 - 成品)，PNL (大板 - 生产中)，KG (油墨/铜球)，SHT (张 - 覆铜板)
+    "production": "PNL", // 生产按 PNL 投料和报工
+    "conversion": 6      // 1 PNL = 6 PCS
+  },
+
+  // PCB 专有工程属性 (核心资产)
+  "pcbAttributes": {
+    "layerCount": 8,
+    "boardThickness": 1.6, // mm，0.8, 1.0, 1.6, 2.0
+    "thicknessTolerance": "+/-0.1",
+    "copperWeight": 1oz // 1oz, 0.5oz, H/H (Half oz)
+    "materialGrade": "FR4-Tg170", // 高Tg板材，FR4-Std, FR4-Tg170, Rogers, Aluminum (铝基板)
+    "surfaceFinish": "ENIG",      // 沉金，ENIG (沉金), HASL (有铅喷锡), HASL_LF (无铅喷锡), OSP, ImAg (沉银)
+    "solderMaskColor": "GREEN",
+    "silkscreenColor": "WHITE",
+    "impedanceControl": true,     // 是否有阻抗控制
+    "minLineSpace": 0.075,        // 最小线距(mm)，决定工艺能力等级
+    "minHoleSize": 0.2,           // 最小孔径(mm)
+    
+    // 尺寸信息
+    "dimensions": {
+      "unitLength": 150.0,
+      "unitWidth": 80.0,
+      "panelLength": 500.0,
+      "panelWidth": 400.0
+      "unitsPerPanel": 10 // 10, 20...
+    }
+  },
+
+  // 供应链计划参数
+  "planning": {
+    "procurementType": "MAKE", // 自制，MAKE (自制)，BUY (外购)，SUB (全外协)
+    "mrpController": "PLANNER-A",
+    "leadTimeDays": 12,
+    "safetyStock": 200, // 安全库存
+    "maxLotSize": 5000  // 最大批量
+  },
+
+  // 库存管理
+  "storage": {
+    "shelfLifeDays": 365, // 成品保质期通常较长
+    "defaultLocation": "WH-FG-01",
+    "storageCondition": "VACUUM_PACK" // 真空包装
+  },
+
+  // 财务成本
+  "costing": {
+    "valuationMethod": "STANDARD",
+    "standardPrice": 85.50, // 单只成本
+    "currency": "CNY",
+    "lastCostUpdate": "2023-10-01"
+  }
+}

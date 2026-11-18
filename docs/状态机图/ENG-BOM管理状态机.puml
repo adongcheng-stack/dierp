@@ -1,0 +1,49 @@
+@startuml ENG-BOM管理状态机
+
+title ENG模块 - BOM管理子模块状态机
+
+[*] --> NEW : 创建BOM
+
+NEW --> REVIEWING : 提交审核\n(工程师)
+REVIEWING --> RELEASED : 审核通过\n(工程师)
+REVIEWING --> NEW : 审核拒绝\n(工程师)
+
+RELEASED --> PRODUCING : 被生产订单使用\n(系统自动)
+PRODUCING --> RELEASED : 生产订单完成\n(系统自动)
+
+RELEASED --> OBSOLETE : 废弃BOM\n(工程师)
+NEW --> OBSOLETE : 废弃BOM\n(工程师)
+
+OBSOLETE --> [*] : 完成
+
+note right of NEW
+  新建状态
+  BOM刚创建
+  可在NEW或REVIEWING状态下更新
+end note
+
+note right of REVIEWING
+  审核中
+  正在审核
+end note
+
+note right of RELEASED
+  已发布
+  审核通过，已发布
+  只有RELEASED状态的BOM
+  才能用于生产版本
+  RELEASED状态需创建新版本
+  而非直接修改
+end note
+
+note right of PRODUCING
+  生产中
+  正在被生产订单使用
+end note
+
+note right of OBSOLETE
+  已废弃
+  已废弃，不再使用
+end note
+
+@enduml

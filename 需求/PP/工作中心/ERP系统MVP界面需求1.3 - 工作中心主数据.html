@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - 工作中心主数据管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .form-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title span {
+            margin-left: auto;
+            font-size: 12px;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        label.required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            color: #7f8c8d;
+        }
+        
+        .select-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .select-dropdown select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        
+        .checkbox-item label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+        
+        .dynamic-list {
+            margin-top: 10px;
+        }
+        
+        .dynamic-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .dynamic-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .item-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .field-description {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 3px;
+            font-style: italic;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-active { background-color: #d4edda; color: #155724; }
+        .status-inactive { background-color: #d6d8d9; color: #383d41; }
+        .status-maintenance { background-color: #fff3cd; color: #856404; }
+        
+        .group-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .group-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .capacity-time-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .capacity-time-input {
+            background-color: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .capacity-time-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .capacity-time-value {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        
+        .standard-capacity-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .activity-types-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .activity-type-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .activity-type-info {
+            flex: 1;
+        }
+        
+        .activity-type-id {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .activity-type-desc {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .activity-type-rate {
+            font-weight: 600;
+            color: #27ae60;
+        }
+        
+        .technical-attributes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .attribute-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .attribute-name {
+            width: 200px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .attribute-value {
+            flex: 1;
+        }
+        
+        .attribute-unit {
+            width: 100px;
+        }
+        
+        .system-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .system-info-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        
+        .system-info-label {
+            width: 150px;
+            font-weight: 600;
+        }
+        
+        .instructions {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 14px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .work-center-type-indicator {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .type-machine { background-color: #3498db; color: white; }
+        .type-machine-group { background-color: #9b59b6; color: white; }
+        .type-labor { background-color: #e74c3c; color: white; }
+        .type-production-line { background-color: #f39c12; color: white; }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .capacity-time-inputs,
+            .standard-capacity-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .attribute-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .attribute-name,
+            .attribute-unit {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>某某ERP系统 - 工作中心主数据管理</h1>
+            <p style="color: #666;">工作中心主数据创建与维护界面</p>
+        </header>
+        
+        <div class="form-container">
+            <!-- 工作中心基本信息 -->
+            <div class="form-section">
+                <h2 class="section-title">工作中心基本信息</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="workCenterId" class="required">工作中心代码 - Work Center ID</label>
+                        <input type="text" id="workCenterId" class="form-control" value="DRILL-A" placeholder="请输入工作中心代码">
+                        <div class="field-description">业务主键，系统唯一标识</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description" class="required">工作中心描述 - Description</label>
+                        <input type="text" id="description" class="form-control" value="CNC钻孔机组A (4轴)" placeholder="请输入工作中心描述">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="workCenterType" class="required">工作中心类型 - Work Center Type</label>
+                        <div class="select-dropdown">
+                            <select id="workCenterType" onchange="onWorkCenterTypeChange()">
+                                <option value="MACHINE">MACHINE (单台机器)</option>
+                                <option value="MACHINE_GROUP" selected>MACHINE_GROUP (机组)</option>
+                                <option value="LABOR">LABOR (人工工位)</option>
+                                <option value="PRODUCTION_LINE">PRODUCTION_LINE (产线)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="plantId" class="required">所属工厂代码 - Plant ID</label>
+                        <input type="text" id="plantId" class="form-control" value="PLANT-1000" placeholder="请输入工厂代码">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="status" class="required">状态 - Status</label>
+                        <div class="select-dropdown">
+                            <select id="status">
+                                <option value="ACTIVE" selected>ACTIVE (活动的)</option>
+                                <option value="INACTIVE">INACTIVE (停用)</option>
+                                <option value="IN_MAINTENANCE">IN_MAINTENANCE (维护中)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="group-container">
+                    <div class="group-title">层级关系 - Hierarchy</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="parentWorkCenterId">父工作中心代码 - Parent Work Center ID</label>
+                            <div class="select-dropdown">
+                                <select id="parentWorkCenterId">
+                                    <option value="">请选择父工作中心</option>
+                                    <option value="DRILLING_DEPT" selected>DRILLING_DEPT (钻孔部门)</option>
+                                    <option value="PLATING_LINE_A">PLATING_LINE_A (电镀A线)</option>
+                                    <option value="ETCHING_LINE_1">ETCHING_LINE_1 (蚀刻线1)</option>
+                                    <option value="LAMINATION_LINE">LAMINATION_LINE (压合线)</option>
+                                    <option value="AOI_DEPT">AOI_DEPT (AOI检测部门)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="hierarchyLevel">层级 - Level</label>
+                            <input type="number" id="hierarchyLevel" class="form-control" value="2" min="1" max="5">
+                            <div class="field-description">1=工厂, 2=部门/产线, 3=机组, 4=设备, 5=工位</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 基础与调度数据 -->
+            <div class="form-section">
+                <h2 class="section-title">基础与调度数据 - Basic & Scheduling Data</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="workCenterCategory" class="required">工作中心类别 - Work Center Category</label>
+                        <div class="select-dropdown">
+                            <select id="workCenterCategory" onchange="onWorkCenterCategoryChange()">
+                                <option value="0001">0001 (机器)</option>
+                                <option value="0002">0002 (人工)</option>
+                                <option value="0003" selected>0003 (产线)</option>
+                            </select>
+                        </div>
+                        <div class="field-description">标准配置，定义了屏幕字段和功能</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="usage" class="required">用途 - Usage</label>
+                        <div class="select-dropdown">
+                            <select id="usage">
+                                <option value="PP01" selected>PP01 (生产)</option>
+                                <option value="PM01">PM01 (设备维护)</option>
+                                <option value="QM01">QM01 (质量检验)</option>
+                            </select>
+                        </div>
+                        <div class="field-description">决定此工作中心能用于哪些任务</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="standardValueKey" class="required">标准值码 - Standard Value Key</label>
+                        <div class="select-dropdown">
+                            <select id="standardValueKey">
+                                <option value="SAP_02" selected>SAP_02 (准备+机器+人工)</option>
+                                <option value="SAP_01">SAP_01 (仅机器时间)</option>
+                            </select>
+                        </div>
+                        <div class="field-description">定义了该工作中心需要维护哪几种标准时间</div>
+                    </div>
+                </div>
+                
+                <div class="capacity-time-inputs">
+                    <div class="capacity-time-input">
+                        <div class="capacity-time-label">排队时间 - Queue Time</div>
+                        <div class="capacity-time-value">
+                            <input type="number" id="queueTime" class="form-control" value="0.5" step="0.1" min="0" style="width: 100px; display: inline-block;"> 小时
+                        </div>
+                        <div class="field-description">物料到达工作中心后，开始加工前的平均排队时间</div>
+                    </div>
+                    
+                    <div class="capacity-time-input">
+                        <div class="capacity-time-label">等待时间 - Wait Time</div>
+                        <div class="capacity-time-value">
+                            <input type="number" id="waitTime" class="form-control" value="0" step="0.1" min="0" style="width: 100px; display: inline-block;"> 小时
+                        </div>
+                        <div class="field-description">加工完成后必须停留的最小时间</div>
+                    </div>
+                    
+                    <div class="capacity-time-input">
+                        <div class="capacity-time-label">传送时间 - Move Time</div>
+                        <div class="capacity-time-value">
+                            <input type="number" id="moveTime" class="form-control" value="0.25" step="0.05" min="0" style="width: 100px; display: inline-block;"> 小时
+                        </div>
+                        <div class="field-description">物理搬运到下一个工作中心所花费的时间</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 产能数据 -->
+            <div class="form-section">
+                <h2 class="section-title">产能数据 - Capacity Data</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="capacityCategory" class="required">能力类别 - Capacity Category</label>
+                        <div class="select-dropdown">
+                            <select id="capacityCategory">
+                                <option value="001" selected>001 (机器)</option>
+                                <option value="002">002 (人工)</option>
+                            </select>
+                        </div>
+                        <div class="field-description">定义了计算产能的基础是机器还是人工</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="factoryCalendarId" class="required">工厂日历ID - Factory Calendar ID</label>
+                        <div class="select-dropdown">
+                            <select id="factoryCalendarId">
+                                <option value="CN" selected>CN (中国标准日历)</option>
+                                <option value="CN_SHENZHEN">CN_SHENZHEN (深圳工厂日历)</option>
+                                <option value="CN_SUZHOU">CN_SUZHOU (苏州工厂日历)</option>
+                            </select>
+                        </div>
+                        <div class="field-description">我们的节假日可以由工厂总经理来决定调整</div>
+                    </div>
+                </div>
+                
+                <div class="group-container">
+                    <div class="group-title">标准产能 - Standard Available Capacity</div>
+                    
+                    <div class="standard-capacity-form">
+                        <div class="form-group">
+                            <label for="shiftStartTime">班次开始时间 - Start Time</label>
+                            <input type="time" id="shiftStartTime" class="form-control" value="08:00">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="shiftFinishTime">班次结束时间 - Finish Time</label>
+                            <input type="time" id="shiftFinishTime" class="form-control" value="17:00">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="breakTime">休息时间 - Break Time</label>
+                            <input type="number" id="breakTime" class="form-control" value="1.0" step="0.5" min="0">
+                            <div class="field-description">小时</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="capacityUtilization">产能利用率 - Capacity Utilization</label>
+                            <input type="number" id="capacityUtilization" class="form-control" value="90" min="0" max="100">
+                            <div class="field-description">% (考虑到设备故障、效率损失等因素)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="numberOfCapacities">能力数量 - Number of Capacities</label>
+                            <input type="number" id="numberOfCapacities" class="form-control" value="4" min="1">
+                            <div class="field-description">并行处理的同类单元的数量</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="group-container">
+                    <div class="group-title">产能计算公式 - Capacity Formula</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="setupFormula">准备时间公式 - Setup Formula</label>
+                            <div class="select-dropdown">
+                                <select id="setupFormula">
+                                    <option value="SAPF01" selected>SAPF01 (标准准备时间公式)</option>
+                                    <option value="SAPF02">SAPF02 (快速换模公式)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="processingFormula">处理时间公式 - Processing Formula</label>
+                            <div class="select-dropdown">
+                                <select id="processingFormula">
+                                    <option value="SAPF02" selected>SAPF02 (标准处理时间公式)</option>
+                                    <option value="SAPF03">SAPF03 (高速处理公式)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="teardownFormula">清理时间公式 - Teardown Formula</label>
+                            <div class="select-dropdown">
+                                <select id="teardownFormula">
+                                    <option value="SAPF03" selected>SAPF03 (标准清理公式)</option>
+                                    <option value="SAPF04">SAPF04 (快速清理公式)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 成本核算数据 -->
+            <div class="form-section">
+                <h2 class="section-title">成本核算数据 - Costing Data</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="costCenterId" class="required">关联的成本中心代码 - Cost Center ID</label>
+                        <input type="text" id="costCenterId" class="form-control" value="CC-4210" placeholder="请输入成本中心代码">
+                    </div>
+                </div>
+                
+                <div class="group-container">
+                    <div class="group-title">作业类型 - Activity Types</div>
+                    
+                    <div class="activity-types-list">
+                        <!-- 作业类型1 -->
+                        <div class="activity-type-item">
+                            <div class="activity-type-info">
+                                <div class="activity-type-id">ACT-SETUP - 机器准备作业</div>
+                                <div class="activity-type-desc">机器准备作业</div>
+                            </div>
+                            <div class="activity-type-rate">
+                                <input type="number" id="setupRate" class="form-control" value="50.00" step="0.01" min="0" style="width: 100px; display: inline-block;"> CNY/H
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removeActivityType(this)">删除</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 作业类型2 -->
+                        <div class="activity-type-item">
+                            <div class="activity-type-info">
+                                <div class="activity-type-id">ACT-MACHINE - 机器运行作业</div>
+                                <div class="activity-type-desc">机器运行作业</div>
+                            </div>
+                            <div class="activity-type-rate">
+                                <input type="number" id="machineRate" class="form-control" value="120.00" step="0.01" min="0" style="width: 100px; display: inline-block;"> CNY/H
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removeActivityType(this)">删除</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 作业类型3 -->
+                        <div class="activity-type-item">
+                            <div class="activity-type-info">
+                                <div class="activity-type-id">ACT-LABOR - 人工监控作业</div>
+                                <div class="activity-type-desc">人工监控作业</div>
+                            </div>
+                            <div class="activity-type-rate">
+                                <input type="number" id="laborRate" class="form-control" value="35.00" step="0.01" min="0" style="width: 100px; display: inline-block;"> CNY/H
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="removeActivityType(this)">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="addActivityType()">+ 添加作业类型</button>
+                </div>
+            </div>
+            
+            <!-- PCB行业特定数据 -->
+            <div class="form-section">
+                <h2 class="section-title">PCB行业特定数据 - PCB-Specific Technical Data</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="processCategory" class="required">工艺类别 - Process Category</label>
+                        <div class="select-dropdown">
+                            <select id="processCategory" onchange="onProcessCategoryChange()">
+                                <option value="">请选择工艺类别</option>
+                                <option value="DRILLING" selected>DRILLING (钻孔)</option>
+                                <option value="PLATING">PLATING (电镀)</option>
+                                <option value="ETCHING">ETCHING (蚀刻)</option>
+                                <option value="LAMINATION">LAMINATION (压合)</option>
+                                <option value="AOI">AOI (自动光学检测)</option>
+                                <option value="SOLDER_MASK">SOLDER_MASK (阻焊)</option>
+                                <option value="SURFACE_FINISH">SURFACE_FINISH (表面处理)</option>
+                            </select>
+                        </div>
+                        <div class="field-description">选择工艺类别后，系统会自动加载相应的技术属性</div>
+                    </div>
+                </div>
+                
+                <div class="group-container" id="technicalAttributesContainer">
+                    <div class="group-title">技术属性 - Technical Attributes <span id="dynamicAttributesNote" style="font-size: 12px; color: #3498db; font-weight: normal;">(根据DRILLING类别动态加载)</span></div>
+                    
+                    <div class="technical-attributes-list">
+                        <!-- 钻孔技术属性 -->
+                        <div class="attribute-item">
+                            <div class="attribute-name">MinHoleSize (最小孔径)</div>
+                            <div class="attribute-value">
+                                <input type="number" id="minHoleSize" class="form-control" value="0.15" step="0.01" min="0">
+                            </div>
+                            <div class="attribute-unit">
+                                <div class="select-dropdown">
+                                    <select id="minHoleSizeUnit">
+                                        <option value="mm" selected>mm</option>
+                                        <option value="mil">mil</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="attribute-item">
+                            <div class="attribute-name">MaxLayerCount (最大加工层数)</div>
+                            <div class="attribute-value">
+                                <input type="number" id="maxLayerCount" class="form-control" value="12" min="1" max="50">
+                            </div>
+                            <div class="attribute-unit">
+                                <div class="select-dropdown">
+                                    <select id="maxLayerCountUnit">
+                                        <option value="Layers" selected>Layers</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="attribute-item">
+                            <div class="attribute-name">PositionalAccuracy (定位精度)</div>
+                            <div class="attribute-value">
+                                <input type="number" id="positionalAccuracy" class="form-control" value="0.01" step="0.001" min="0">
+                            </div>
+                            <div class="attribute-unit">
+                                <div class="select-dropdown">
+                                    <select id="positionalAccuracyUnit">
+                                        <option value="mm" selected>mm</option>
+                                        <option value="mil">mil</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="addTechnicalAttribute()">+ 添加技术属性</button>
+                </div>
+            </div>
+            
+            <!-- 系统与审计信息 -->
+            <div class="form-section">
+                <h2 class="section-title">系统与审计信息 - System & Audit Info</h2>
+                
+                <div class="system-info">
+                    <div class="system-info-row">
+                        <div class="system-info-label">创建人:</div>
+                        <div>user_admin</div>
+                    </div>
+                    <div class="system-info-row">
+                        <div class="system-info-label">创建时间:</div>
+                        <div>2024-01-15T09:00:00Z</div>
+                    </div>
+                    <div class="system-info-row">
+                        <div class="system-info-label">最后修改人:</div>
+                        <div>user_prod_mgr</div>
+                    </div>
+                    <div class="system-info-row">
+                        <div class="system-info-label">最后修改时间:</div>
+                        <div>2024-05-22T11:45:00Z</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="saveWorkCenter()">保存工作中心</button>
+                <button class="btn btn-primary" onclick="activateWorkCenter()">激活工作中心</button>
+                <button class="btn btn-warning" onclick="deactivateWorkCenter()">停用工作中心</button>
+                <button class="btn btn-secondary" onclick="saveAsDraft()">保存为草稿</button>
+                <button class="btn btn-danger" onclick="deleteWorkCenter()">删除工作中心</button>
+                <button class="btn btn-secondary" onclick="cancelForm()">取消</button>
+            </div>
+            
+            <div class="timestamp">
+                当前工作中心: DRILL-A | 状态: <span id="currentStatus">ACTIVE (活动的)</span> | 最后保存时间: 2024-05-22 11:45:00
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>工作中心主数据管理说明</h3>
+            <ul>
+                <li><strong>工作中心代码:</strong> 系统唯一标识，创建后不可修改</li>
+                <li><strong>工作中心类型:</strong> 决定工作中心的基本性质和功能特性</li>
+                <li><strong>工艺类别:</strong> PCB行业特有属性，决定技术属性的动态加载</li>
+                <li><strong>调度数据:</strong> 用于生产计划和排程的时间参数</li>
+                <li><strong>产能数据:</strong> 定义工作中心的生产能力和工作班次</li>
+                <li><strong>成本数据:</strong> 用于成本核算的作业类型和费率</li>
+                <li><strong>技术属性:</strong> PCB行业特定技术参数，根据工艺类别动态加载</li>
+                <li>标记 <span style="color: #e74c3c;">*</span> 的字段为必填项</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 工艺类别与技术属性模板映射
+        const processCategoryTemplates = {
+            'DRILLING': [
+                { name: 'MinHoleSize', label: '最小孔径', defaultValue: '0.15', unit: 'mm', type: 'number', required: true },
+                { name: 'MaxLayerCount', label: '最大加工层数', defaultValue: '12', unit: 'Layers', type: 'number', required: true },
+                { name: 'PositionalAccuracy', label: '定位精度', defaultValue: '0.01', unit: 'mm', type: 'number', required: false }
+            ],
+            'PLATING': [
+                { name: 'TankCapacity', label: '镀缸容量', defaultValue: '1000', unit: 'L', type: 'number', required: true },
+                { name: 'MaxCurrent', label: '最大电流', defaultValue: '500', unit: 'A', type: 'number', required: true },
+                { name: 'CoatingThickness', label: '镀层厚度范围', defaultValue: '1-5', unit: 'μm', type: 'text', required: false }
+            ],
+            'ETCHING': [
+                { name: 'EtchingPrecision', label: '蚀刻精度', defaultValue: '0.02', unit: 'mm', type: 'number', required: true },
+                { name: 'MaxPanelSize', label: '最大面板尺寸', defaultValue: '610x710', unit: 'mm', type: 'text', required: true },
+                { name: 'EtchingSolutionType', label: '蚀刻液类型', defaultValue: '碱性', unit: '', type: 'text', required: false }
+            ],
+            'LAMINATION': [
+                { name: 'MaxPressure', label: '最大压力', defaultValue: '300', unit: 'T', type: 'number', required: true },
+                { name: 'HeatingPlateSize', label: '加热板尺寸', defaultValue: '600x600', unit: 'mm', type: 'text', required: true },
+                { name: 'TemperatureRange', label: '温度范围', defaultValue: '180-220', unit: '°C', type: 'text', required: false }
+            ],
+            'AOI': [
+                { name: 'DetectionResolution', label: '检测分辨率', defaultValue: '10', unit: 'μm', type: 'number', required: true },
+                { name: 'ScanSpeed', label: '扫描速度', defaultValue: '30', unit: 'cm²/s', type: 'number', required: true },
+                { name: 'MinDefectSize', label: '最小缺陷尺寸', defaultValue: '25', unit: 'μm', type: 'number', required: false }
+            ]
+        };
+        
+        // 作业类型计数器
+        let activityTypeCounter = 3;
+        
+        // 技术属性计数器
+        let technicalAttributeCounter = 3;
+        
+        // 工作中心类型变更处理
+        function onWorkCenterTypeChange() {
+            const workCenterType = document.getElementById('workCenterType').value;
+            const statusIndicator = document.querySelector('#workCenterTypeIndicator');
+            
+            // 更新界面提示
+            const typeLabels = {
+                'MACHINE': 'MACHINE (单台机器)',
+                'MACHINE_GROUP': 'MACHINE_GROUP (机组)',
+                'LABOR': 'LABOR (人工工位)',
+                'PRODUCTION_LINE': 'PRODUCTION_LINE (产线)'
+            };
+            
+            // 根据类型调整产能类别
+            if (workCenterType === 'LABOR') {
+                document.getElementById('capacityCategory').value = '002';
+            } else {
+                document.getElementById('capacityCategory').value = '001';
+            }
+        }
+        
+        // 工作中心类别变更处理
+        function onWorkCenterCategoryChange() {
+            const workCenterCategory = document.getElementById('workCenterCategory').value;
+            
+            // 根据类别调整标准值码
+            if (workCenterCategory === '0002') { // 人工
+                document.getElementById('standardValueKey').value = 'SAP_01';
+            } else {
+                document.getElementById('standardValueKey').value = 'SAP_02';
+            }
+        }
+        
+        // 工艺类别变更处理
+        function onProcessCategoryChange() {
+            const processCategory = document.getElementById('processCategory').value;
+            const container = document.getElementById('technicalAttributesContainer');
+            const note = document.getElementById('dynamicAttributesNote');
+            
+            if (!processCategory) {
+                note.textContent = '(请选择工艺类别)';
+                return;
+            }
+            
+            // 更新提示
+            const categoryLabels = {
+                'DRILLING': '钻孔',
+                'PLATING': '电镀',
+                'ETCHING': '蚀刻',
+                'LAMINATION': '压合',
+                'AOI': '自动光学检测',
+                'SOLDER_MASK': '阻焊',
+                'SURFACE_FINISH': '表面处理'
+            };
+            
+            note.textContent = `(根据${categoryLabels[processCategory] || processCategory}类别动态加载)`;
+            
+            // 获取对应的模板
+            const template = processCategoryTemplates[processCategory] || [];
+            
+            // 清空现有属性
+            const attributesList = container.querySelector('.technical-attributes-list');
+            attributesList.innerHTML = '';
+            
+            // 添加新属性
+            template.forEach((attr, index) => {
+                const attributeItem = document.createElement('div');
+                attributeItem.className = 'attribute-item';
+                attributeItem.id = `attribute_${index}`;
+                
+                attributeItem.innerHTML = `
+                    <div class="attribute-name">${attr.name} (${attr.label})</div>
+                    <div class="attribute-value">
+                        <input type="${attr.type}" id="attr_${attr.name}" class="form-control" value="${attr.defaultValue}" ${attr.required ? 'required' : ''}>
+                    </div>
+                    <div class="attribute-unit">
+                        <div class="select-dropdown">
+                            <select id="attr_${attr.name}_unit">
+                                <option value="${attr.unit}" selected>${attr.unit}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-danger btn-sm" onclick="removeTechnicalAttribute('attribute_${index}')">删除</button>
+                    </div>
+                `;
+                
+                attributesList.appendChild(attributeItem);
+            });
+            
+            technicalAttributeCounter = template.length;
+        }
+        
+        // 添加作业类型
+        function addActivityType() {
+            activityTypeCounter++;
+            const container = document.querySelector('.activity-types-list');
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'activity-type-item';
+            newItem.innerHTML = `
+                <div class="activity-type-info">
+                    <input type="text" class="form-control" placeholder="作业类型代码" style="width: 150px; display: inline-block;">
+                    <input type="text" class="form-control" placeholder="作业类型描述" style="width: 200px; display: inline-block; margin-left: 10px;">
+                </div>
+                <div class="activity-type-rate">
+                    <input type="number" class="form-control" value="0.00" step="0.01" min="0" style="width: 100px; display: inline-block;"> 
+                    <div class="select-dropdown" style="width: 100px; display: inline-block; margin-left: 10px;">
+                        <select>
+                            <option value="CNY/H">CNY/H</option>
+                            <option value="USD/H">USD/H</option>
+                            <option value="EUR/H">EUR/H</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-danger btn-sm" onclick="removeActivityType(this)">删除</button>
+                </div>
+            `;
+            
+            container.appendChild(newItem);
+        }
+        
+        // 删除作业类型
+        function removeActivityType(button) {
+            const item = button.closest('.activity-type-item');
+            if (item) {
+                item.remove();
+            }
+        }
+        
+        // 添加技术属性
+        function addTechnicalAttribute() {
+            technicalAttributeCounter++;
+            const container = document.querySelector('.technical-attributes-list');
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'attribute-item';
+            newItem.innerHTML = `
+                <div class="attribute-name">
+                    <input type="text" class="form-control" placeholder="属性名称" style="width: 150px;">
+                    <input type="text" class="form-control" placeholder="属性标签" style="width: 150px; margin-left: 10px;">
+                </div>
+                <div class="attribute-value">
+                    <input type="text" class="form-control" placeholder="属性值">
+                </div>
+                <div class="attribute-unit">
+                    <div class="select-dropdown">
+                        <select>
+                            <option value="">选择单位</option>
+                            <option value="mm">mm</option>
+                            <option value="mil">mil</option>
+                            <option value="L">L</option>
+                            <option value="A">A</option>
+                            <option value="Layers">Layers</option>
+                            <option value="μm">μm</option>
+                            <option value="°C">°C</option>
+                            <option value="T">T</option>
+                            <option value="cm²/s">cm²/s</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-danger btn-sm" onclick="removeTechnicalAttribute(this)">删除</button>
+                </div>
+            `;
+            
+            container.appendChild(newItem);
+        }
+        
+        // 删除技术属性
+        function removeTechnicalAttribute(element) {
+            if (typeof element === 'string') {
+                // 通过ID删除
+                const item = document.getElementById(element);
+                if (item) item.remove();
+            } else {
+                // 通过按钮删除
+                const item = element.closest('.attribute-item');
+                if (item) item.remove();
+            }
+        }
+        
+        // 保存工作中心
+        function saveWorkCenter() {
+            // 验证必填字段
+            const workCenterId = document.getElementById('workCenterId').value;
+            const description = document.getElementById('description').value;
+            const workCenterType = document.getElementById('workCenterType').value;
+            const plantId = document.getElementById('plantId').value;
+            const status = document.getElementById('status').value;
+            
+            if (!workCenterId || !description || !workCenterType || !plantId || !status) {
+                alert('请填写所有必填字段');
+                return;
+            }
+            
+            // 收集表单数据
+            const formData = {
+                workCenterId: workCenterId,
+                description: description,
+                workCenterType: workCenterType,
+                plantId: plantId,
+                status: status,
+                hierarchy: {
+                    parentWorkCenterId: document.getElementById('parentWorkCenterId').value,
+                    level: parseInt(document.getElementById('hierarchyLevel').value)
+                },
+                schedulingData: {
+                    workCenterCategory: document.getElementById('workCenterCategory').value,
+                    usage: document.getElementById('usage').value,
+                    standardValueKey: document.getElementById('standardValueKey').value,
+                    queueTime: parseFloat(document.getElementById('queueTime').value),
+                    waitTime: parseFloat(document.getElementById('waitTime').value),
+                    moveTime: parseFloat(document.getElementById('moveTime').value)
+                },
+                capacityData: {
+                    capacityCategory: document.getElementById('capacityCategory').value,
+                    factoryCalendarId: document.getElementById('factoryCalendarId').value,
+                    standardAvailableCapacity: {
+                        startTime: document.getElementById('shiftStartTime').value + ':00',
+                        finishTime: document.getElementById('shiftFinishTime').value + ':00',
+                        breakTime: parseFloat(document.getElementById('breakTime').value),
+                        capacityUtilization: parseInt(document.getElementById('capacityUtilization').value),
+                        numberOfCapacities: parseInt(document.getElementById('numberOfCapacities').value)
+                    },
+                    capacityFormula: {
+                        setup: document.getElementById('setupFormula').value,
+                        processing: document.getElementById('processingFormula').value,
+                        teardown: document.getElementById('teardownFormula').value
+                    }
+                },
+                costingData: {
+                    costCenterId: document.getElementById('costCenterId').value,
+                    activityTypes: []
+                },
+                technicalAttributes: []
+            };
+            
+            // 收集作业类型
+            const activityItems = document.querySelectorAll('.activity-type-item');
+            activityItems.forEach(item => {
+                const inputs = item.querySelectorAll('input');
+                const selects = item.querySelectorAll('select');
+                
+                if (inputs.length >= 2 && selects.length >= 1) {
+                    formData.costingData.activityTypes.push({
+                        activityTypeId: inputs[0].value || 'ACT-CUSTOM',
+                        description: inputs[1].value || '自定义作业',
+                        standardRate: parseFloat(inputs[2]?.value || 0),
+                        unitOfMeasure: selects[0].value || 'CNY/H'
+                    });
+                }
+            });
+            
+            // 收集技术属性
+            const attributeItems = document.querySelectorAll('.attribute-item');
+            attributeItems.forEach(item => {
+                const inputs = item.querySelectorAll('input');
+                const selects = item.querySelectorAll('select');
+                
+                if (inputs.length >= 2) {
+                    formData.technicalAttributes.push({
+                        attributeName: inputs[0].value || 'CustomAttribute',
+                        attributeValue: inputs[1].value || '',
+                        unit: selects[0]?.value || ''
+                    });
+                }
+            });
+            
+            // 添加系统信息
+            formData.systemInfo = {
+                createdBy: 'user_admin',
+                creationDate: new Date().toISOString(),
+                lastModifiedBy: 'user_prod_mgr',
+                lastModifiedDate: new Date().toISOString()
+            };
+            
+            // 这里可以添加代码将formData发送到服务器
+            console.log('工作中心数据:', JSON.stringify(formData, null, 2));
+            
+            // 更新状态显示
+            document.getElementById('currentStatus').textContent = `${status} (${getStatusText(status)})`;
+            
+            // 更新最后保存时间
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            document.querySelector('.timestamp').innerHTML = `当前工作中心: ${workCenterId} | 状态: <span id="currentStatus">${status} (${getStatusText(status)})</span> | 最后保存时间: ${timeString}`;
+            
+            alert('工作中心保存成功！');
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'ACTIVE': '活动的',
+                'INACTIVE': '停用',
+                'IN_MAINTENANCE': '维护中'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 激活工作中心
+        function activateWorkCenter() {
+            document.getElementById('status').value = 'ACTIVE';
+            saveWorkCenter();
+            alert('工作中心已激活！');
+        }
+        
+        // 停用工作中心
+        function deactivateWorkCenter() {
+            document.getElementById('status').value = 'INACTIVE';
+            saveWorkCenter();
+            alert('工作中心已停用！');
+        }
+        
+        // 保存为草稿
+        function saveAsDraft() {
+            // 可以设置一个草稿状态或标记
+            saveWorkCenter();
+            alert('工作中心已保存为草稿！');
+        }
+        
+        // 删除工作中心
+        function deleteWorkCenter() {
+            if (confirm('确定要删除这个工作中心吗？此操作不可恢复。')) {
+                alert('工作中心已删除！');
+                // 在实际系统中，这里会调用删除API
+                window.location.href = 'workcenter_list.html'; // 假设返回列表页
+            }
+        }
+        
+        // 取消
+        function cancelForm() {
+            if (confirm('确定要取消吗？未保存的数据将丢失。')) {
+                window.location.href = 'workcenter_list.html'; // 假设返回列表页
+            }
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化工作中心类型指示器
+            onWorkCenterTypeChange();
+            
+            // 初始化工作中心类别
+            onWorkCenterCategoryChange();
+            
+            // 初始化工艺类别
+            onProcessCategoryChange();
+        });
+    </script>
+</body>
+</html>

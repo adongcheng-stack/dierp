@@ -1,0 +1,76 @@
+{
+  "mi_number": "MI-2024-002",
+  "work_order": "WO-2024-002",
+  "customer": "XYZ Technology Ltd.",
+  "product_code": "PCB-8L-001",
+  "revision": "A",
+  "quantity": 500,
+  "panel_size": "240mm × 200mm",
+  "panel_up": 2,
+  "panels_required": 250,
+  "issue_date": "2024-01-21",
+  "due_date": "2024-02-16",
+  
+  "special_instructions": {
+    "stackup": "严格按照指定叠层结构",
+    "impedance": "50Ω±10%, 100Ω差分±10%",
+    "blind_vias": "激光盲孔 L1-L2, L7-L8",
+    "back_drill": "背钻深度控制在±0.05mm",
+    "copper_thickness": "孔铜厚度≥25μm，面铜厚度≥35μm"
+  },
+  
+  "engineering_notes": [
+    "使用LDI设备进行外层图形转移",
+    "压合前需做涨缩系数测试",
+    "每批生产前做首板确认",
+    "提供阻抗测试条数据"
+  ],
+  
+  "quality_requirements": {
+    "acceptance_level": "IPC-6012 Class 3",
+    "inspection_criteria": "100%外观检查",
+    "special_tests": [
+      "切片分析（每批2个位置）",
+      "X-ray检查（100%）",
+      "阻抗测试（TDR）",
+      "热应力测试（288℃, 10秒, 3次）"
+    ],
+    "documentation": [
+      "全套检测报告",
+      "阻抗测试报告",
+      "切片分析报告",
+      "材料证书"
+    ]
+  },
+  
+  "tooling_references": [
+    "激光钻孔程序: LDR-8L-001",
+    "机械钻孔程序: DRL-8L-001",
+    "背钻程序: BDR-8L-001",
+    "电测程序: TST-8L-001",
+    "阻抗测试程序: IMP-8L-001"
+  ],
+  
+  "packaging_instructions": {
+    "inner_packing": "独立托盘+真空袋+防潮剂",
+    "intermediate_packing": "防静电盒",
+    "outer_packing": "加强型纸箱+防震材料",
+    "labeling": "每片板子单独标签，包含序列号",
+    "storage": "存储温度15-30℃，湿度<60%"
+  },
+  
+  "first_article_requirements": {
+    "quantity": 5,
+    "tests_required": ["切片", "阻抗", "可焊性", "X-ray"],
+    "approval_process": "客户签字确认",
+    "timeline": "生产开始后3天内"
+  },
+  
+  "approvals": {
+    "prepared_by": "陈工",
+    "checked_by": "刘工",
+    "approved_by": "赵总监",
+    "customer_approval": "待签",
+    "date": "2024-01-21"
+  }
+}

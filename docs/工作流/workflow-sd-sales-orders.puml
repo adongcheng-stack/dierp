@@ -1,0 +1,146 @@
+' ============================================
+' 某某ERP系统 - 销售订单工作流
+' ============================================
+' 版本：v1.4
+' 创建日期：2025-01-XX
+' 最后更新：2025-01-XX
+' 基于：某某ERP系统MVP版本需求规格说明书 v1.4
+' 模块：SD（销售与分销）
+'
+' 本文档包含销售订单管理模块的业务流程，使用PlantUML活动图格式。
+' ============================================
+
+' 1.3 返单快速下单流程
+@startuml SD-返单快速下单流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title SD模块 - 返单快速下单流程
+
+start
+if (是否为返单?\n相同客户+相同产品+时间范围内) then (否)
+  :新单流程;
+  stop
+else (是)
+endif
+
+:匹配历史订单;
+:加载历史信息（价格、交期、付款方式等）;
+:自动填充订单信息;
+
+repeat
+  :销售员确认订单;
+  if (需要调整?) then (是)
+    :编辑订单信息;
+  else (否)
+  endif
+repeat while (需要调整?) is (是)
+
+:创建销售订单;
+:提交订单评审;
+stop
+
+@enduml
+
+' 1.4 新单下单流程
+@startuml SD-新单下单流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title SD模块 - 新单下单流程
+
+start
+:选择/创建客户;
+:确认客户信息;
+
+if (产品主数据是否存在?) then (不存在)
+  :SD模块调用ENG模块的产品主数据创建API\n自动创建产品主数据\n（产品编码为本厂编号，产品类型为成品FG，\n物料分类为成品）;
+  :自动创建的产品主数据不需要审核;
+  :产品主数据由工程管理模块统一管理;
+else (存在)
+endif
+
+repeat
+  :录入订单信息;
+  :确认价格;
+  if (价格确认?) then (需要修改)
+  else (确认)
+  endif
+repeat while (价格确认?) is (需要修改)
+
+:订单审核;
+if (审核通过?) then (不通过)
+  :退回修改;
+  stop
+else (通过)
+endif
+
+:创建销售订单;
+stop
+
+@enduml
+
+' 1.5 销售订单评审流程
+@startuml SD-销售订单评审流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title SD模块 - 销售订单评审流程（多部门串行评审）
+
+start
+:提交订单评审;
+
+:销售部门评审;
+if (评审通过?) then (不通过)
+  :退回草稿，记录评审意见;
+  stop
+else (通过)
+endif
+
+:工程部门评审;
+if (评审通过?) then (不通过)
+  :退回草稿，记录评审意见;
+  stop
+else (通过)
+endif
+
+:物料部门评审;
+if (评审通过?) then (不通过)
+  :退回草稿，记录评审意见;
+  stop
+else (通过)
+endif
+
+:财务部门评审;
+if (评审通过?) then (不通过)
+  :退回草稿，记录评审意见;
+  stop
+else (通过)
+endif
+
+:所有部门评审通过;
+:更新订单状态：APPROVED;
+:可以创建生产订单;
+stop
+
+note right
+  **评审规则：**
+  多部门评审必须按顺序进行：
+  销售 → 工程 → 物料 → 财务
+  任一部门拒绝，订单退回草稿状态
+end note
+
+@enduml
+

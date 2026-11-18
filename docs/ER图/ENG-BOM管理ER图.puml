@@ -1,0 +1,78 @@
+@startuml ENG-BOM管理ER图
+skinparam linetype ortho
+
+title ENG模块 - BOM管理子模块ER图
+
+entity materials {
+    material_code VARCHAR <<PK>>
+    material_name VARCHAR
+}
+
+entity boms {
+    id SERIAL <<PK>>
+    bom_number VARCHAR <<UK>>
+    version VARCHAR
+    parent_material_code VARCHAR <<FK>>
+    plant_id VARCHAR
+    bom_type VARCHAR
+    base_quantity NUMERIC
+    base_uom VARCHAR
+    effective_date DATE
+    expiry_date DATE
+    status ENUM
+    description VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity bom_items {
+    id SERIAL <<PK>>
+    bom_number VARCHAR <<FK>>
+    line_number INTEGER
+    material_code VARCHAR <<FK>>
+    item_category VARCHAR
+    quantity NUMERIC
+    unit VARCHAR
+    scrap_rate NUMERIC
+    calculation_formula VARCHAR
+    layer_code VARCHAR
+    material_type VARCHAR
+    process_step VARCHAR
+    remarks VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity production_versions {
+    production_version_id VARCHAR <<PK>>
+    bom_number VARCHAR <<FK>>
+}
+
+' 关系定义
+materials ||--o{ boms : has
+boms ||--o{ bom_items : contains
+materials ||--o{ bom_items : used_in
+boms ||--o{ production_versions : used_in
+
+note right of boms
+    BOM（物料清单）
+    主键：id
+    业务主键：bom_number（唯一）
+    状态：NEW, REVIEWING, RELEASED, PRODUCING, OBSOLETE
+    基础单位通常为PNL（拼板）
+    只有RELEASED状态的BOM才能用于生产版本
+end note
+
+note right of bom_items
+    BOM明细
+    包含层码、物料类型等PCB专用信息
+    支持PCB行业特定的物料分类和属性
+end note
+
+@enduml

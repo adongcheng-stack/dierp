@@ -1,0 +1,48 @@
+@startuml ENG-MI管理状态机
+
+title ENG模块 - MI管理子模块状态机
+
+[*] --> DRAFT : 创建MI
+
+DRAFT --> REVIEWING : 提交审核\n(工程师)
+REVIEWING --> APPROVED : 审核通过\n(工程师)
+REVIEWING --> DRAFT : 审核拒绝\n(工程师)
+
+APPROVED --> RELEASED : 发布\n(工程师)
+
+RELEASED --> OBSOLETE : 废弃\n(工程师)
+DRAFT --> OBSOLETE : 废弃\n(工程师)
+
+OBSOLETE --> [*] : 完成
+
+note right of DRAFT
+  草稿状态
+  MI创建但未提交
+  可在DRAFT或REVIEWING状态下更新
+  可以基于工艺路线自动生成MI草稿
+end note
+
+note right of REVIEWING
+  审核中
+  正在审核
+end note
+
+note right of APPROVED
+  已审批
+  审核通过
+  发布时需要MI已制作且已审核通过
+end note
+
+note right of RELEASED
+  已发布
+  已发布，可用于生产版本发布
+  和生产订单/工单下达
+  发布后的修改需走变更/新版本流程
+end note
+
+note right of OBSOLETE
+  已废弃
+  已废弃，不再使用
+end note
+
+@enduml

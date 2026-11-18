@@ -1,0 +1,50 @@
+{
+  "order_id": "SO-2024-001",
+  "customer_po": "CUST-PO-2024-1234",
+  "customer": "ABC Electronics Co., Ltd.",
+  "order_date": "2024-01-18",
+  "delivery_date": "2024-02-08",
+  "ship_to": "深圳市南山区科技园A栋3楼",
+  "bill_to": "同上",
+  "sales_rep": "张三",
+  "payment_terms": "30%预付，70%发货前",
+  
+  "order_lines": [
+    {
+      "line_no": 1,
+      "item_code": "PCB-4L-001",
+      "description": "四层PCB板 FR-4 Tg150",
+      "ordered_qty": 1000,
+      "unit_price": 45.80,
+      "line_total": 45800.00,
+      "delivery_schedule": [
+        {
+          "schedule_no": 1,
+          "qty": 500,
+          "date": "2024-02-01"
+        },
+        {
+          "schedule_no": 2,
+          "qty": 500,
+          "date": "2024-02-08"
+        }
+      ]
+    }
+  ],
+  
+  "order_summary": {
+    "subtotal": 45800.00,
+    "tooling_charge": 3500.00,
+    "shipping_charge": 800.00,
+    "tax": 0.00,
+    "total_amount": 50100.00,
+    "deposit_received": 15030.00,
+    "balance_due": 35070.00
+  },
+  
+  "special_instructions": [
+    "所有板子必须做100%电测",
+    "提供CPK报告",
+    "每箱标签需包含订单号、数量、日期"
+  ]
+}

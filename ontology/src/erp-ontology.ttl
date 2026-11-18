@@ -1,0 +1,338 @@
+@prefix : <https://dierp.local/ontology/erp/v1#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+<https://dierp.local/ontology/erp/v1> a owl:Ontology ;
+    rdfs:label "DIERP 制造 ERP 领域本体" ;
+    rdfs:comment "以计划链（需求→MPS→MRP→计划订单→执行）和成本链（标准成本→实际归集→差异）为主线的制造 ERP 本体。枚举唯一事实源为 src/mappings.json。" ;
+    owl:versionInfo "1.0.0" .
+
+# ─────────────────────────────────────────────────────────────
+# 六个互斥顶层范畴（建模铁律）
+# ─────────────────────────────────────────────────────────────
+[] a owl:AllDisjointClasses ;
+   owl:members ( :Agent :PhysicalObject :Document :DocumentLine :NormativeRule :EventRecord ) .
+
+:Agent a owl:Class ; rdfs:label "行动主体" ;
+    rdfs:comment "能行动、能被联系或被追责的角色。" .
+:PhysicalObject a owl:Class ; rdfs:label "实物对象" ;
+    rdfs:comment "物料、工作中心等可被计划与消耗的实物/资源。" .
+:Document a owl:Class ; rdfs:label "单据" ;
+    rdfs:comment "有独立编号与生命周期、可单独查询的业务单据。" .
+:DocumentLine a owl:Class ; rdfs:label "单据行" ;
+    rdfs:comment "依附父单据生存、不独立编号的行项。" .
+:NormativeRule a owl:Class ; rdfs:label "规范规则" ;
+    rdfs:comment "批量、提前期、费率、日历等计划与成本参数。" .
+:EventRecord a owl:Class ; rdfs:label "事件记录" ;
+    rdfs:comment "计划运行产生、带时间戳、通常不可变的异常/追溯/差异记录。" .
+
+# ─────────────────────────────────────────────────────────────
+# Agent
+# ─────────────────────────────────────────────────────────────
+:Customer a owl:Class ; rdfs:subClassOf :Agent ; rdfs:label "客户" .
+:Supplier a owl:Class ; rdfs:subClassOf :Agent ; rdfs:label "供应商" .
+:Planner a owl:Class ; rdfs:subClassOf :Agent ; rdfs:label "计划员" .
+
+# ─────────────────────────────────────────────────────────────
+# PhysicalObject
+# ─────────────────────────────────────────────────────────────
+:Material a owl:Class ; rdfs:subClassOf :PhysicalObject ; rdfs:label "物料" ;
+    rdfs:comment "原材料、半成品、成品、包装材料与服务性物料的统一抽象。" .
+:WorkCenter a owl:Class ; rdfs:subClassOf :PhysicalObject ; rdfs:label "工作中心" ;
+    rdfs:comment "产能与成本归集的资源单元，可绑定设备。" .
+:Resource a owl:Class ; rdfs:subClassOf :PhysicalObject ; rdfs:label "设备资源" ;
+    rdfs:comment "绑定工作中心的设备/人员资源，带能力标签与可用状态（可用/保养/停机）。" .
+
+# ─────────────────────────────────────────────────────────────
+# Document
+# ─────────────────────────────────────────────────────────────
+:SalesOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "销售订单" .
+:Forecast a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "需求预测" .
+:MpsPlan a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "主生产计划" .
+:MrpRun a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "MRP 运算批次" .
+:PlannedOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "计划订单" ;
+    rdfs:comment "MRP 推导出的计划生产/采购订单，确认后可下达为执行单据。" .
+:ProductionOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "生产订单/工单" .
+:PurchaseOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "采购订单" .
+:BOM a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "物料清单" .
+:Routing a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "工艺路线" .
+:ScheduleRun a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "排程运算批次" ;
+    rdfs:comment "一次有限产能排程的运算批次：算法、窗口、工序/异常计数与发布状态。" .
+:ScenarioSimulation a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "插单模拟场景" ;
+    rdfs:comment "插单/设备停机/物料延迟三类扰动的模拟场景。" .
+
+# ─────────────────────────────────────────────────────────────
+# DocumentLine
+# ─────────────────────────────────────────────────────────────
+:MpsEntry a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "MPS 计划行" .
+:MrpRequirement a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "MRP 需求行" .
+:BomLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "BOM 行" .
+:RoutingOperation a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "工艺工序行" .
+:PurchaseOrderLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "采购订单行" .
+:ScheduledOperation a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "排程工序" ;
+    rdfs:comment "工单 × 工序 × 工作中心的排程结果行，带计划开始/结束时间。" .
+
+# ─────────────────────────────────────────────────────────────
+# NormativeRule
+# ─────────────────────────────────────────────────────────────
+:PlanningPolicy a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "计划参数策略" ;
+    rdfs:comment "按物料配置的批量规则、提前期、安全库存、MOQ、整数倍等。" .
+:CostRate a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "成本费率" .
+:WorkCalendar a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "工作中心日历" .
+:StandardCost a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "标准成本" ;
+    rdfs:comment "按 BOM 与工艺路线卷积出的版本化标准成本基线。" .
+:SkillMatrix a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "人员技能矩阵" ;
+    rdfs:comment "资源（人员）与技能码、熟练度的映射，用于排程技能约束。" .
+:ChangeoverMatrix a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "换产矩阵" ;
+    rdfs:comment "同一工作中心相邻工序之间的换产时间（分钟）。" .
+
+# ─────────────────────────────────────────────────────────────
+# EventRecord
+# ─────────────────────────────────────────────────────────────
+:MrpException a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "MRP 异常" .
+:PeggingLink a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "需求-供应追溯链" .
+:KittingResult a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "齐套分析结果" .
+:CostVariance a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "成本差异" .
+:CostSettlement a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "工单成本结算" .
+:ProductionCost a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "工单实际成本归集" .
+:ScheduleException a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "排程异常" ;
+    rdfs:comment "排程运行产生的产能/交期/缺料/技能/换产/停机异常记录。" .
+:ScenarioImpact a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "插单影响明细" ;
+    rdfs:comment "模拟场景对既有排程工序的影响：原/新完工时间、延期天数、影响级别。" .
+
+# ─────────────────────────────────────────────────────────────
+# EAM（设备管理，与 APS Resource 主数据打通）
+# ─────────────────────────────────────────────────────────────
+:MaintenancePlan a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "设备维护计划" ;
+    rdfs:comment "按资源定义的周期性点检/润滑/维修/大保养计划，到期自动生成维护工单。" .
+:MaintenanceOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "维护工单" ;
+    rdfs:comment "维护计划到期生成或手工创建的保养作业单，记录停机时长与执行结果。" .
+:EquipmentFailure a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "设备故障记录" ;
+    rdfs:comment "设备故障上报与闭环记录，其停机时长参与 OEE 可用率计算并联动 APS 资源停机异常。" .
+
+# ─────────────────────────────────────────────────────────────
+# QMS（质量管理，与报工/LOT/EAM 双向打通）
+# ─────────────────────────────────────────────────────────────
+:InspectionOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "质量检验单" ;
+    rdfs:comment "来料/过程/终检统一的检验单，完成检验后给出 PASS/FAIL/HOLD 结论，不合格时自动生成不合格品记录。" .
+:NonConformanceReport a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "不合格品记录" ;
+    rdfs:comment "不合格品闭环记录（开立→评审→处置→关闭）；判定为设备原因时自动联动 EAM 故障记录。" .
+
+# ─────────────────────────────────────────────────────────────
+# 数据属性（共享属性不声明 rdfs:domain，由 SHACL 在各 Shape 内约束）
+# ─────────────────────────────────────────────────────────────
+:documentNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:lineNumber a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:version a owl:DatatypeProperty ; rdfs:range xsd:string .
+:status a owl:DatatypeProperty ; rdfs:range xsd:string .
+:materialCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:materialName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:materialType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:procurementType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:uom a owl:DatatypeProperty ; rdfs:range xsd:string .
+:quantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:dueDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+:startDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+:finishDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+:createdAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:customerId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:supplierId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:salesOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:productionOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:plannedOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mrpRunNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mpsPlanNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:runType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:horizonStart a owl:DatatypeProperty ; rdfs:range xsd:date .
+:horizonEnd a owl:DatatypeProperty ; rdfs:range xsd:date .
+:bucketDate a owl:DatatypeProperty ; rdfs:range xsd:date .
+:grossRequirement a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:scheduledReceipt a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:projectedAvailable a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:netRequirement a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:plannedReceipt a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:plannerAction a owl:DatatypeProperty ; rdfs:range xsd:string .
+:orderType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:lotSizingRule a owl:DatatypeProperty ; rdfs:range xsd:string .
+:leadTimeDays a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:safetyStock a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:safetyTimeDays a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:minOrderQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:maxOrderQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:orderMultiple a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:eoq a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:parentMaterialCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:componentMaterialCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:scrapRate a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:operationNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:workCenterId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:setupMinutes a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:runMinutesPerUnit a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:rateType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:ratePerHour a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:currency a owl:DatatypeProperty ; rdfs:range xsd:string .
+:shiftStart a owl:DatatypeProperty ; rdfs:range xsd:string .
+:shiftEnd a owl:DatatypeProperty ; rdfs:range xsd:string .
+:capacityHours a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:exceptionType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:severity a owl:DatatypeProperty ; rdfs:range xsd:string .
+:shortageQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:suggestion a owl:DatatypeProperty ; rdfs:range xsd:string .
+:resolutionStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:demandType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:demandRef a owl:DatatypeProperty ; rdfs:range xsd:string .
+:supplyType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:supplyRef a owl:DatatypeProperty ; rdfs:range xsd:string .
+:peggedQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:kitStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:requiredQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:availableQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:standardAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:actualAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:varianceAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:varianceType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:wipValue a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:totalCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:unitCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:settlementStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:costId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:costMethod a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mrpType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:fixedLotSize a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:reorderPoint a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:plannerCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:abcClass a owl:DatatypeProperty ; rdfs:range xsd:string .
+:consumedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:bucketType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:demandSource a owl:DatatypeProperty ; rdfs:range xsd:string .
+:coveredQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:requirementLevel a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:conversionOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:totalDemands a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:totalRequirements a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:exceptionCount a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:shortageCount a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:startedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:finishedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:supplierName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:unitPrice a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:totalAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:receivedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:effectiveFrom a owl:DatatypeProperty ; rdfs:range xsd:date .
+:effectiveTo a owl:DatatypeProperty ; rdfs:range xsd:date .
+:breakHours a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:utilization a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:workdays a owl:DatatypeProperty ; rdfs:range xsd:string .
+:materialCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:laborCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:overheadCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:variancePct a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:sourceType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:sourceRef a owl:DatatypeProperty ; rdfs:range xsd:string .
+:shortageDetails a owl:DatatypeProperty ; rdfs:range xsd:string .
+:checkedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+
+# ── APS 排程域属性 ─────────────────────────────────────────────
+:resourceId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:resourceName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:resourceType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:capacityPerShift a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:skillTags a owl:DatatypeProperty ; rdfs:range xsd:string .
+:skillId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:skillCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:skillName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:proficiency a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:changeoverId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:fromOperation a owl:DatatypeProperty ; rdfs:range xsd:string .
+:toOperation a owl:DatatypeProperty ; rdfs:range xsd:string .
+:changeoverMinutes a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:scheduleAlgorithm a owl:DatatypeProperty ; rdfs:range xsd:string .
+:generatedBy a owl:DatatypeProperty ; rdfs:range xsd:string .
+:publishedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:operationCount a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:runNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:opId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:sequence a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:plannedQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:runMinutes a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:plannedStart a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:plannedEnd a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:exceptionId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:suggestedAction a owl:DatatypeProperty ; rdfs:range xsd:string .
+:scenarioId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:scenarioType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:description a owl:DatatypeProperty ; rdfs:range xsd:string .
+:referenceRef a owl:DatatypeProperty ; rdfs:range xsd:string .
+:impactSummary a owl:DatatypeProperty ; rdfs:range xsd:string .
+:impactId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:affectedDays a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:originalDueDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:newDueDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:delayDays a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:impactLevel a owl:DatatypeProperty ; rdfs:range xsd:string .
+
+# EAM 设备管理属性
+:planId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:maintenanceType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:cycleDays a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:lastExecutedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:nextDueAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:responsible a owl:DatatypeProperty ; rdfs:range xsd:string .
+:notes a owl:DatatypeProperty ; rdfs:range xsd:string .
+:orderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:plannedDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:completedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:downtimeHours a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:executedBy a owl:DatatypeProperty ; rdfs:range xsd:string .
+:resultNote a owl:DatatypeProperty ; rdfs:range xsd:string .
+:failureNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:occurredAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:resolvedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:rootCause a owl:DatatypeProperty ; rdfs:range xsd:string .
+:actionTaken a owl:DatatypeProperty ; rdfs:range xsd:string .
+:reportedBy a owl:DatatypeProperty ; rdfs:range xsd:string .
+
+# QMS 质量管理属性
+:inspectionNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:inspectionType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:lotNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:purchaseOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:reportNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:quantityInspected a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:quantityOk a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:quantityRejected a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:inspector a owl:DatatypeProperty ; rdfs:range xsd:string .
+:inspectedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:result a owl:DatatypeProperty ; rdfs:range xsd:string .
+:remarks a owl:DatatypeProperty ; rdfs:range xsd:string .
+:ncrNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:defectCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:defectDesc a owl:DatatypeProperty ; rdfs:range xsd:string .
+:disposition a owl:DatatypeProperty ; rdfs:range xsd:string .
+:dispositionNote a owl:DatatypeProperty ; rdfs:range xsd:string .
+:equipmentCause a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+:reviewedBy a owl:DatatypeProperty ; rdfs:range xsd:string .
+:reviewedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:closedBy a owl:DatatypeProperty ; rdfs:range xsd:string .
+:closedAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+
+# ─────────────────────────────────────────────────────────────
+# 对象属性
+# ─────────────────────────────────────────────────────────────
+:hasPolicy a owl:ObjectProperty ; rdfs:range :PlanningPolicy .
+:producedAt a owl:ObjectProperty ; rdfs:range :WorkCenter .
+:hasMpsEntry a owl:ObjectProperty ; rdfs:range :MpsEntry .
+:hasRequirement a owl:ObjectProperty ; rdfs:range :MrpRequirement .
+:hasPlannedOrder a owl:ObjectProperty ; rdfs:range :PlannedOrder .
+:hasBomLine a owl:ObjectProperty ; rdfs:range :BomLine .
+:hasPurchaseLine a owl:ObjectProperty ; rdfs:range :PurchaseOrderLine .
+:hasRoutingOperation a owl:ObjectProperty ; rdfs:range :RoutingOperation .
+:pegsTo a owl:ObjectProperty ; rdfs:range :PlannedOrder .
+:raisesException a owl:ObjectProperty ; rdfs:range :MrpException .
+:hasCostVariance a owl:ObjectProperty ; rdfs:range :CostVariance .
+:hasScheduledOperation a owl:ObjectProperty ; rdfs:range :ScheduledOperation .
+:raisesScheduleException a owl:ObjectProperty ; rdfs:range :ScheduleException .
+:hasScenarioImpact a owl:ObjectProperty ; rdfs:range :ScenarioImpact .

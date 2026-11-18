@@ -1,0 +1,55 @@
+{
+  "mi_number": "MI-2024-001",
+  "work_order": "WO-2024-001",
+  "customer": "ABC Electronics Co., Ltd.",
+  "product_code": "PCB-4L-001",
+  "revision": "B",
+  "quantity": 1000,
+  "panel_size": "200mm × 160mm",
+  "panel_up": 4,
+  "panels_required": 250,
+  "issue_date": "2024-01-20",
+  "due_date": "2024-02-08",
+  
+  "special_instructions": {
+    "material": "必须使用指定批次的FR-4材料",
+    "impedance": "50Ω单端线宽0.15mm±10%",
+    "solder_mask": "绿色油墨，厚度15-25μm",
+    "testing": "100%飞针测试，测试覆盖率>95%"
+  },
+  
+  "engineering_notes": [
+    "板边需加5mm工艺边",
+    "定位孔直径3.2mm，数量4个",
+    "V-cut深度为板厚的1/3",
+    "字符位置不可覆盖焊盘"
+  ],
+  
+  "quality_requirements": {
+    "acceptance_level": "IPC-A-600 Class 2",
+    "inspection_criteria": "AQL 0.65",
+    "special_tests": ["可焊性测试", "热应力测试"],
+    "documentation": ["检验报告", "测试报告", "材质证明"]
+  },
+  
+  "tooling_references": [
+    "钻孔程序: DRL-4L-001",
+    "锣边程序: RTR-4L-001",
+    "测试程序: TST-4L-001",
+    "钢网文件: STN-4L-001"
+  ],
+  
+  "packaging_instructions": {
+    "inner_packing": "真空袋+防静电袋",
+    "outer_packing": "纸箱+防潮剂",
+    "labeling": "每箱标签含: PO号、料号、数量、日期",
+    "palletization": "每托不超过20箱"
+  },
+  
+  "approvals": {
+    "prepared_by": "张工",
+    "checked_by": "李工",
+    "approved_by": "王经理",
+    "date": "2024-01-20"
+  }
+}

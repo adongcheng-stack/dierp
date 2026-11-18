@@ -1,0 +1,92 @@
+{
+  "bomHeader": {
+    "bomId": "BOM-PCB-23001",
+    "parentMaterialId": "PNL-PCB-4LAYER-V1", // 注意：这里是生产拼板(PNL)，不是成品(PCS)
+    "description": "4-Layer Build-up Structure / 4层板压合结构",
+    "version": "A.0",
+    "plantId": "SZ-FACTORY-01",
+    "bomType": "PRODUCTION",
+    "baseQuantity": 1,
+    "baseUom": "PNL", // 做1个拼板需要的料
+    "validFrom": "2023-01-01",
+    "status": "ACTIVE"
+  },
+
+  "bomItems": [
+    // ------------------------------------------
+    // 第一层：顶层铜箔 (Top Copper)
+    // ------------------------------------------
+    {
+      "itemSequence": 10,
+      "componentMaterialId": "CU-FOIL-1OZ",
+      "description": "Copper Foil 1oz HTE",
+      "itemCategory": "STOCK_ITEM",
+
+      // PCB 专用属性：物理位置
+      "pcbSpecifics": {
+        "layerCode": "L1", // 第1层
+        "materialType": "COPPER_FOIL"
+      },
+
+      "quantity": 1.0,  // 需要1张
+      "uom": "SHT",     // 张
+      "scrapRate": 3.0  // 3% 裁剪损耗
+    },
+
+    // ------------------------------------------
+    // 第二层：PP片 (Prepreg - L1/L2)
+    // ------------------------------------------
+    {
+      "itemSequence": 20,
+      "componentMaterialId": "PP-1080-HighTg",
+      "description": "Prepreg 1080 / 半固化片",
+      "itemCategory": "STOCK_ITEM",
+
+      "pcbSpecifics": {
+        "layerCode": "L1-L2", // 介于1层和2层之间
+        "materialType": "PREPREG"
+      },
+
+      "quantity": 2.0, // 一个夹层通常叠2张PP
+      "uom": "SHT"
+    },
+
+    // ------------------------------------------
+    // 第三层：核心芯板 (Core - L2/L3)
+    // ------------------------------------------
+    {
+      "itemSequence": 30,
+      // 这是一个半成品！它自己也有BOM (内层线路BOM)
+      "componentMaterialId": "CORE-L2-L3-ETCHED",
+      "description": "Etched Core L2-L3 / 已蚀刻芯板",
+      "itemCategory": "SUB_ASSEMBLY", // 半成品
+
+      "pcbSpecifics": {
+        "layerCode": "L2-L3",
+        "materialType": "CORE"
+      },
+
+      "quantity": 1.0,
+      "uom": "PNL"
+    },
+
+    // ------------------------------------------
+    // 第四层：底漆油墨 (Solder Mask) - 非压合结构，属后工序
+    // ------------------------------------------
+    {
+      "itemSequence": 90,
+      "componentMaterialId": "INK-GREEN-UV",
+      "description": "Green Solder Mask Ink / 绿油",
+      "itemCategory": "CONSUMABLE", // 耗材
+
+      "pcbSpecifics": {
+        "processStep": "SOLDER_MASK"
+      },
+
+      // 油墨用量是算出来的：面积 * 厚度
+      "quantity": 0.05,
+      "uom": "KG",
+      "calculationFormula": "AREA_FORMULA_V2"
+    }
+  ]
+}

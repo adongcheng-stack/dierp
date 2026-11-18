@@ -1,0 +1,441 @@
+@prefix : <https://dierp.local/ontology/erp/v1#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ═══════════════════════════════════════════════════════════════
+# 演示实例：与 PostgreSQL 种子数据同源同值。
+# 每个实例必须双类型（业务类 + 唯一顶层范畴）。
+# ═══════════════════════════════════════════════════════════════
+
+# ── Agent ─────────────────────────────────────────────────────
+:CUST-HF001 a :Customer, :Agent ;
+    :customerId "CUST-HF001" ;
+    :status "ACTIVE" .
+
+:SUP-SZ001 a :Supplier, :Agent ;
+    :supplierId "SUP-SZ001" ;
+    :status "ACTIVE" .
+
+:PLANNER-001 a :Planner, :Agent ;
+    :status "ACTIVE" .
+
+# ── PhysicalObject ────────────────────────────────────────────
+:HF1004ENIGAB01 a :Material, :PhysicalObject ;
+    :materialCode "HF1004ENIGAB01" ; :materialName "四层板 ENIG 版本 1" ;
+    :materialType "FG" ; :procurementType "MAKE" ; :uom "PCS" .
+
+:HF1004ENIGAB02 a :Material, :PhysicalObject ;
+    :materialCode "HF1004ENIGAB02" ; :materialName "四层板 ENIG 版本 2" ;
+    :materialType "FG" ; :procurementType "MAKE" ; :uom "PCS" .
+
+:HF1004ENIGAB03 a :Material, :PhysicalObject ;
+    :materialCode "HF1004ENIGAB03" ; :materialName "四层板 ENIG 版本 3" ;
+    :materialType "FG" ; :procurementType "MAKE" ; :uom "PCS" .
+
+:SEMI-INNER-L2 a :Material, :PhysicalObject ;
+    :materialCode "SEMI-INNER-L2" ; :materialName "内层芯板半成品" ;
+    :materialType "SEMI" ; :procurementType "MAKE" ; :uom "PNL" .
+
+:RM-FR4-150 a :Material, :PhysicalObject ;
+    :materialCode "RM-FR4-150" ; :materialName "FR-4 覆铜板" ;
+    :materialType "RAW" ; :procurementType "BUY" ; :uom "SHT" .
+
+:RM-PP1080 a :Material, :PhysicalObject ;
+    :materialCode "RM-PP1080" ; :materialName "1080 半固化片" ;
+    :materialType "RAW" ; :procurementType "BUY" ; :uom "PNL" .
+
+:RM-CU-FOIL a :Material, :PhysicalObject ;
+    :materialCode "RM-CU-FOIL" ; :materialName "电解铜箔" ;
+    :materialType "RAW" ; :procurementType "BUY" ; :uom "KG" .
+
+:RM-DRY-FILM a :Material, :PhysicalObject ;
+    :materialCode "RM-DRY-FILM" ; :materialName "干膜" ;
+    :materialType "RAW" ; :procurementType "BUY" ; :uom "M2" .
+
+:RM-SOLDER-MASK a :Material, :PhysicalObject ;
+    :materialCode "RM-SOLDER-MASK" ; :materialName "阻焊油墨" ;
+    :materialType "RAW" ; :procurementType "BUY" ; :uom "KG" .
+
+:WC-DRILL-A a :WorkCenter, :PhysicalObject ;
+    :workCenterId "DRILL-A" ; :capacityHours 10.8 ; :status "ACTIVE" .
+:WC-DRILL-B a :WorkCenter, :PhysicalObject ;
+    :workCenterId "DRILL-B" ; :capacityHours 10.8 ; :status "ACTIVE" .
+:WC-DRILL-C a :WorkCenter, :PhysicalObject ;
+    :workCenterId "DRILL-C" ; :capacityHours 10.8 ; :status "ACTIVE" .
+
+# ── 单据：销售/预测/MPS/MRP ───────────────────────────────────
+:SO-20260105-0001 a :SalesOrder, :Document ;
+    :documentNumber "SO-20260105-0001" ; :customerId "CUST-HF001" ;
+    :materialCode "HF1004ENIGAB01" ; :quantity 120 ; :uom "PCS" ;
+    :status "APPROVED" ; :dueDate "2026-01-20"^^xsd:date .
+
+:SO-20260105-0002 a :SalesOrder, :Document ;
+    :documentNumber "SO-20260105-0002" ; :customerId "CUST-HF001" ;
+    :materialCode "HF1004ENIGAB02" ; :quantity 80 ; :uom "PCS" ;
+    :status "APPROVED" ; :dueDate "2026-01-18"^^xsd:date .
+
+:SO-20260105-0003 a :SalesOrder, :Document ;
+    :documentNumber "SO-20260105-0003" ; :customerId "CUST-HF001" ;
+    :materialCode "HF1004ENIGAB03" ; :quantity 40 ; :uom "PCS" ;
+    :status "IN_PRODUCTION" ; :dueDate "2026-01-25"^^xsd:date .
+
+:FC-20260101-0001 a :Forecast, :Document ;
+    :documentNumber "FC-20260101-0001" ; :customerId "CUST-HF001" ;
+    :materialCode "HF1004ENIGAB02" ; :quantity 60 ; :uom "PCS" ;
+    :status "RELEASED" ; :dueDate "2026-01-22"^^xsd:date .
+
+:FC-20260101-0002 a :Forecast, :Document ;
+    :documentNumber "FC-20260101-0002" ; :customerId "CUST-HF001" ;
+    :materialCode "HF1004ENIGAB01" ; :quantity 40 ; :uom "PCS" ;
+    :status "RELEASED" ; :dueDate "2026-01-27"^^xsd:date .
+
+:MPS-20260105-001 a :MpsPlan, :Document ;
+    :documentNumber "MPS-20260105-001" ; :version "1" ;
+    :status "RELEASED" ;
+    :horizonStart "2026-01-05"^^xsd:date ;
+    :horizonEnd "2026-02-01"^^xsd:date ;
+    :hasMpsEntry :MPS-E-001, :MPS-E-002, :MPS-E-003, :MPS-E-004 .
+
+:MPS-E-001 a :MpsEntry, :DocumentLine ;
+    :mpsPlanNumber "MPS-20260105-001" ; :lineNumber 1 ;
+    :materialCode "HF1004ENIGAB01" ; :bucketDate "2026-01-19"^^xsd:date ;
+    :grossRequirement 120 ; :scheduledReceipt 0 ; :projectedAvailable 0 ;
+    :netRequirement 120 ; :plannedReceipt 120 ; :plannerAction "RELEASE" .
+
+:MPS-E-002 a :MpsEntry, :DocumentLine ;
+    :mpsPlanNumber "MPS-20260105-001" ; :lineNumber 2 ;
+    :materialCode "HF1004ENIGAB01" ; :bucketDate "2026-01-26"^^xsd:date ;
+    :grossRequirement 40 ; :scheduledReceipt 0 ; :projectedAvailable 0 ;
+    :netRequirement 40 ; :plannedReceipt 40 ; :plannerAction "RELEASE" .
+
+:MPS-E-003 a :MpsEntry, :DocumentLine ;
+    :mpsPlanNumber "MPS-20260105-001" ; :lineNumber 3 ;
+    :materialCode "HF1004ENIGAB02" ; :bucketDate "2026-01-18"^^xsd:date ;
+    :grossRequirement 80 ; :scheduledReceipt 20 ; :projectedAvailable 0 ;
+    :netRequirement 60 ; :plannedReceipt 60 ; :plannerAction "RELEASE" .
+
+:MPS-E-004 a :MpsEntry, :DocumentLine ;
+    :mpsPlanNumber "MPS-20260105-001" ; :lineNumber 4 ;
+    :materialCode "HF1004ENIGAB02" ; :bucketDate "2026-01-25"^^xsd:date ;
+    :grossRequirement 60 ; :scheduledReceipt 0 ; :projectedAvailable 0 ;
+    :netRequirement 60 ; :plannedReceipt 60 ; :plannerAction "NONE" .
+
+:MRP-20260105-001 a :MrpRun, :Document ;
+    :documentNumber "MRP-20260105-001" ; :runType "REGENERATIVE" ;
+    :status "COMPLETED" ;
+    :horizonStart "2026-01-05"^^xsd:date ;
+    :horizonEnd "2026-02-01"^^xsd:date ;
+    :createdAt "2026-01-05T08:30:00"^^xsd:dateTime ;
+    :hasRequirement :MR-001, :MR-002, :MR-003 ;
+    :hasPlannedOrder :PLO-20260105-0001, :PLO-20260105-0002, :PLO-20260105-0003, :PLO-20260105-0004 ;
+    :raisesException :EX-001, :EX-002, :EX-003 .
+
+# ── 执行单据 ─────────────────────────────────────────────────
+:PO-20251230-0002 a :ProductionOrder, :Document ;
+    :documentNumber "PO-20251230-0002" ; :materialCode "HF1004ENIGAB02" ;
+    :quantity 20 ; :uom "PNL" ; :status "RELEASED" ;
+    :startDate "2026-01-06"^^xsd:date ; :dueDate "2026-01-12"^^xsd:date .
+
+:PO-20251230-0003 a :ProductionOrder, :Document ;
+    :documentNumber "PO-20251230-0003" ; :materialCode "HF1004ENIGAB02" ;
+    :quantity 20 ; :uom "PNL" ; :status "IN_PROGRESS" ;
+    :startDate "2026-01-04"^^xsd:date ; :dueDate "2026-01-09"^^xsd:date .
+
+:BUY-20260102-0001 a :PurchaseOrder, :Document ;
+    :documentNumber "BUY-20260102-0001" ; :supplierId "SUP-SZ001" ;
+    :status "RELEASED" ; :dueDate "2026-01-10"^^xsd:date ;
+    :hasPurchaseLine :BUY-L-001 .
+
+:BUY-L-001 a :PurchaseOrderLine, :DocumentLine ;
+    :lineNumber 1 ; :materialCode "RM-FR4-150" ;
+    :quantity 100 ; :uom "SHT" ; :dueDate "2026-01-10"^^xsd:date .
+
+# ── 工程单据 ─────────────────────────────────────────────────
+:BOM-HF1004ENIGAB01 a :BOM, :Document ;
+    :documentNumber "BOM-HF1004ENIGAB01" ; :version "1.0" ;
+    :parentMaterialCode "HF1004ENIGAB01" ; :status "RELEASED" ;
+    :hasBomLine :BOM-L-001, :BOM-L-002, :BOM-L-003, :BOM-L-004 .
+
+:BOM-L-001 a :BomLine, :DocumentLine ;
+    :lineNumber 1 ; :componentMaterialCode "RM-FR4-150" ; :quantity 1 ; :uom "SHT" ; :scrapRate 2 .
+:BOM-L-002 a :BomLine, :DocumentLine ;
+    :lineNumber 2 ; :componentMaterialCode "RM-PP1080" ; :quantity 2 ; :uom "PNL" ; :scrapRate 3 .
+:BOM-L-003 a :BomLine, :DocumentLine ;
+    :lineNumber 3 ; :componentMaterialCode "RM-CU-FOIL" ; :quantity 1 ; :uom "KG" ; :scrapRate 2 .
+:BOM-L-004 a :BomLine, :DocumentLine ;
+    :lineNumber 4 ; :componentMaterialCode "SEMI-INNER-L2" ; :quantity 1 ; :uom "PNL" ; :scrapRate 1 .
+
+:BOM-HF1004ENIGAB02 a :BOM, :Document ;
+    :documentNumber "BOM-HF1004ENIGAB02" ; :version "1.0" ;
+    :parentMaterialCode "HF1004ENIGAB02" ; :status "RELEASED" ;
+    :hasBomLine :BOM-L-011, :BOM-L-012, :BOM-L-013 .
+:BOM-L-011 a :BomLine, :DocumentLine ;
+    :lineNumber 1 ; :componentMaterialCode "RM-FR4-150" ; :quantity 1 ; :uom "SHT" ; :scrapRate 2 .
+:BOM-L-012 a :BomLine, :DocumentLine ;
+    :lineNumber 2 ; :componentMaterialCode "RM-CU-FOIL" ; :quantity 1.2 ; :uom "KG" ; :scrapRate 2 .
+:BOM-L-013 a :BomLine, :DocumentLine ;
+    :lineNumber 3 ; :componentMaterialCode "RM-DRY-FILM" ; :quantity 0.5 ; :uom "M2" ; :scrapRate 5 .
+
+:BOM-SEMI-INNER-L2 a :BOM, :Document ;
+    :documentNumber "BOM-SEMI-INNER-L2" ; :version "1.0" ;
+    :parentMaterialCode "SEMI-INNER-L2" ; :status "RELEASED" ;
+    :hasBomLine :BOM-L-021, :BOM-L-022 .
+:BOM-L-021 a :BomLine, :DocumentLine ;
+    :lineNumber 1 ; :componentMaterialCode "RM-PP1080" ; :quantity 2 ; :uom "PNL" ; :scrapRate 3 .
+:BOM-L-022 a :BomLine, :DocumentLine ;
+    :lineNumber 2 ; :componentMaterialCode "RM-CU-FOIL" ; :quantity 0.8 ; :uom "KG" ; :scrapRate 2 .
+
+:RT-HF1004ENIGAB01 a :Routing, :Document ;
+    :documentNumber "RT-HF1004ENIGAB01" ; :materialCode "HF1004ENIGAB01" ;
+    :status "RELEASED" ; :hasRoutingOperation :OP-10, :OP-20, :OP-30 .
+
+:OP-10 a :RoutingOperation, :DocumentLine ;
+    :operationNumber "10" ; :workCenterId "DRILL-A" ;
+    :setupMinutes 30 ; :runMinutesPerUnit 2.5 .
+:OP-20 a :RoutingOperation, :DocumentLine ;
+    :operationNumber "20" ; :workCenterId "DRILL-B" ;
+    :setupMinutes 20 ; :runMinutesPerUnit 1.8 .
+:OP-30 a :RoutingOperation, :DocumentLine ;
+    :operationNumber "30" ; :workCenterId "DRILL-C" ;
+    :setupMinutes 15 ; :runMinutesPerUnit 1.2 .
+
+# ── 规范：计划参数 / 费率 / 日历 ─────────────────────────────
+:PP-HF1004ENIGAB01 a :PlanningPolicy, :NormativeRule ;
+    :materialCode "HF1004ENIGAB01" ; :mrpType "MRP" ; :lotSizingRule "LOT_FOR_LOT" ;
+    :leadTimeDays 2 ; :safetyStock 0 ; :safetyTimeDays 1 ;
+    :minOrderQty 1 ; :orderMultiple 1 ; :procurementType "MAKE" .
+
+:PP-HF1004ENIGAB02 a :PlanningPolicy, :NormativeRule ;
+    :materialCode "HF1004ENIGAB02" ; :mrpType "MRP" ; :lotSizingRule "FIXED_LOT" ;
+    :leadTimeDays 2 ; :safetyStock 10 ; :safetyTimeDays 1 ;
+    :minOrderQty 20 ; :maxOrderQty 200 ; :orderMultiple 10 ; :procurementType "MAKE" .
+
+:PP-SEMI-INNER-L2 a :PlanningPolicy, :NormativeRule ;
+    :materialCode "SEMI-INNER-L2" ; :mrpType "MRP" ; :lotSizingRule "LOT_FOR_LOT" ;
+    :leadTimeDays 3 ; :safetyStock 0 ; :minOrderQty 1 ; :orderMultiple 1 ; :procurementType "MAKE" .
+
+:PP-RM-FR4-150 a :PlanningPolicy, :NormativeRule ;
+    :materialCode "RM-FR4-150" ; :mrpType "MRP" ; :lotSizingRule "LOT_FOR_LOT" ;
+    :leadTimeDays 7 ; :safetyStock 20 ; :minOrderQty 50 ; :orderMultiple 10 ; :procurementType "BUY" .
+
+:PP-RM-PP1080 a :PlanningPolicy, :NormativeRule ;
+    :materialCode "RM-PP1080" ; :mrpType "MRP" ; :lotSizingRule "LOT_FOR_LOT" ;
+    :leadTimeDays 5 ; :safetyStock 30 ; :minOrderQty 100 ; :orderMultiple 50 ; :procurementType "BUY" .
+
+:PP-RM-CU-FOIL a :PlanningPolicy, :NormativeRule ;
+    :materialCode "RM-CU-FOIL" ; :mrpType "MRP" ; :lotSizingRule "LOT_FOR_LOT" ;
+    :leadTimeDays 10 ; :safetyStock 15 ; :minOrderQty 30 ; :orderMultiple 5 ; :procurementType "BUY" .
+
+:CR-DRILL-A-MACHINE a :CostRate, :NormativeRule ;
+    :workCenterId "DRILL-A" ; :rateType "MACHINE" ; :ratePerHour 180 ; :currency "CNY" .
+:CR-DRILL-A-LABOR a :CostRate, :NormativeRule ;
+    :workCenterId "DRILL-A" ; :rateType "LABOR" ; :ratePerHour 60 ; :currency "CNY" .
+:CR-OVERHEAD a :CostRate, :NormativeRule ;
+    :workCenterId "PLANT" ; :rateType "OVERHEAD" ; :ratePerHour 30 ; :currency "CNY" .
+
+:WCAL-DRILL-A a :WorkCalendar, :NormativeRule ;
+    :workCenterId "DRILL-A" ; :shiftStart "08:00" ; :shiftEnd "20:00" ; :capacityHours 10.8 .
+:WCAL-DRILL-B a :WorkCalendar, :NormativeRule ;
+    :workCenterId "DRILL-B" ; :shiftStart "08:00" ; :shiftEnd "20:00" ; :capacityHours 10.8 .
+:WCAL-DRILL-C a :WorkCalendar, :NormativeRule ;
+    :workCenterId "DRILL-C" ; :shiftStart "08:00" ; :shiftEnd "20:00" ; :capacityHours 10.8 .
+
+# ── 计划订单 ─────────────────────────────────────────────────
+:PLO-20260105-0001 a :PlannedOrder, :Document ;
+    :documentNumber "PLO-20260105-0001" ; :orderType "PRODUCTION" ;
+    :materialCode "HF1004ENIGAB01" ; :quantity 120 ; :uom "PCS" ;
+    :startDate "2026-01-16"^^xsd:date ; :dueDate "2026-01-18"^^xsd:date ;
+    :status "PLANNED" ; :leadTimeDays 2 ; :mrpRunNumber "MRP-20260105-001" .
+
+:PLO-20260105-0002 a :PlannedOrder, :Document ;
+    :documentNumber "PLO-20260105-0002" ; :orderType "PRODUCTION" ;
+    :materialCode "HF1004ENIGAB02" ; :quantity 80 ; :uom "PCS" ;
+    :startDate "2026-01-14"^^xsd:date ; :dueDate "2026-01-16"^^xsd:date ;
+    :status "FIRMED" ; :leadTimeDays 2 ; :mrpRunNumber "MRP-20260105-001" .
+
+:PLO-20260105-0003 a :PlannedOrder, :Document ;
+    :documentNumber "PLO-20260105-0003" ; :orderType "PURCHASE" ;
+    :materialCode "RM-FR4-150" ; :quantity 200 ; :uom "SHT" ;
+    :startDate "2026-01-08"^^xsd:date ; :dueDate "2026-01-15"^^xsd:date ;
+    :status "PLANNED" ; :leadTimeDays 7 ; :mrpRunNumber "MRP-20260105-001" .
+
+:PLO-20260105-0004 a :PlannedOrder, :Document ;
+    :documentNumber "PLO-20260105-0004" ; :orderType "PURCHASE" ;
+    :materialCode "RM-PP1080" ; :quantity 300 ; :uom "PNL" ;
+    :startDate "2026-01-06"^^xsd:date ; :dueDate "2026-01-11"^^xsd:date ;
+    :status "PLANNED" ; :leadTimeDays 5 ; :mrpRunNumber "MRP-20260105-001" .
+
+:PLO-20260105-0005 a :PlannedOrder, :Document ;
+    :documentNumber "PLO-20260105-0005" ; :orderType "PRODUCTION" ;
+    :materialCode "SEMI-INNER-L2" ; :quantity 120 ; :uom "PNL" ;
+    :startDate "2026-01-10"^^xsd:date ; :dueDate "2026-01-13"^^xsd:date ;
+    :status "PLANNED" ; :leadTimeDays 3 ; :mrpRunNumber "MRP-20260105-001" .
+
+# ── MRP 需求行 / 追溯 / 异常 / 齐套 ─────────────────────────
+:MR-001 a :MrpRequirement, :DocumentLine ;
+    :lineNumber 1 ; :materialCode "HF1004ENIGAB01" ;
+    :demandType "SALES_ORDER" ; :demandRef "SO-20260105-0001" ;
+    :quantity 120 ; :dueDate "2026-01-20"^^xsd:date .
+
+:MR-002 a :MrpRequirement, :DocumentLine ;
+    :lineNumber 2 ; :materialCode "HF1004ENIGAB02" ;
+    :demandType "SALES_ORDER" ; :demandRef "SO-20260105-0002" ;
+    :quantity 80 ; :dueDate "2026-01-18"^^xsd:date .
+
+:MR-003 a :MrpRequirement, :DocumentLine ;
+    :lineNumber 3 ; :materialCode "SEMI-INNER-L2" ;
+    :demandType "DEPENDENT" ; :demandRef "PLO-20260105-0001" ;
+    :quantity 120 ; :dueDate "2026-01-16"^^xsd:date .
+
+:PEG-001 a :PeggingLink, :EventRecord ;
+    :demandType "SALES_ORDER" ; :demandRef "SO-20260105-0001" ;
+    :supplyType "PLANNED_ORDER" ; :supplyRef "PLO-20260105-0001" ;
+    :peggedQty 120 ; :pegsTo :PLO-20260105-0001 .
+
+:PEG-002 a :PeggingLink, :EventRecord ;
+    :demandType "SALES_ORDER" ; :demandRef "SO-20260105-0002" ;
+    :supplyType "PLANNED_ORDER" ; :supplyRef "PLO-20260105-0002" ;
+    :peggedQty 80 ; :pegsTo :PLO-20260105-0002 .
+
+:PEG-003 a :PeggingLink, :EventRecord ;
+    :demandType "DEPENDENT" ; :demandRef "MR-003" ;
+    :supplyType "PLANNED_ORDER" ; :supplyRef "PLO-20260105-0005" ;
+    :peggedQty 120 ; :pegsTo :PLO-20260105-0005 .
+
+:EX-001 a :MrpException, :EventRecord ;
+    :exceptionType "SHORTAGE" ; :severity "CRITICAL" ;
+    :materialCode "RM-PP1080" ; :shortageQty 120 ;
+    :suggestion "将采购计划单 PLO-20260105-0004 提前 2 天并追加 50 PNL" ;
+    :resolutionStatus "OPEN" ; :createdAt "2026-01-05T08:31:00"^^xsd:dateTime .
+
+:EX-002 a :MrpException, :EventRecord ;
+    :exceptionType "LEAD_TIME_VIOLATION" ; :severity "WARNING" ;
+    :materialCode "HF1004ENIGAB02" ; :shortageQty 0 ;
+    :suggestion "需求日期早于累计提前期，建议与客户协商交期或压缩钻孔工序" ;
+    :resolutionStatus "ACKNOWLEDGED" ; :createdAt "2026-01-05T08:31:10"^^xsd:dateTime .
+
+:EX-003 a :MrpException, :EventRecord ;
+    :exceptionType "EXCESS" ; :severity "INFO" ;
+    :materialCode "RM-FR4-150" ; :shortageQty 0 ;
+    :suggestion "期末预计库存高于安全库存 3 倍，建议推迟后续采购" ;
+    :resolutionStatus "OPEN" ; :createdAt "2026-01-05T08:31:20"^^xsd:dateTime .
+
+:KIT-001 a :KittingResult, :EventRecord ;
+    :productionOrderNumber "PO-20251230-0002" ; :kitStatus "SHORT" ;
+    :requiredQty 40 ; :availableQty 34 ; :shortageQty 6 ;
+    :createdAt "2026-01-05T08:32:00"^^xsd:dateTime .
+
+:KIT-002 a :KittingResult, :EventRecord ;
+    :plannedOrderNumber "PLO-20260105-0001" ; :kitStatus "FULL" ;
+    :requiredQty 120 ; :availableQty 120 ; :shortageQty 0 ;
+    :createdAt "2026-01-05T08:32:10"^^xsd:dateTime .
+
+# ── 成本差异 / 结算 ─────────────────────────────────────────
+:SC-HF1004ENIGAB01-V1 a :StandardCost, :NormativeRule ;
+    :costId "SC-HF1004ENIGAB01-V1" ; :materialCode "HF1004ENIGAB01" ;
+    :version "1" ; :costMethod "STANDARD" ;
+    :materialCost 86.4 ; :laborCost 24.8 ; :overheadCost 12.4 ;
+    :unitCost 123.6 ; :currency "CNY" .
+
+:PC-PO-20251230-0001 a :ProductionCost, :EventRecord ;
+    :costId "PC-PO-20251230-0001" ; :productionOrderNumber "PO-20251230-0001" ;
+    :materialCost 2100 ; :laborCost 1800 ; :overheadCost 900 ;
+    :totalCost 4800 ; :wipValue 0 ; :settlementStatus "SETTLED" ;
+    :createdAt "2026-01-04T18:00:00"^^xsd:dateTime .
+
+:CV-001 a :CostVariance, :EventRecord ;
+    :productionOrderNumber "PO-20251230-0001" ;
+    :varianceType "MATERIAL_USAGE" ;
+    :standardAmount 1200 ; :actualAmount 1320 ; :varianceAmount 120 ;
+    :createdAt "2026-01-04T18:00:00"^^xsd:dateTime .
+
+:CV-002 a :CostVariance, :EventRecord ;
+    :productionOrderNumber "PO-20251230-0001" ;
+    :varianceType "LABOR_EFFICIENCY" ;
+    :standardAmount 800 ; :actualAmount 860 ; :varianceAmount 60 ;
+    :createdAt "2026-01-04T18:00:10"^^xsd:dateTime .
+
+:CS-001 a :CostSettlement, :EventRecord ;
+    :productionOrderNumber "PO-20251230-0001" ;
+    :totalCost 5600 ; :wipValue 0 ; :settlementStatus "SETTLED" ;
+    :createdAt "2026-01-04T18:05:00"^^xsd:dateTime .
+
+# ─────────────────────────────────────────────────────────────
+# EAM 设备管理演示实例
+# ─────────────────────────────────────────────────────────────
+
+:MP-DEMO-0001 a :MaintenancePlan, :NormativeRule ;
+    :planId "MP-DEMO-0001" ; :resourceId "RES-DRILL-A-01" ;
+    :maintenanceType "INSPECTION" ; :cycleDays 30 ;
+    :nextDueAt "2026-02-05T08:00:00"^^xsd:dateTime ;
+    :responsible "张工" ; :status "PLANNED" ;
+    :notes "主轴精度月度点检" .
+
+:MO-20260105-0001 a :MaintenanceOrder, :Document ;
+    :orderNumber "MO-20260105-0001" ; :resourceId "RES-DRILL-A-01" ;
+    :planId "MP-DEMO-0001" ; :maintenanceType "INSPECTION" ;
+    :plannedDate "2026-01-06T09:00:00"^^xsd:dateTime ;
+    :downtimeHours 1.5 ; :executedBy "张工" ;
+    :resultNote "点检正常" ; :status "DONE" .
+
+:EF-20260105-0001 a :EquipmentFailure, :EventRecord ;
+    :failureNumber "EF-20260105-0001" ; :resourceId "RES-DRILL-B-01" ;
+    :workCenterId "DRILL-B" ;
+    :occurredAt "2026-01-05T14:20:00"^^xsd:dateTime ;
+    :severity "HIGH" ; :status "CLOSED" ;
+    :description "主轴异响" ; :rootCause "轴承磨损" ;
+    :actionTaken "更换轴承" ; :downtimeHours 2.5 ;
+    :reportedBy "李工" .
+
+# ─────────────────────────────────────────────────────────────
+# QMS 质量管理演示实例
+# ─────────────────────────────────────────────────────────────
+
+:IQC-20260105-0001 a :InspectionOrder, :Document ;
+    :inspectionNumber "IQC-20260105-0001" ;
+    :inspectionType "INCOMING" ;
+    :materialCode "HF1004ENIGAB01" ;
+    :purchaseOrderNumber "PO-20251230-0003" ;
+    :quantityInspected 300 ; :quantityOk 300 ; :quantityRejected 0 ;
+    :inspector "李质检" ; :inspectedAt "2026-01-05T09:30:00"^^xsd:dateTime ;
+    :result "PASS" ; :status "COMPLETED" ;
+    :remarks "来料抽检 300 PCS 全部合格" .
+
+:IPQC-20260106-0001 a :InspectionOrder, :Document ;
+    :inspectionNumber "IPQC-20260106-0001" ;
+    :inspectionType "IN_PROCESS" ;
+    :materialCode "HF1004ENIGAB02" ;
+    :lotNumber "LOT-20251230-0003" ;
+    :reportNumber "OR-20251230-0001" ;
+    :quantityInspected 200 ; :quantityOk 180 ; :quantityRejected 20 ;
+    :inspector "王质检" ; :inspectedAt "2026-01-06T14:10:00"^^xsd:dateTime ;
+    :result "FAIL" ; :status "COMPLETED" ;
+    :remarks "钻孔后孔径超差 20 PCS，已开立不合格品记录" .
+
+:NCR-20260106-0001 a :NonConformanceReport, :EventRecord ;
+    :ncrNumber "NCR-20260106-0001" ;
+    :sourceType "INSPECTION" ; :sourceRef "IPQC-20260106-0001" ;
+    :reportNumber "OR-20251230-0001" ;
+    :lotNumber "LOT-20251230-0003" ;
+    :materialCode "HF1004ENIGAB02" ;
+    :quantity 20 ;
+    :defectCode "DIM-OOT" ; :defectDesc "孔径超差" ;
+    :severity "MAJOR" ; :disposition "REWORK" ;
+    :dispositionNote "返工重钻后复检" ;
+    :reviewedBy "王质检" ; :reviewedAt "2026-01-06T15:00:00"^^xsd:dateTime ;
+    :closedBy "王质检" ; :closedAt "2026-01-07T10:00:00"^^xsd:dateTime ;
+    :status "CLOSED" .
+
+:NCR-20260107-0001 a :NonConformanceReport, :EventRecord ;
+    :ncrNumber "NCR-20260107-0001" ;
+    :sourceType "LOT_CARD" ; :sourceRef "LOT-20251230-0002" ;
+    :lotNumber "LOT-20251230-0002" ;
+    :materialCode "HF1004ENIGAB02" ;
+    :quantity 8 ;
+    :defectCode "SCRATCH" ; :defectDesc "板面划伤" ;
+    :severity "CRITICAL" ; :equipmentCause true ;
+    :failureNumber "EF-20260105-0001" ;
+    :rootCause "传输滚轮磨损导致板面擦伤" ;
+    :status "OPEN" ;
+    :reviewedBy "王质检" ; :reviewedAt "2026-01-07T11:00:00"^^xsd:dateTime .

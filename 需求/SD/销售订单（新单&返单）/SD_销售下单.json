@@ -1,0 +1,848 @@
+{
+  "module": {
+    "name": "SD模块 - 报价转订单与返单下单",
+    "description": "处理报价单转为销售订单以及客户返单快速下单的业务流程",
+    "version": "1.3",
+    "last_updated": "2025-12-04",
+    "business_scenarios": ["新单转订单", "返单快速下单"],
+    "business_value": "提升订单创建效率，减少重复操作"
+  },
+  "business_scenarios": [
+    {
+      "name": "新单转订单",
+      "id": "quote_to_order",
+      "english_name": "Quote to Order Conversion",
+      "description": "新客户或新产品报价单转为销售订单的流程",
+      "tag": {
+        "name": "新客户/新产品",
+        "color": "#3498db",
+        "class": "tag-new"
+      },
+      "workflow_steps": [
+        {
+          "step": 1,
+          "name": "报价创建",
+          "id": "quote_creation",
+          "status": "completed"
+        },
+        {
+          "step": 2,
+          "name": "报价审核",
+          "id": "quote_approval",
+          "status": "completed"
+        },
+        {
+          "step": 3,
+          "name": "客户确认",
+          "id": "customer_confirmation",
+          "status": "completed"
+        },
+        {
+          "step": 4,
+          "name": "转为订单",
+          "id": "convert_to_order",
+          "status": "active"
+        },
+        {
+          "step": 5,
+          "name": "合同评审",
+          "id": "contract_review",
+          "status": "pending"
+        }
+      ],
+      "required_preconditions": [
+        "报价单状态为'客户确认'",
+        "报价单通过三级审核",
+        "客户档案完整",
+        "价格条款已确定"
+      ]
+    },
+    {
+      "name": "返单快速下单",
+      "id": "return_order_quick",
+      "english_name": "Return Order Quick Create",
+      "description": "老客户重复下单，跳过报价环节直接创建销售订单",
+      "tag": {
+        "name": "返单/重复订单",
+        "color": "#e74c3c",
+        "class": "tag-return"
+      },
+      "system_features": [
+        "自动识别返单",
+        "历史订单匹配",
+        "价格自动填充",
+        "交期智能计算"
+      ]
+    }
+  ],
+  "interface_components": {
+    "common_elements": {
+      "customer_card": {
+        "name": "客户信息卡片",
+        "components": [
+          {
+            "name": "客户头像",
+            "id": "customer_avatar",
+            "type": "avatar",
+            "default_color": "#3498db",
+            "text_color": "white"
+          },
+          {
+            "name": "客户名称",
+            "id": "customer_name",
+            "type": "text_display",
+            "font_size": "16px",
+            "font_weight": "600"
+          },
+          {
+            "name": "客户详细信息",
+            "id": "customer_details",
+            "type": "multi_field_display",
+            "fields": [
+              {"label": "客户编号", "key": "customer_code"},
+              {"label": "联系人", "key": "contact_person"},
+              {"label": "电话", "key": "phone"},
+              {"label": "等级", "key": "customer_level"},
+              {"label": "信用额度", "key": "credit_limit"}
+            ]
+          },
+          {
+            "name": "操作面板",
+            "id": "action_panel",
+            "type": "button_group",
+            "buttons": [
+              {
+                "name": "查看客户档案",
+                "action": "viewCustomerDetails",
+                "style": "icon-btn"
+              },
+              {
+                "name": "查看信用额度",
+                "action": "viewCreditInfo",
+                "style": "icon-btn"
+              },
+              {
+                "name": "查看历史订单",
+                "action": "viewCustomerHistory",
+                "style": "icon-btn"
+              },
+              {
+                "name": "复制最近订单",
+                "action": "copyLatestOrder",
+                "style": "icon-btn"
+              }
+            ]
+          }
+        ]
+      },
+      "quote_details": {
+        "name": "报价单详情展示",
+        "border_style": "left: 4px solid #3498db",
+        "items": [
+          {
+            "label": "报价单编号",
+            "key": "quote_number",
+            "format": "QTYYYYMMDD-XXX"
+          },
+          {
+            "label": "产品编号",
+            "key": "product_code",
+            "format": "HS系列编码"
+          },
+          {
+            "label": "产品描述",
+            "key": "product_description"
+          },
+          {
+            "label": "报价数量",
+            "key": "quote_quantity",
+            "unit": "PCS"
+          },
+          {
+            "label": "报价单价",
+            "key": "quote_unit_price",
+            "currency": "¥"
+          },
+          {
+            "label": "报价金额",
+            "key": "quote_amount",
+            "currency": "¥",
+            "highlight": true
+          },
+          {
+            "label": "承诺交期",
+            "key": "promised_delivery_date",
+            "format": "YYYY-MM-DD"
+          },
+          {
+            "label": "标准交期",
+            "key": "standard_delivery_time",
+            "unit": "工作日"
+          }
+        ]
+      },
+      "order_summary": {
+        "name": "订单汇总信息",
+        "layout": "grid",
+        "columns": 4,
+        "items": [
+          {
+            "label": "订单金额",
+            "key": "order_amount",
+            "class": "amount",
+            "color": "#27ae60"
+          },
+          {
+            "label": "产品数量",
+            "key": "order_quantity",
+            "unit": "PCS"
+          },
+          {
+            "label": "预计交期",
+            "key": "estimated_delivery",
+            "unit": "工作日"
+          },
+          {
+            "label": "利润率",
+            "key": "profit_margin",
+            "unit": "%"
+          },
+          {
+            "label": "信用额度",
+            "key": "credit_available",
+            "currency": "¥"
+          }
+        ]
+      }
+    },
+    "new_order_conversion": {
+      "name": "新单转订单界面",
+      "sections": [
+        {
+          "name": "提示信息",
+          "id": "conversion_alert",
+          "type": "alert_box",
+          "alert_type": "info",
+          "content": "此报价单已通过三级审核并获客户确认，可以转为销售订单。请核对以下信息并完成订单创建。"
+        },
+        {
+          "name": "销售订单信息表单",
+          "id": "sales_order_form",
+          "fields": [
+            {
+              "name": "订单编号",
+              "id": "order_number",
+              "type": "text_input",
+              "readonly": true,
+              "format": "SOYYYYMMDD-XXX",
+              "generation_rule": "自动生成"
+            },
+            {
+              "name": "订单类型",
+              "id": "order_type",
+              "type": "dropdown",
+              "required": true,
+              "options": [
+                {"value": "standard", "label": "标准订单"},
+                {"value": "urgent", "label": "加急订单"},
+                {"value": "sample", "label": "样品订单"},
+                {"value": "trial", "label": "试产订单"}
+              ]
+            },
+            {
+              "name": "订单日期",
+              "id": "order_date",
+              "type": "date_picker",
+              "required": true,
+              "default_value": "current_date"
+            },
+            {
+              "name": "交货日期",
+              "id": "delivery_date",
+              "type": "date_picker",
+              "required": true,
+              "default_value": "from_quote"
+            },
+            {
+              "name": "付款方式",
+              "id": "payment_method",
+              "type": "dropdown",
+              "required": true,
+              "options": [
+                {"value": "monthly_30", "label": "月结30天"},
+                {"value": "cod", "label": "货到付款"},
+                {"value": "prepay_30", "label": "预付30%"},
+                {"value": "prepay_50", "label": "预付50%"},
+                {"value": "full_prepay", "label": "全额预付"}
+              ]
+            },
+            {
+              "name": "运输方式",
+              "id": "shipping_method",
+              "type": "dropdown",
+              "required": true,
+              "options": [
+                {"value": "pickup", "label": "客户自提"},
+                {"value": "express_cod", "label": "快递到付"},
+                {"value": "express_prepaid", "label": "快递预付"},
+                {"value": "logistics", "label": "物流配送"}
+              ]
+            },
+            {
+              "name": "订单备注",
+              "id": "order_notes",
+              "type": "textarea",
+              "rows": 3,
+              "placeholder": "请输入订单特殊要求或备注信息..."
+            }
+          ]
+        },
+        {
+          "name": "订单条款确认表",
+          "id": "terms_confirmation_table",
+          "type": "data_table",
+          "columns": [
+            {"name": "条款类型", "key": "term_type"},
+            {"name": "内容", "key": "content"},
+            {"name": "报价单条款", "key": "quote_term"},
+            {"name": "订单条款", "key": "order_term"},
+            {"name": "状态", "key": "status"}
+          ],
+          "terms": [
+            {
+              "term_type": "价格条款",
+              "content": "产品单价",
+              "sync_enabled": true,
+              "editable": false
+            },
+            {
+              "term_type": "交付条款",
+              "content": "交货日期",
+              "sync_enabled": true,
+              "editable": true
+            },
+            {
+              "term_type": "质量条款",
+              "content": "验收标准",
+              "sync_enabled": true,
+              "editable": true
+            },
+            {
+              "term_type": "付款条款",
+              "content": "付款方式",
+              "sync_enabled": false,
+              "editable": true,
+              "requires_confirmation": true
+            }
+          ],
+          "status_options": [
+            {"value": "synced", "label": "已同步", "class": "status-approved"},
+            {"value": "pending", "label": "待确认", "class": "status-pending"},
+            {"value": "modified", "label": "已修改", "class": "status-warning"}
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "确认转为销售订单",
+          "id": "convert_to_sales_order",
+          "type": "success",
+          "action": "convertToSalesOrder",
+          "confirmation_required": true,
+          "workflow_transition": "quote_to_order"
+        },
+        {
+          "name": "修改后转订单",
+          "id": "modify_before_convert",
+          "type": "warning",
+          "action": "modifyBeforeConvert",
+          "mode": "edit_mode"
+        },
+        {
+          "name": "打印转换报告",
+          "id": "print_conversion_report",
+          "type": "secondary",
+          "action": "printConversionReport",
+          "report_type": "conversion_summary"
+        },
+        {
+          "name": "取消",
+          "id": "cancel_conversion",
+          "type": "secondary",
+          "action": "cancelConversion",
+          "confirmation_required": true,
+          "redirect_to": "quote_management"
+        }
+      ]
+    },
+    "return_order_quick": {
+      "name": "返单快速下单界面",
+      "sections": [
+        {
+          "name": "系统检测提示",
+          "id": "return_detection_alert",
+          "type": "alert_box",
+          "alert_type": "warning",
+          "content": "系统检测到返单: 客户'{customer_name}'曾于{last_order_date}订购过相同产品'{product_code}'，系统已自动匹配历史订单信息。"
+        },
+        {
+          "name": "产品与历史订单选择",
+          "id": "product_history_selection",
+          "fields": [
+            {
+              "name": "产品选择",
+              "id": "product_select",
+              "type": "dropdown_with_search",
+              "required": true,
+              "data_source": "customer_products",
+              "on_change_action": "loadProductHistory",
+              "options": [
+                {
+                  "value": "HS1004ENIGAB01",
+                  "label": "HS1004ENIGAB01 - 标准四层板沉金工艺",
+                  "customer_specific": true
+                },
+                {
+                  "value": "HS3008GOLDCI02",
+                  "label": "HS3008GOLDCI02 - 高速八层板镀金工艺",
+                  "customer_specific": true
+                }
+              ]
+            },
+            {
+              "name": "历史订单参考",
+              "id": "history_order_select",
+              "type": "dropdown_with_search",
+              "data_source": "customer_order_history",
+              "on_change_action": "loadOrderDetails",
+              "filters": {
+                "product_code": "dynamic_from_product_select",
+                "time_range": "last_12_months"
+              }
+            }
+          ]
+        },
+        {
+          "name": "历史订单参考信息",
+          "id": "history_order_reference",
+          "type": "info_box",
+          "data_binding": "selected_history_order",
+          "fields": [
+            {
+              "name": "产品编号",
+              "key": "product_code",
+              "readonly": true
+            },
+            {
+              "name": "产品描述",
+              "key": "product_description",
+              "readonly": true
+            },
+            {
+              "name": "历史单价",
+              "key": "historical_unit_price",
+              "readonly": true,
+              "currency": "¥"
+            },
+            {
+              "name": "历史交期",
+              "key": "historical_delivery_time",
+              "readonly": true,
+              "unit": "工作日"
+            },
+            {
+              "name": "历史数量",
+              "key": "historical_quantity",
+              "readonly": true,
+              "unit": "PCS"
+            },
+            {
+              "name": "付款方式",
+              "key": "payment_method",
+              "readonly": true
+            },
+            {
+              "name": "质量要求",
+              "key": "quality_requirement",
+              "readonly": true
+            }
+          ]
+        },
+        {
+          "name": "历史订单列表",
+          "id": "history_order_table",
+          "type": "data_table_with_selection",
+          "selection_type": "radio",
+          "columns": [
+            {"name": "选择", "key": "selection", "type": "radio_button"},
+            {"name": "历史订单号", "key": "order_number"},
+            {"name": "下单日期", "key": "order_date", "format": "YYYY-MM-DD"},
+            {"name": "产品", "key": "product_code"},
+            {"name": "数量(PCS)", "key": "quantity", "type": "number"},
+            {"name": "单价(¥)", "key": "unit_price", "type": "currency"},
+            {"name": "交期(天)", "key": "delivery_days", "type": "number"},
+            {"name": "状态", "key": "status", "type": "status_badge"}
+          ],
+          "status_mapping": {
+            "completed": {"label": "已完成", "class": "status-approved"},
+            "pending": {"label": "待处理", "class": "status-pending"},
+            "cancelled": {"label": "已取消", "class": "status-cancelled"}
+          },
+          "row_selection_class": "selected-row",
+          "auto_select": "latest_completed_order",
+          "on_selection_change": "updateFormFromHistory"
+        },
+        {
+          "name": "新订单信息表单",
+          "id": "new_order_form_return",
+          "fields": [
+            {
+              "name": "订单编号",
+              "id": "return_order_number",
+              "type": "text_input",
+              "readonly": true,
+              "format": "SOYYYYMMDD-XXX",
+              "generation_rule": "自动生成"
+            },
+            {
+              "name": "订单日期",
+              "id": "return_order_date",
+              "type": "date_picker",
+              "default_value": "current_date"
+            },
+            {
+              "name": "订单类型",
+              "id": "return_order_type",
+              "type": "dropdown",
+              "default_value": "return",
+              "options": [
+                {"value": "return", "label": "返单"},
+                {"value": "standard", "label": "标准订单"},
+                {"value": "urgent", "label": "加急订单"}
+              ]
+            },
+            {
+              "name": "产品编号",
+              "id": "return_product_code",
+              "type": "text_input",
+              "readonly": true,
+              "data_binding": "selected_product"
+            },
+            {
+              "name": "产品描述",
+              "id": "return_product_description",
+              "type": "text_input",
+              "readonly": true,
+              "data_binding": "selected_product_description"
+            },
+            {
+              "name": "订单数量(PCS)",
+              "id": "return_order_quantity",
+              "type": "number_input",
+              "required": true,
+              "min": 1,
+              "default_value": "from_history",
+              "on_change_action": "calculateOrderAmount"
+            },
+            {
+              "name": "销售单价(¥)",
+              "id": "return_unit_price",
+              "type": "number_input",
+              "required": true,
+              "step": 0.01,
+              "min": 0,
+              "default_value": "from_history",
+              "on_change_action": "calculateOrderAmount"
+            },
+            {
+              "name": "订单金额(¥)",
+              "id": "return_order_amount",
+              "type": "text_input",
+              "readonly": true,
+              "calculation": "quantity * unit_price",
+              "format": "currency"
+            },
+            {
+              "name": "要求交期",
+              "id": "return_required_delivery",
+              "type": "date_picker",
+              "calculated_default": "current_date + standard_delivery"
+            },
+            {
+              "name": "预计交期",
+              "id": "return_estimated_delivery",
+              "type": "text_input",
+              "readonly": true,
+              "calculation": "based_on_capacity_and_history"
+            },
+            {
+              "name": "交期状态",
+              "id": "delivery_status",
+              "type": "status_display",
+              "status_mapping": {
+                "available": {"label": "可承诺", "color": "#155724", "background": "#d4edda"},
+                "risk": {"label": "有风险", "color": "#856404", "background": "#fff3cd"},
+                "unavailable": {"label": "不可承诺", "color": "#721c24", "background": "#f8d7da"}
+              }
+            },
+            {
+              "name": "付款方式",
+              "id": "return_payment_method",
+              "type": "dropdown",
+              "default_value": "from_history",
+              "options": [
+                {"value": "monthly_30", "label": "月结30天"},
+                {"value": "cod", "label": "货到付款"},
+                {"value": "prepay_30", "label": "预付30%"},
+                {"value": "prepay_50", "label": "预付50%"}
+              ]
+            },
+            {
+              "name": "运输方式",
+              "id": "return_shipping_method",
+              "type": "dropdown",
+              "default_value": "from_history",
+              "options": [
+                {"value": "express_cod", "label": "快递到付"},
+                {"value": "pickup", "label": "客户自提"},
+                {"value": "express_prepaid", "label": "快递预付"},
+                {"value": "logistics", "label": "物流配送"}
+              ]
+            },
+            {
+              "name": "订单备注",
+              "id": "return_order_notes",
+              "type": "textarea",
+              "rows": 3,
+              "default_value": "此为返单，参照历史订单{history_order_number}，交期要求与上次相同。"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "直接创建销售订单",
+          "id": "create_return_order",
+          "type": "success",
+          "action": "createReturnOrder",
+          "skip_validation": false,
+          "workflow_transition": "create_order"
+        },
+        {
+          "name": "保存为草稿",
+          "id": "save_as_draft_return",
+          "type": "primary",
+          "action": "saveAsDraft",
+          "status": "draft"
+        },
+        {
+          "name": "价格校验",
+          "id": "check_price_validity",
+          "type": "warning",
+          "action": "checkPriceValidity",
+          "validation_rules": [
+            {
+              "name": "价格偏差检查",
+              "rule": "current_price_within_10_percent_of_history_average",
+              "threshold": 10
+            },
+            {
+              "name": "最低价格检查",
+              "rule": "current_price_above_minimum_price",
+              "source": "product_cost"
+            }
+          ]
+        },
+        {
+          "name": "重置",
+          "id": "reset_return_form",
+          "type": "secondary",
+          "action": "resetForm",
+          "confirmation_required": true,
+          "reset_to": "history_selection"
+        }
+      ]
+    }
+  ],
+  "business_rules": {
+    "new_order_conversion": {
+      "validation_rules": [
+        {
+          "name": "报价单状态检查",
+          "rule": "quote_status_must_be_customer_confirmed",
+          "error_message": "报价单状态必须为'客户确认'才能转为订单"
+        },
+        {
+          "name": "报价审核检查",
+          "rule": "quote_must_pass_three_level_approval",
+          "error_message": "报价单必须通过三级审核"
+        },
+        {
+          "name": "客户信用检查",
+          "rule": "customer_credit_check",
+          "error_message": "客户信用额度不足或信用状态异常"
+        },
+        {
+          "name": "交期承诺检查",
+          "rule": "delivery_date_must_be_achievable",
+          "error_message": "要求的交期无法满足，请调整交货日期"
+        }
+      ],
+      "data_sync_rules": [
+        {
+          "source": "quote",
+          "target": "order",
+          "fields": ["product_code", "quantity", "unit_price", "delivery_date"],
+          "sync_strategy": "auto_sync_with_override"
+        },
+        {
+          "source": "customer",
+          "target": "order",
+          "fields": ["customer_code", "contact_person", "shipping_address"],
+          "sync_strategy": "auto_sync"
+        }
+      ]
+    },
+    "return_order_quick": {
+      "return_detection_rules": [
+        {
+          "name": "相同客户产品检测",
+          "rule": "same_customer_and_product_within_timeframe",
+          "timeframe_months": 12,
+          "minimum_orders": 1
+        },
+        {
+          "name": "价格稳定性检测",
+          "rule": "price_variation_within_threshold",
+          "threshold_percent": 15
+        }
+      ],
+      "auto_fill_rules": [
+        {
+          "name": "历史订单选择",
+          "rule": "auto_select_latest_completed_order",
+          "preference": "most_recent"
+        },
+        {
+          "name": "价格自动填充",
+          "rule": "fill_price_from_selected_history",
+          "adjustment_allowed": true
+        },
+        {
+          "name": "交期自动计算",
+          "rule": "calculate_delivery_based_on_capacity",
+          "consider_historical_performance": true
+        }
+      ],
+      "validation_rules": [
+        {
+          "name": "价格合理性检查",
+          "rule": "price_within_historical_range",
+          "range_percent": 20,
+          "warning_threshold": 10
+        },
+        {
+          "name": "数量合理性检查",
+          "rule": "quantity_within_historical_range",
+          "range_percent": 50
+        },
+        {
+          "name": "交期可行性检查",
+          "rule": "delivery_feasibility_check",
+          "source": "production_capacity"
+        }
+      ]
+    }
+  },
+  "performance_metrics": {
+    "new_order_conversion": {
+      "average_processing_time": "15分钟",
+      "required_fields": 8,
+      "steps": 5
+    },
+    "return_order_quick": {
+      "average_processing_time": "5分钟",
+      "time_savings_percentage": 70,
+      "required_fields": 5,
+      "auto_fill_fields": 10
+    }
+  },
+  "integration_points": {
+    "data_sources": [
+      {
+        "name": "报价单数据",
+        "endpoint": "/api/quotes/{quote_id}",
+        "used_in": "new_order_conversion"
+      },
+      {
+        "name": "客户历史订单",
+        "endpoint": "/api/customers/{customer_id}/orders",
+        "filters": ["product_code", "time_range", "status"],
+        "used_in": "return_order_quick"
+      },
+      {
+        "name": "客户信用信息",
+        "endpoint": "/api/customers/{customer_id}/credit",
+        "used_in": "both"
+      },
+      {
+        "name": "生产产能数据",
+        "endpoint": "/api/production/capacity",
+        "used_in": "both",
+        "purpose": "交期承诺计算"
+      }
+    ],
+    "output_destinations": [
+      {
+        "name": "销售订单创建",
+        "endpoint": "/api/sales-orders",
+        "method": "POST"
+      },
+      {
+        "name": "订单草稿保存",
+        "endpoint": "/api/sales-orders/drafts",
+        "method": "POST"
+      },
+      {
+        "name": "转换报告生成",
+        "endpoint": "/api/reports/order-conversion",
+        "method": "POST"
+      }
+    ]
+  },
+  "ui_configuration": {
+    "responsive_layout": true,
+    "mobile_friendly": true,
+    "color_scheme": {
+      "primary": "#3498db",
+      "success": "#27ae60",
+      "warning": "#f39c12",
+      "danger": "#e74c3c",
+      "info": "#17a2b8"
+    },
+    "status_colors": {
+      "completed": {"background": "#d4edda", "text": "#155724"},
+      "pending": {"background": "#fff3cd", "text": "#856404"},
+      "active": {"background": "#cce5ff", "text": "#004085"},
+      "draft": {"background": "#d1ecf1", "text": "#0c5460"}
+    },
+    "timestamp_format": "YYYY-MM-DD HH:mm:ss"
+  },
+  "audit_trail": {
+    "tracked_events": [
+      "quote_selection",
+      "history_order_selection",
+      "form_field_changes",
+      "order_creation",
+      "price_validations"
+    ],
+    "required_fields": [
+      "created_by",
+      "created_time",
+      "last_modified_by",
+      "last_modified_time",
+      "conversion_source",
+      "reference_order"
+    ]
+  }
+}

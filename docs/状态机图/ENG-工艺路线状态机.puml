@@ -1,0 +1,33 @@
+@startuml ENG-工艺路线状态机
+
+title ENG模块 - 工艺路线子模块状态机
+
+[*] --> DRAFT : 创建工艺路线
+
+DRAFT --> RELEASED : 发布\n(工程师)
+
+RELEASED --> OBSOLETE : 废弃\n(工程师)
+DRAFT --> OBSOLETE : 废弃\n(工程师)
+
+OBSOLETE --> [*] : 完成
+
+note right of DRAFT
+  草稿状态
+  工艺路线创建但未发布
+  只能在DRAFT状态下更新
+  RELEASED状态需创建新版本
+end note
+
+note right of RELEASED
+  已发布
+  已发布，可用于生产
+  只有RELEASED状态的工艺路线
+  才能用于生产版本
+end note
+
+note right of OBSOLETE
+  已废弃
+  已废弃，不再使用
+end note
+
+@enduml

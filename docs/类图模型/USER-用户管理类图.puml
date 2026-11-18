@@ -1,0 +1,38 @@
+@startuml USER-用户管理类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title 用户与权限管理模块 - 用户管理子模块类图
+
+package "用户管理 (User Management)" {
+    
+    class User {
+        +Integer id
+        +String username
+        +String email
+        +String password_hash
+        +String full_name
+        +Enum role
+        +String department
+        +Boolean is_active
+        +String phone
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    note right of User
+        用户
+        角色：SALES, SALES_MANAGER, ENGINEER, PLANNER,
+        PRODUCTION, WAREHOUSE, FINANCE, ACCOUNT_MANAGER,
+        GENERAL_MANAGER, ADMIN
+        用户名和邮箱必须唯一
+        密码需要进行哈希处理
+        只有激活的用户才能登录
+        支持软删除
+    end note
+}
+
+@enduml

@@ -1,0 +1,597 @@
+# ═══════════════════════════════════════════════════════════════
+# DIERP 计划与成本域 operational model
+# 这是后端 SQLAlchemy 模型与前端类型契约的唯一生成源。
+# 生成命令：python backend/ontology/generate_models.py
+# 语义约束（必填/枚举/范围）以 ontology/src/shapes.ttl 为准。
+# ═══════════════════════════════════════════════════════════════
+version: "1.1.0"
+namespace: "https://dierp.local/ontology/erp/v1#"
+
+entities:
+  PlanningPolicy:
+    table: planning_policies
+    label: 物料计划参数策略
+    ontology_class: PlanningPolicy
+    top_category: NormativeRule
+    fields:
+      policy_id: {type: string, length: 50, required: true, unique: true, index: true, comment: 策略编号}
+      material_code: {type: string, length: 50, required: true, unique: true, index: true, fk: "materials.material_code", comment: 物料编码}
+      mrp_type: {type: enum, enum: MrpType, default: MRP, comment: MRP/订货点/不计划}
+      procurement_type: {type: enum, enum: ProcurementType, default: MAKE, comment: 自制/采购/委外}
+      lot_sizing_rule: {type: enum, enum: LotSizingRule, default: LOT_FOR_LOT, comment: 批量规则}
+      fixed_lot_size: {type: decimal, precision: 15, scale: 4, default: 0, comment: 固定批量}
+      min_order_qty: {type: decimal, precision: 15, scale: 4, default: 0, comment: 最小起订量}
+      max_order_qty: {type: decimal, precision: 15, scale: 4, comment: 最大批量}
+      order_multiple: {type: decimal, precision: 15, scale: 4, default: 1, comment: 整数倍}
+      eoq: {type: decimal, precision: 15, scale: 4, comment: 经济订货量}
+      lead_time_days: {type: integer, default: 0, comment: 提前期天数}
+      safety_time_days: {type: integer, default: 0, comment: 安全时间天数}
+      safety_stock: {type: decimal, precision: 15, scale: 4, default: 0, comment: 安全库存}
+      reorder_point: {type: decimal, precision: 15, scale: 4, default: 0, comment: 订货点}
+      planner_code: {type: string, length: 50, comment: 计划员}
+      abc_class: {type: string, length: 10, comment: ABC 分类}
+      is_active: {type: boolean, default: true, comment: 是否启用}
+      remarks: {type: text}
+
+  Forecast:
+    table: forecasts
+    label: 需求预测
+    ontology_class: Forecast
+    top_category: Document
+    fields:
+      forecast_number: {type: string, length: 50, required: true, unique: true, index: true}
+      version: {type: string, length: 20, default: "1"}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code"}
+      customer_id: {type: string, length: 50, fk: "customers.customer_id"}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true}
+      unit: {type: string, length: 20, required: true}
+      due_date: {type: datetime, required: true, index: true}
+      bucket_type: {type: string, length: 20, default: WEEK}
+      status: {type: string, length: 20, default: RELEASED, index: true}
+      consumed_quantity: {type: decimal, precision: 15, scale: 2, default: 0}
+      remarks: {type: text}
+
+  MpsPlan:
+    table: mps_plans
+    label: 主生产计划
+    ontology_class: MpsPlan
+    top_category: Document
+    fields:
+      mps_number: {type: string, length: 50, required: true, unique: true, index: true}
+      version: {type: string, length: 20, default: "1"}
+      plan_name: {type: string, length: 200}
+      plant_id: {type: string, length: 50}
+      horizon_start: {type: datetime, required: true}
+      horizon_end: {type: datetime, required: true}
+      bucket_type: {type: string, length: 20, default: WEEK}
+      status: {type: string, length: 20, default: DRAFT, index: true}
+      demand_source: {type: string, length: 20, default: MIXED}
+      total_gross: {type: decimal, precision: 15, scale: 2, default: 0}
+      total_planned: {type: decimal, precision: 15, scale: 2, default: 0}
+      generated_by: {type: string, length: 50}
+      generated_at: {type: datetime}
+      remarks: {type: text}
+
+  MpsEntry:
+    table: mps_entries
+    label: MPS 计划行
+    ontology_class: MpsEntry
+    top_category: DocumentLine
+    fields:
+      mps_number: {type: string, length: 50, required: true, index: true, fk: "mps_plans.mps_number"}
+      line_number: {type: integer, required: true}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code"}
+      bucket_date: {type: datetime, required: true, index: true}
+      opening_stock: {type: decimal, precision: 15, scale: 2, default: 0}
+      gross_requirement: {type: decimal, precision: 15, scale: 2, default: 0}
+      sales_demand: {type: decimal, precision: 15, scale: 2, default: 0}
+      forecast_demand: {type: decimal, precision: 15, scale: 2, default: 0}
+      scheduled_receipt: {type: decimal, precision: 15, scale: 2, default: 0}
+      projected_available: {type: decimal, precision: 15, scale: 2, default: 0}
+      net_requirement: {type: decimal, precision: 15, scale: 2, default: 0}
+      planned_receipt: {type: decimal, precision: 15, scale: 2, default: 0}
+      planner_action: {type: enum, enum: PlannerAction, default: NONE}
+      remarks: {type: text}
+
+  MrpRun:
+    table: mrp_runs
+    label: MRP 运算批次
+    ontology_class: MrpRun
+    top_category: Document
+    fields:
+      run_number: {type: string, length: 50, required: true, unique: true, index: true}
+      run_type: {type: enum, enum: MrpRunType, default: REGENERATIVE}
+      status: {type: enum, enum: MrpRunStatus, default: RUNNING, index: true}
+      horizon_start: {type: datetime, required: true}
+      horizon_end: {type: datetime, required: true}
+      demand_source: {type: string, length: 20, default: AUTO}
+      mps_number: {type: string, length: 50, fk: "mps_plans.mps_number"}
+      plant_id: {type: string, length: 50}
+      total_demands: {type: integer, default: 0}
+      total_requirements: {type: integer, default: 0}
+      planned_production_count: {type: integer, default: 0}
+      planned_purchase_count: {type: integer, default: 0}
+      exception_count: {type: integer, default: 0}
+      shortage_count: {type: integer, default: 0}
+      started_at: {type: datetime}
+      finished_at: {type: datetime}
+      run_by: {type: string, length: 50}
+      log_text: {type: text}
+      remarks: {type: text}
+
+  MrpRequirement:
+    table: mrp_requirements
+    label: MRP 需求行
+    ontology_class: MrpRequirement
+    top_category: DocumentLine
+    fields:
+      run_number: {type: string, length: 50, required: true, index: true, fk: "mrp_runs.run_number"}
+      line_number: {type: integer, required: true}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code"}
+      requirement_level: {type: integer, default: 0, index: true}
+      demand_type: {type: enum, enum: DemandType, required: true}
+      demand_ref: {type: string, length: 100}
+      parent_planned_order: {type: string, length: 50}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true}
+      covered_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      shortage_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      due_date: {type: datetime, required: true, index: true}
+      status: {type: string, length: 20, default: OPEN}
+      remarks: {type: text}
+
+  PlannedOrder:
+    table: planned_orders
+    label: 计划订单
+    ontology_class: PlannedOrder
+    top_category: Document
+    fields:
+      planned_order_number: {type: string, length: 50, required: true, unique: true, index: true}
+      run_number: {type: string, length: 50, index: true, fk: "mrp_runs.run_number"}
+      order_type: {type: enum, enum: PlannedOrderType, required: true, index: true}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code"}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true}
+      unit: {type: string, length: 20, required: true}
+      start_date: {type: datetime, required: true}
+      due_date: {type: datetime, required: true, index: true}
+      status: {type: enum, enum: PlannedOrderStatus, default: PLANNED, index: true}
+      procurement_type: {type: string, length: 20}
+      supplier_id: {type: string, length: 50}
+      lot_sizing_rule: {type: string, length: 20}
+      lead_time_days: {type: integer, default: 0}
+      demand_type: {type: string, length: 20}
+      demand_ref: {type: string, length: 100}
+      parent_planned_order: {type: string, length: 50}
+      conversion_order_number: {type: string, length: 50}
+      confirmed_by: {type: string, length: 50}
+      confirmed_at: {type: datetime}
+      remarks: {type: text}
+
+  PeggingLink:
+    table: pegging_links
+    label: 需求-供应追溯链
+    ontology_class: PeggingLink
+    top_category: EventRecord
+    fields:
+      run_number: {type: string, length: 50, index: true, fk: "mrp_runs.run_number"}
+      planned_order_number: {type: string, length: 50, index: true, fk: "planned_orders.planned_order_number"}
+      demand_type: {type: enum, enum: DemandType, required: true}
+      demand_ref: {type: string, length: 100}
+      supply_type: {type: enum, enum: SupplyType, required: true}
+      supply_ref: {type: string, length: 100}
+      pegged_qty: {type: decimal, precision: 15, scale: 2, required: true}
+      pegged_at: {type: datetime}
+
+  MrpException:
+    table: mrp_exceptions
+    label: MRP 异常
+    ontology_class: MrpException
+    top_category: EventRecord
+    fields:
+      run_number: {type: string, length: 50, index: true, fk: "mrp_runs.run_number"}
+      exception_type: {type: enum, enum: MrpExceptionType, required: true, index: true}
+      severity: {type: enum, enum: ExceptionSeverity, required: true, index: true}
+      material_code: {type: string, length: 50, index: true, fk: "materials.material_code"}
+      requirement_ref: {type: string, length: 100}
+      planned_order_number: {type: string, length: 50}
+      shortage_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      shortage_date: {type: datetime}
+      suggestion: {type: text}
+      resolution_status: {type: enum, enum: ResolutionStatus, default: OPEN, index: true}
+      resolved_by: {type: string, length: 50}
+      resolved_at: {type: datetime}
+      remarks: {type: text}
+
+  PurchaseOrder:
+    table: purchase_orders
+    label: 采购订单
+    ontology_class: PurchaseOrder
+    top_category: Document
+    fields:
+      purchase_order_number: {type: string, length: 50, required: true, unique: true, index: true}
+      supplier_id: {type: string, length: 50, index: true}
+      supplier_name: {type: string, length: 200}
+      status: {type: enum, enum: PurchaseOrderStatus, default: DRAFT, index: true}
+      order_date: {type: datetime}
+      expected_date: {type: datetime}
+      currency: {type: string, length: 10, default: CNY}
+      total_amount: {type: decimal, precision: 15, scale: 2, default: 0}
+      source_planned_order: {type: string, length: 50}
+      remarks: {type: text}
+
+  PurchaseOrderLine:
+    table: purchase_order_lines
+    label: 采购订单行
+    ontology_class: PurchaseOrderLine
+    top_category: DocumentLine
+    fields:
+      purchase_order_number: {type: string, length: 50, required: true, index: true, fk: "purchase_orders.purchase_order_number"}
+      line_number: {type: integer, required: true}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code"}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true}
+      received_quantity: {type: decimal, precision: 15, scale: 2, default: 0}
+      unit: {type: string, length: 20, required: true}
+      unit_price: {type: decimal, precision: 15, scale: 4, default: 0}
+      expected_date: {type: datetime}
+      status: {type: string, length: 20, default: OPEN}
+      remarks: {type: text}
+
+  CostRate:
+    table: cost_rates
+    label: 成本费率
+    ontology_class: CostRate
+    top_category: NormativeRule
+    fields:
+      rate_id: {type: string, length: 50, required: true, unique: true, index: true}
+      work_center_id: {type: string, length: 50, index: true, fk: "work_centers.work_center_id"}
+      rate_type: {type: enum, enum: CostRateType, required: true, index: true}
+      rate_per_hour: {type: decimal, precision: 15, scale: 4, required: true}
+      currency: {type: string, length: 10, default: CNY}
+      effective_from: {type: datetime}
+      effective_to: {type: datetime}
+      status: {type: string, length: 20, default: ACTIVE}
+      remarks: {type: text}
+
+  WorkCalendar:
+    table: work_calendars
+    label: 工作中心日历
+    ontology_class: WorkCalendar
+    top_category: NormativeRule
+    fields:
+      calendar_id: {type: string, length: 50, required: true, unique: true, index: true}
+      work_center_id: {type: string, length: 50, required: true, unique: true, index: true, fk: "work_centers.work_center_id"}
+      shift_start: {type: string, length: 10, default: "08:00"}
+      shift_end: {type: string, length: 10, default: "20:00"}
+      break_hours: {type: decimal, precision: 10, scale: 2, default: 1}
+      capacity_hours: {type: decimal, precision: 10, scale: 2, default: 10}
+      utilization: {type: decimal, precision: 5, scale: 2, default: 100}
+      workdays: {type: string, length: 50, default: "1,2,3,4,5,6"}
+      status: {type: string, length: 20, default: ACTIVE}
+
+  StandardCost:
+    table: standard_costs
+    label: 标准成本
+    ontology_class: StandardCost
+    top_category: NormativeRule
+    fields:
+      cost_id: {type: string, length: 50, required: true, unique: true, index: true}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code"}
+      version: {type: string, length: 20, default: "1"}
+      cost_date: {type: datetime, index: true}
+      material_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      labor_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      overhead_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      total_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      unit_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      currency: {type: string, length: 10, default: CNY}
+      status: {type: string, length: 20, default: ACTIVE}
+      rolled_up_at: {type: datetime}
+      cost_method: {type: string, length: 20, default: STANDARD}
+      remarks: {type: text}
+
+  ProductionCost:
+    table: production_costs
+    label: 工单实际成本归集
+    ontology_class: ProductionCost
+    top_category: EventRecord
+    fields:
+      cost_id: {type: string, length: 50, required: true, unique: true, index: true}
+      production_order_number: {type: string, length: 50, required: true, unique: true, index: true, fk: "production_orders.order_number"}
+      material_code: {type: string, length: 50}
+      quantity: {type: decimal, precision: 15, scale: 2}
+      material_cost_actual: {type: decimal, precision: 15, scale: 4, default: 0}
+      labor_cost_actual: {type: decimal, precision: 15, scale: 4, default: 0}
+      overhead_actual: {type: decimal, precision: 15, scale: 4, default: 0}
+      total_actual: {type: decimal, precision: 15, scale: 4, default: 0}
+      standard_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      wip_value: {type: decimal, precision: 15, scale: 4, default: 0}
+      status: {type: enum, enum: CostStatus, default: OPEN, index: true}
+      collected_at: {type: datetime}
+      settled_at: {type: datetime}
+      remarks: {type: text}
+
+  CostVariance:
+    table: cost_variances
+    label: 成本差异
+    ontology_class: CostVariance
+    top_category: EventRecord
+    fields:
+      variance_number: {type: string, length: 50, required: true, unique: true, index: true}
+      production_order_number: {type: string, length: 50, index: true, fk: "production_orders.order_number"}
+      variance_type: {type: enum, enum: VarianceType, required: true, index: true}
+      standard_amount: {type: decimal, precision: 15, scale: 4, default: 0}
+      actual_amount: {type: decimal, precision: 15, scale: 4, default: 0}
+      variance_amount: {type: decimal, precision: 15, scale: 4, default: 0}
+      variance_pct: {type: decimal, precision: 10, scale: 2, default: 0}
+      analyzed_at: {type: datetime}
+      remarks: {type: text}
+
+  CostSettlement:
+    table: cost_settlements
+    label: 工单成本结算
+    ontology_class: CostSettlement
+    top_category: EventRecord
+    fields:
+      settlement_number: {type: string, length: 50, required: true, unique: true, index: true}
+      production_order_number: {type: string, length: 50, index: true, fk: "production_orders.order_number"}
+      total_cost: {type: decimal, precision: 15, scale: 4, default: 0}
+      wip_value: {type: decimal, precision: 15, scale: 4, default: 0}
+      settlement_status: {type: enum, enum: CostStatus, default: SETTLED}
+      settled_at: {type: datetime}
+      remarks: {type: text}
+
+  KittingResult:
+    table: kitting_results
+    label: 齐套分析结果
+    ontology_class: KittingResult
+    top_category: EventRecord
+    fields:
+      result_number: {type: string, length: 50, required: true, unique: true, index: true}
+      source_type: {type: string, length: 30, default: PRODUCTION_ORDER}
+      source_ref: {type: string, length: 50, required: true, index: true}
+      material_code: {type: string, length: 50}
+      kit_status: {type: enum, enum: KitStatus, default: FULL, index: true}
+      required_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      available_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      shortage_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      shortage_details: {type: text, comment: JSON 数组}
+      checked_at: {type: datetime}
+      remarks: {type: text}
+
+  Resource:
+    table: resources
+    label: 设备资源
+    ontology_class: Resource
+    top_category: PhysicalObject
+    fields:
+      resource_id: {type: string, length: 50, required: true, unique: true, index: true, comment: 资源编码}
+      resource_name: {type: string, length: 200}
+      work_center_id: {type: string, length: 50, index: true, fk: "work_centers.work_center_id"}
+      resource_type: {type: string, length: 50, default: MACHINE}
+      capacity_per_shift: {type: decimal, precision: 10, scale: 2, default: 10}
+      shift_start: {type: string, length: 10, default: "08:00"}
+      shift_end: {type: string, length: 10, default: "20:00"}
+      workdays: {type: string, length: 50, default: "1,2,3,4,5,6"}
+      status: {type: enum, enum: ResourceStatus, default: ACTIVE, index: true}
+      skill_tags: {type: text, comment: JSON 数组，能力标签}
+      notes: {type: text}
+
+  SkillMatrix:
+    table: skill_matrices
+    label: 人员技能矩阵
+    ontology_class: SkillMatrix
+    top_category: NormativeRule
+    fields:
+      skill_id: {type: string, length: 50, required: true, unique: true, index: true}
+      resource_id: {type: string, length: 50, required: true, index: true, fk: "resources.resource_id"}
+      skill_code: {type: string, length: 50, required: true, index: true}
+      skill_name: {type: string, length: 200}
+      proficiency: {type: decimal, precision: 5, scale: 2, default: 1}
+      status: {type: string, length: 20, default: ACTIVE}
+
+  ChangeoverMatrix:
+    table: changeover_matrices
+    label: 换产矩阵
+    ontology_class: ChangeoverMatrix
+    top_category: NormativeRule
+    fields:
+      changeover_id: {type: string, length: 50, required: true, unique: true, index: true}
+      work_center_id: {type: string, length: 50, index: true, fk: "work_centers.work_center_id"}
+      from_operation: {type: string, length: 50}
+      to_operation: {type: string, length: 50}
+      changeover_minutes: {type: decimal, precision: 10, scale: 2, default: 0}
+      status: {type: string, length: 20, default: ACTIVE}
+
+  ScheduleRun:
+    table: schedule_runs
+    label: 排程运算批次
+    ontology_class: ScheduleRun
+    top_category: Document
+    fields:
+      run_number: {type: string, length: 50, required: true, unique: true, index: true}
+      run_name: {type: string, length: 200}
+      algorithm: {type: enum, enum: ScheduleAlgorithm, default: FORWARD}
+      status: {type: enum, enum: ScheduleRunStatus, default: DRAFT, index: true}
+      horizon_start: {type: datetime, required: true}
+      horizon_end: {type: datetime, required: true}
+      source_type: {type: string, length: 30, default: PRODUCTION_ORDER}
+      generated_by: {type: string, length: 50}
+      generated_at: {type: datetime}
+      published_at: {type: datetime}
+      operation_count: {type: integer, default: 0}
+      exception_count: {type: integer, default: 0}
+      notes: {type: text}
+
+  ScheduledOperation:
+    table: scheduled_operations
+    label: 排程工序
+    ontology_class: ScheduledOperation
+    top_category: DocumentLine
+    fields:
+      op_id: {type: string, length: 50, required: true, unique: true, index: true}
+      run_number: {type: string, length: 50, required: true, index: true, fk: "schedule_runs.run_number"}
+      production_order_number: {type: string, length: 50, index: true, fk: "production_orders.order_number"}
+      planned_order_number: {type: string, length: 50, index: true}
+      material_code: {type: string, length: 50, index: true}
+      operation_no: {type: string, length: 20}
+      operation_name: {type: string, length: 200}
+      work_center_id: {type: string, length: 50, index: true}
+      resource_id: {type: string, length: 50, index: true}
+      sequence: {type: integer, default: 0}
+      planned_qty: {type: decimal, precision: 15, scale: 2, default: 0}
+      setup_minutes: {type: decimal, precision: 10, scale: 2, default: 0}
+      run_minutes: {type: decimal, precision: 10, scale: 2, default: 0}
+      planned_start: {type: datetime}
+      planned_end: {type: datetime}
+      status: {type: enum, enum: ScheduleOpStatus, default: PLANNED, index: true}
+
+  ScheduleException:
+    table: schedule_exceptions
+    label: 排程异常
+    ontology_class: ScheduleException
+    top_category: EventRecord
+    fields:
+      exception_id: {type: string, length: 50, required: true, unique: true, index: true}
+      run_number: {type: string, length: 50, index: true, fk: "schedule_runs.run_number"}
+      exception_type: {type: enum, enum: ScheduleExceptionType, index: true}
+      production_order_number: {type: string, length: 50, index: true}
+      work_center_id: {type: string, length: 50}
+      resource_id: {type: string, length: 50}
+      severity: {type: string, length: 20, default: WARNING}
+      message: {type: text}
+      suggested_action: {type: text}
+      created_at: {type: datetime}
+
+  ScenarioSimulation:
+    table: scenario_simulations
+    label: 插单模拟场景
+    ontology_class: ScenarioSimulation
+    top_category: Document
+    fields:
+      scenario_id: {type: string, length: 50, required: true, unique: true, index: true}
+      run_number: {type: string, length: 50, index: true, fk: "schedule_runs.run_number"}
+      scenario_type: {type: enum, enum: ScenarioType, required: true}
+      description: {type: text}
+      reference_ref: {type: string, length: 50}
+      created_by: {type: string, length: 50}
+      created_at: {type: datetime}
+      impact_summary: {type: text}
+      status: {type: string, length: 20, default: DRAFT}
+
+  ScenarioImpact:
+    table: scenario_impacts
+    label: 插单影响明细
+    ontology_class: ScenarioImpact
+    top_category: EventRecord
+    fields:
+      impact_id: {type: string, length: 50, required: true, unique: true, index: true}
+      scenario_id: {type: string, length: 50, index: true, fk: "scenario_simulations.scenario_id"}
+      production_order_number: {type: string, length: 50, index: true}
+      material_code: {type: string, length: 50}
+      affected_days: {type: decimal, precision: 10, scale: 2, default: 0}
+      original_due_date: {type: datetime}
+      new_due_date: {type: datetime}
+      delay_days: {type: decimal, precision: 10, scale: 2, default: 0}
+      impact_level: {type: string, length: 20, default: LOW}
+
+  # ── P1 轻量 EAM 设备管理（与 APS Resource 主数据打通） ──────────────
+  MaintenancePlan:
+    table: maintenance_plans
+    label: 设备维护计划
+    ontology_class: MaintenancePlan
+    top_category: NormativeRule
+    fields:
+      plan_id: {type: string, length: 50, required: true, unique: true, index: true, comment: 维护计划编号}
+      resource_id: {type: string, length: 50, required: true, index: true, fk: "resources.resource_id", comment: 设备资源}
+      maintenance_type: {type: enum, enum: MaintenanceType, default: INSPECTION, comment: 维护类型（点检/润滑/维修/大保养）}
+      cycle_days: {type: integer, default: 30, comment: 维护周期（天）}
+      last_executed_at: {type: datetime, comment: 上次执行时间}
+      next_due_at: {type: datetime, index: true, comment: 下次到期时间}
+      responsible: {type: string, length: 50, comment: 责任人}
+      status: {type: enum, enum: MaintenanceStatus, default: PLANNED, index: true}
+      notes: {type: text}
+
+  MaintenanceOrder:
+    table: maintenance_orders
+    label: 维护工单
+    ontology_class: MaintenanceOrder
+    top_category: Document
+    fields:
+      order_number: {type: string, length: 50, required: true, unique: true, index: true}
+      resource_id: {type: string, length: 50, required: true, index: true, fk: "resources.resource_id", comment: 设备资源}
+      plan_id: {type: string, length: 50, index: true, fk: "maintenance_plans.plan_id", comment: 来源维护计划，手工单可为空}
+      maintenance_type: {type: enum, enum: MaintenanceType, default: INSPECTION, comment: 维护类型}
+      planned_date: {type: datetime, required: true, index: true, comment: 计划执行日期}
+      completed_at: {type: datetime, comment: 完成时间}
+      downtime_hours: {type: decimal, precision: 10, scale: 2, default: 0, comment: 停机时长（小时）}
+      executed_by: {type: string, length: 50, comment: 执行人}
+      result_note: {type: text, comment: 执行结果记录}
+      status: {type: enum, enum: MaintenanceStatus, default: PLANNED, index: true}
+
+  EquipmentFailure:
+    table: equipment_failures
+    label: 设备故障记录
+    ontology_class: EquipmentFailure
+    top_category: EventRecord
+    fields:
+      failure_number: {type: string, length: 50, required: true, unique: true, index: true}
+      resource_id: {type: string, length: 50, required: true, index: true, fk: "resources.resource_id", comment: 设备资源}
+      work_center_id: {type: string, length: 50, index: true, fk: "work_centers.work_center_id", comment: 所属工作中心，冗余便于 OEE 汇总}
+      occurred_at: {type: datetime, required: true, index: true, comment: 故障发生时间}
+      resolved_at: {type: datetime, comment: 故障解决时间}
+      severity: {type: enum, enum: FailureSeverity, default: MEDIUM, index: true, comment: 严重程度}
+      description: {type: text, comment: 故障描述}
+      root_cause: {type: text, comment: 根本原因}
+      action_taken: {type: text, comment: 处置措施}
+      downtime_hours: {type: decimal, precision: 10, scale: 2, default: 0, comment: 停机时长（小时）}
+      status: {type: enum, enum: FailureStatus, default: OPEN, index: true}
+      reported_by: {type: string, length: 50, comment: 上报人}
+
+  # ── P1 QMS 质量管理（来料/过程/终检三环节检验 + 不合格品闭环） ─────
+  InspectionOrder:
+    table: inspection_orders
+    label: 检验单
+    ontology_class: InspectionOrder
+    top_category: Document
+    fields:
+      inspection_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 检验单号}
+      inspection_type: {type: enum, enum: InspectionType, required: true, index: true, comment: 检验环节（来料/过程/终检）}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 被检物料}
+      lot_number: {type: string, length: 50, index: true, comment: 关联 LOT 卡（过程/终检）}
+      purchase_order_number: {type: string, length: 50, index: true, fk: "purchase_orders.purchase_order_number", comment: 关联采购订单（来料）}
+      report_number: {type: string, length: 50, index: true, comment: 关联报工单（过程）}
+      quantity_inspected: {type: decimal, precision: 15, scale: 2, default: 0, comment: 检验数量}
+      quantity_ok: {type: decimal, precision: 15, scale: 2, default: 0, comment: 合格数量}
+      quantity_rejected: {type: decimal, precision: 15, scale: 2, default: 0, comment: 不合格数量}
+      inspector: {type: string, length: 50, comment: 检验员}
+      inspected_at: {type: datetime, index: true, comment: 检验时间}
+      result: {type: enum, enum: InspectionResult, index: true, comment: 检验结论}
+      status: {type: enum, enum: InspectionStatus, default: DRAFT, index: true}
+      remarks: {type: text, comment: 备注}
+
+  NonConformanceReport:
+    table: non_conformance_reports
+    label: 不合格品记录（NCR）
+    ontology_class: NonConformanceReport
+    top_category: EventRecord
+    fields:
+      ncr_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 不合格编号}
+      source_type: {type: enum, enum: NcrSourceType, default: INSPECTION, index: true, comment: 来源类型}
+      source_ref: {type: string, length: 100, index: true, comment: 来源单据号}
+      inspection_number: {type: string, length: 50, index: true, fk: "inspection_orders.inspection_number", comment: 来源检验单（可空）}
+      report_number: {type: string, length: 50, index: true, comment: 来源报工单（可空）}
+      lot_number: {type: string, length: 50, index: true, comment: 涉及批次}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 物料}
+      quantity: {type: decimal, precision: 15, scale: 2, default: 0, comment: 不合格数量}
+      defect_code: {type: string, length: 50, comment: 缺陷代码}
+      defect_desc: {type: text, comment: 缺陷描述}
+      severity: {type: enum, enum: NcrSeverity, default: MAJOR, index: true, comment: 严重程度}
+      disposition: {type: enum, enum: NcrDisposition, index: true, comment: 处置方式}
+      disposition_note: {type: text, comment: 处置说明}
+      root_cause: {type: text, comment: 根本原因}
+      equipment_cause: {type: boolean, default: false, comment: 是否判定为设备原因（触发 EAM 联动）}
+      failure_number: {type: string, length: 50, index: true, comment: 联动生成的 EAM 故障号（可空）}
+      status: {type: enum, enum: NcrStatus, default: OPEN, index: true}
+      reviewed_by: {type: string, length: 50, comment: 评审人}
+      reviewed_at: {type: datetime, comment: 评审时间}
+      closed_by: {type: string, length: 50, comment: 关闭人}
+      closed_at: {type: datetime, comment: 关闭时间}

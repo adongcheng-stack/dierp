@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0">
+  <bpmn:collaboration id="Collaboration_1i54c6s">
+    <bpmn:participant id="Participant_141jfzk" name="ENG模块BOM与工艺管理流程" processRef="HF_ENG_P040" />
+  </bpmn:collaboration>
+  <bpmn:process id="HF_ENG_P040" name="生产版本建立流程" isExecutable="true">
+    <bpmn:documentation>适用范围: 本流程适用于所有原因的生产版本建立，包括新产品的生产版本建立，内部ECN原因新增生产版本，外部ECN原因新增生产版本</bpmn:documentation>
+    <bpmn:extensionElements />
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Engineering" name="工程部">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelFork</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_HF_ENG_P020</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubProcess_HF_ENG_P030</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ParallelJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HF_ENG_P040-ZP01-010</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_04j110q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0paa36h</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="开始">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_ParallelFork" name="并行开始">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:callActivity id="SubProcess_HF_ENG_P020" name="BOM维护流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 承接BOM维护流程
+输出: BOM数据</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="HF_ENG_P020" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="SubProcess_HF_ENG_P030" name="工艺路线维护流程">
+      <bpmn:documentation>任务类型: 子流程
+操作: 承接工艺路线维护流程
+输出: 工艺路线数据</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="HF_ENG_P030" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:parallelGateway id="Gateway_ParallelJoin" name="并行合并">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="HF_ENG_P040-ZP01-010" name="建立生数据包（本厂编号）">
+      <bpmn:documentation>任务类型: 服务任务
+系统: SAP系统
+SAP操作: 010
+输入输出文件: C223
+操作: BOM、工艺路线传到SAP系统后，由SAP系统自动建立生产版本，与BOM、工艺路线做关联
+注意: 新的生产版本生效时，原有的生产版本自动失效，保证在同一时间只存在一个有效的生产版本，只有有效的版本才可供下单</bpmn:documentation>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tic95v</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0h10ykp">
+        <bpmn:targetRef>HF_ENG_P040-ZP01-DO01</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:dataObjectReference id="HF_ENG_P040-ZP01-DO01" name="生产数据包" dataObjectRef="DataObject_0dmwo8i" />
+    <bpmn:dataObject id="DataObject_0dmwo8i" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Gateway_ParallelFork" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Gateway_ParallelFork" targetRef="SubProcess_HF_ENG_P020" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Gateway_ParallelFork" targetRef="SubProcess_HF_ENG_P030" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="SubProcess_HF_ENG_P020" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="SubProcess_HF_ENG_P030" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Gateway_ParallelJoin" targetRef="HF_ENG_P040-ZP01-010" />
+    <bpmn:sequenceFlow id="Flow_1tic95v" sourceRef="HF_ENG_P040-ZP01-010" targetRef="Activity_04j110q" />
+    <bpmn:userTask id="Activity_04j110q" name="MI管理">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1tic95v</bpmn:incoming>
+      <bpmn:outgoing>Flow_059by6k</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_059by6k" sourceRef="Activity_04j110q" targetRef="Activity_0paa36h" />
+    <bpmn:sequenceFlow id="Flow_1p6ryn2" sourceRef="Activity_0paa36h" targetRef="EndEvent_1" />
+    <bpmn:endEvent id="EndEvent_1" name="结束">
+      <bpmn:incoming>Flow_1p6ryn2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Activity_0paa36h" name="正式发布生成数据包（本厂编号）">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_059by6k</bpmn:incoming>
+      <bpmn:outgoing>Flow_1p6ryn2</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1v5r7lc">
+        <bpmn:targetRef>DataObjectReference_01zofji</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:dataObjectReference id="DataObjectReference_01zofji" name="生产数据包&#10;（含MI）" dataObjectRef="DataObject_0o45g9n" />
+    <bpmn:dataObject id="DataObject_0o45g9n" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1i54c6s">
+      <bpmndi:BPMNShape id="Participant_141jfzk_di" bpmnElement="Participant_141jfzk" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="1240" height="350" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Engineering_di" bpmnElement="Lane_Engineering" isHorizontal="true">
+        <dc:Bounds x="180" y="80" width="1210" height="350" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="244" y="199" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="251" y="242" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_ParallelFork" bpmnElement="Gateway_ParallelFork" isMarkerVisible="true">
+        <dc:Bounds x="355" y="206" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="300" y="224" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_BOMMaintenance" bpmnElement="SubProcess_HF_ENG_P020">
+        <dc:Bounds x="470" y="127" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_SubProcess_RoutingMaintenance" bpmnElement="SubProcess_HF_ENG_P030">
+        <dc:Bounds x="470" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_Gateway_ParallelJoin" bpmnElement="Gateway_ParallelJoin" isMarkerVisible="true">
+        <dc:Bounds x="635" y="206" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="581" y="224" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1inz3d0_di" bpmnElement="HF_ENG_P040-ZP01-010">
+        <dc:Bounds x="770" y="191" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_09l83w8_di" bpmnElement="HF_ENG_P040-ZP01-DO01">
+        <dc:Bounds x="802" y="305" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="793" y="362" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04j110q_di" bpmnElement="Activity_04j110q">
+        <dc:Bounds x="950" y="191" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_EndEvent_2" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1282" y="213" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1288" y="189" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0paa36h_di" bpmnElement="Activity_0paa36h">
+        <dc:Bounds x="1120" y="191" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataObjectReference_01zofji_di" bpmnElement="DataObjectReference_01zofji">
+        <dc:Bounds x="1154" y="305" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1145" y="362" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="279" y="223" />
+        <di:waypoint x="363" y="223" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="380" y="206" />
+        <di:waypoint x="380" y="167" />
+        <di:waypoint x="470" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="380" y="256" />
+        <di:waypoint x="380" y="300" />
+        <di:waypoint x="470" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="570" y="161" />
+        <di:waypoint x="660" y="161" />
+        <di:waypoint x="660" y="206" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="570" y="300" />
+        <di:waypoint x="660" y="300" />
+        <di:waypoint x="660" y="256" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="685" y="231" />
+        <di:waypoint x="770" y="231" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tic95v_di" bpmnElement="Flow_1tic95v">
+        <di:waypoint x="870" y="231" />
+        <di:waypoint x="950" y="231" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_059by6k_di" bpmnElement="Flow_059by6k">
+        <di:waypoint x="1050" y="231" />
+        <di:waypoint x="1120" y="231" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1p6ryn2_di" bpmnElement="Flow_1p6ryn2">
+        <di:waypoint x="1220" y="231" />
+        <di:waypoint x="1282" y="231" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_0h10ykp_di" bpmnElement="DataOutputAssociation_0h10ykp">
+        <di:waypoint x="819" y="271" />
+        <di:waypoint x="819" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_1v5r7lc_di" bpmnElement="DataOutputAssociation_1v5r7lc">
+        <di:waypoint x="1170" y="271" />
+        <di:waypoint x="1170" y="305" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

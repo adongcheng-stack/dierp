@@ -1,0 +1,83 @@
+@startuml SD-报价单ER图
+skinparam linetype ortho
+
+title SD模块 - 报价单子模块ER图
+
+entity customers {
+    customer_id VARCHAR <<PK>>
+    customer_status ENUM
+}
+
+entity quotations {
+    id SERIAL <<PK>>
+    quotation_number VARCHAR <<UK>>
+    customer_id VARCHAR <<FK>>
+    product_number VARCHAR
+    product_name VARCHAR
+    quantity NUMERIC
+    unit_price NUMERIC
+    total_amount NUMERIC
+    currency VARCHAR
+    valid_until DATE
+    status ENUM
+    sales_approver VARCHAR
+    sales_approved_at TIMESTAMP
+    engineer_approver VARCHAR
+    engineer_approved_at TIMESTAMP
+    account_manager_approver VARCHAR
+    general_manager_approver VARCHAR
+    account_manager_approved_at TIMESTAMP
+    customer_confirmed BOOLEAN
+    customer_confirmed_at TIMESTAMP
+    customer_confirmed_by VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+entity quotation_items {
+    id SERIAL <<PK>>
+    quotation_number VARCHAR <<FK>>
+    line_number INTEGER
+    material_code VARCHAR
+    material_name VARCHAR
+    quantity NUMERIC
+    unit_price NUMERIC
+    total_price NUMERIC
+    remarks VARCHAR
+    created_by VARCHAR
+    created_at TIMESTAMP
+    updated_by VARCHAR
+    updated_at TIMESTAMP
+    is_deleted BOOLEAN
+}
+
+' 关系定义
+customers ||--o{ quotations : places
+quotations ||--o{ quotation_items : contains
+
+note right of quotations
+    报价单
+    主键：id
+    业务主键：quotation_number（唯一）
+    状态：DRAFT, PENDING_SALES, PENDING_ENGINEER,
+    PENDING_ACCOUNT_MANAGER, APPROVED, REJECTED,
+    CUSTOMER_CONFIRMED, LINKED, CANCELLED
+    三级审核流程（串行）：
+    一级：SALES_MANAGER
+    二级：ENGINEER
+    三级：ACCOUNT_MANAGER或GENERAL_MANAGER
+    创建报价单时，如果输入的14位本厂编号不存在
+    对应的产品主数据，SD模块调用ENG模块的产品
+    主数据创建API自动创建产品主数据。自动创建
+    的产品主数据不需要审核
+end note
+
+note right of quotation_items
+    报价单明细
+    包含多个报价明细项
+end note
+
+@enduml

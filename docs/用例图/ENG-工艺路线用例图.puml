@@ -1,0 +1,44 @@
+@startuml ENG-工艺路线用例图
+
+title ENG模块 - 工艺路线子模块用例图
+
+left to right direction
+
+actor 工程师 as engineer
+
+rectangle "工艺路线管理" {
+  usecase "创建工艺路线\n(UC-ENG-006)" as UC006
+  usecase "更新工艺路线\n(UC-ENG-007)" as UC007
+  usecase "发布工艺路线\n(UC-ENG-008)" as UC008
+}
+
+engineer --> UC006 : 创建工艺路线
+engineer --> UC007 : 更新工艺路线
+engineer --> UC008 : 发布工艺路线
+
+UC006 ..> UC007 : <<extend>>
+UC006 ..> UC008 : <<extend>>
+UC007 ..> UC008 : <<extend>>
+
+note right of UC006
+  创建工艺路线
+  定义产品的生产工艺流程
+  父项为产品主数据
+  产品编码为本厂编号
+  包含多个工序
+end note
+
+note right of UC007
+  更新工艺路线
+  只能在DRAFT状态下更新
+  RELEASED状态需创建新版本
+end note
+
+note right of UC008
+  发布工艺路线
+  状态转换：DRAFT → RELEASED
+  只有RELEASED状态的工艺路线
+  才能用于生产版本
+end note
+
+@enduml

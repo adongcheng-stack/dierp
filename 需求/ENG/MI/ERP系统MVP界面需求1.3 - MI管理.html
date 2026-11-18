@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某某ERP系统 - MI制作与审核</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --primary-light: #3498db;
+            --secondary-color: #7f8c8d;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --background-light: #f5f7fa;
+            --border-color: #d1d8e0;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 顶部导航 */
+        .app-header {
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .logo i {
+            color: var(--primary-light);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* 选项卡导航 */
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover {
+            color: var(--primary-color);
+        }
+        
+        .tab.active {
+            color: var(--primary-light);
+            border-bottom-color: var(--primary-light);
+        }
+        
+        /* 统计信息卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        
+        .stat-icon.primary {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--primary-light);
+        }
+        
+        .stat-icon.success {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+        
+        .stat-icon.warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .stat-icon.danger {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .stat-content {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        /* 内容区域 */
+        .content-area {
+            display: none;
+        }
+        
+        .content-area.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 卡片通用样式 */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--background-light);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        /* 表单样式 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-label.required::after {
+            content: " *";
+            color: var(--danger-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+        
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        /* 状态标识 */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-draft {
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+        
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        /* MI制作界面样式 */
+        .mi-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: #f8f9fa;
+        }
+        
+        /* MI审核界面样式 */
+        .review-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .review-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .mi-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .mi-details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .info-item {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 6px 0;
+        }
+        
+        /* 审核操作区域 */
+        .review-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .review-actions .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        /* 审核历史 */
+        .history-list {
+            margin-top: 25px;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .history-user {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .history-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .history-action {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .history-comment {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background-color: #f9fafb;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+        
+        /* 文件上传区域 */
+        .file-upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 6px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            border-color: var(--primary-light);
+            background-color: #f8f9fa;
+        }
+        
+        .file-list {
+            margin-top: 15px;
+        }
+        
+        .file-item {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-name {
+            font-size: 13px;
+        }
+        
+        .file-size {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* MI列表表格 */
+        .mi-table-container {
+            overflow-x: auto;
+        }
+        
+        .mi-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .mi-table thead {
+            background-color: #f8f9fa;
+        }
+        
+        .mi-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        
+        .mi-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        
+        .mi-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .app-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .tabs {
+                overflow-x: auto;
+            }
+            
+            .tab {
+                white-space: nowrap;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .mi-form-actions {
+                flex-direction: column;
+            }
+            
+            .mi-form-actions .btn {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fas fa-industry"></i>
+                <span>某某ERP - MI制造指令系统</span>
+            </div>
+            <div class="user-info">
+                <span>当前用户: 工程师_张工</span>
+                <button class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </button>
+            </div>
+        </header>
+        
+        <!-- 选项卡导航 -->
+        <nav class="tabs">
+            <button class="tab" data-target="mi-management">
+                <i class="fas fa-list"></i>
+                MI管理
+            </button>
+            <button class="tab active" data-target="mi-creation">
+                <i class="fas fa-file-alt"></i>
+                MI制作
+            </button>
+            <button class="tab" data-target="mi-review">
+                <i class="fas fa-check-circle"></i>
+                MI审核
+                <span style="margin-left: 8px; background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">3</span>
+            </button>
+            <button class="tab" data-target="reports">
+                <i class="fas fa-chart-bar"></i>
+                报表统计
+            </button>
+        </nav>
+        
+        <!-- MI管理界面 -->
+        <div id="mi-management" class="content-area">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">MI总数</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">23</div>
+                        <div class="stat-label">待审核</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">128</div>
+                        <div class="stat-label">已批准</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon danger">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">5</div>
+                        <div class="stat-label">已驳回</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索和筛选 -->
+            <div class="card">
+                <div class="card-body">
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" class="form-control" placeholder="搜索生产编号、客户型号...">
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <select class="form-control" style="width: 150px;">
+                                <option value="">MI状态</option>
+                                <option value="draft">草稿</option>
+                                <option value="pending">待审核</option>
+                                <option value="approved">已批准</option>
+                                <option value="rejected">已驳回</option>
+                            </select>
+                            <select class="form-control" style="width: 150px;">
+                                <option value="">生产类型</option>
+                                <option value="mass">批量生产</option>
+                                <option value="sample">样品生产</option>
+                                <option value="trial">试产</option>
+                            </select>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                                搜索
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MI列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-table"></i>
+                        MI列表
+                    </div>
+                    <div>
+                        <button class="btn btn-success">
+                            <i class="fas fa-plus"></i>
+                            新建MI
+                        </button>
+                    </div>
+                </div>
+                <div class="mi-table-container">
+                    <table class="mi-table">
+                        <thead>
+                            <tr>
+                                <th>生产编号</th>
+                                <th>客户</th>
+                                <th>客户型号</th>
+                                <th>层数</th>
+                                <th>表面处理</th>
+                                <th>板厚</th>
+                                <th>MI状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>PC20251209001</strong></td>
+                                <td>华为技术有限公司</td>
+                                <td>HW-PCB-MAIN-A1</td>
+                                <td>8层</td>
+                                <td>沉金</td>
+                                <td>1.6mm</td>
+                                <td><span class="status-badge status-pending">待审核</span></td>
+                                <td>2025-12-09</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>PC20251208015</strong></td>
+                                <td>小米科技</td>
+                                <td>XM-PCB-POWER-B2</td>
+                                <td>6层</td>
+                                <td>OSP</td>
+                                <td>1.0mm</td>
+                                <td><span class="status-badge status-approved">已批准</span></td>
+                                <td>2025-12-08</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>PC20251207022</strong></td>
+                                <td>中兴通讯</td>
+                                <td>ZT-PCB-RF-C3</td>
+                                <td>10层</td>
+                                <td>沉银</td>
+                                <td>2.0mm</td>
+                                <td><span class="status-badge status-draft">草稿</span></td>
+                                <td>2025-12-07</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>PC20251206011</strong></td>
+                                <td>OPPO广东移动</td>
+                                <td>OP-PCB-CONTROL-D4</td>
+                                <td>4层</td>
+                                <td>喷锡</td>
+                                <td>1.2mm</td>
+                                <td><span class="status-badge status-rejected">已驳回</span></td>
+                                <td>2025-12-06</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MI制作界面 -->
+        <div id="mi-creation" class="content-area active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-file-alt"></i>
+                        创建制造指令 (MI)
+                    </div>
+                    <div>
+                        <span class="status-badge status-draft">草稿</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="mi-creation-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">生产编号</label>
+                                <input type="text" class="form-control" value="PC20251209025" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">客户</label>
+                                <select class="form-control">
+                                    <option value="">请选择客户</option>
+                                    <option value="huawei" selected>华为技术有限公司</option>
+                                    <option value="xiaomi">小米科技</option>
+                                    <option value="zte">中兴通讯</option>
+                                    <option value="oppo">OPPO广东移动</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">客户代码</label>
+                                <input type="text" class="form-control" placeholder="请输入客户代码">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">客户型号</label>
+                                <input type="text" class="form-control" placeholder="请输入客户型号">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">生产类型</label>
+                                <select class="form-control">
+                                    <option value="">请选择生产类型</option>
+                                    <option value="mass">批量生产</option>
+                                    <option value="sample">样品生产</option>
+                                    <option value="trial" selected>试产</option>
+                                    <option value="urgent">紧急生产</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">PCB类型</label>
+                                <select class="form-control">
+                                    <option value="">请选择PCB类型</option>
+                                    <option value="rigid">刚性板</option>
+                                    <option value="flex">柔性板</option>
+                                    <option value="rigid-flex">刚柔结合板</option>
+                                    <option value="aluminum">铝基板</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">层数</label>
+                                <select class="form-control">
+                                    <option value="">请选择层数</option>
+                                    <option value="1">单层板</option>
+                                    <option value="2">双层板</option>
+                                    <option value="4">4层板</option>
+                                    <option value="6" selected>6层板</option>
+                                    <option value="8">8层板</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">板厚(mm)</label>
+                                <input type="text" class="form-control" placeholder="例如: 1.6">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">铜厚(oz)</label>
+                                <select class="form-control">
+                                    <option value="">请选择铜厚</option>
+                                    <option value="0.5">0.5 oz</option>
+                                    <option value="1">1 oz</option>
+                                    <option value="1.5">1.5 oz</option>
+                                    <option value="2" selected>2 oz</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">表面处理</label>
+                                <select class="form-control">
+                                    <option value="">请选择表面处理</option>
+                                    <option value="hasl">喷锡(HASL)</option>
+                                    <option value="enigma" selected>沉金(ENIG)</option>
+                                    <option value="osp">有机保焊膜(OSP)</option>
+                                    <option value="immersion-silver">沉银</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">阻焊颜色</label>
+                                <select class="form-control">
+                                    <option value="green" selected>绿色</option>
+                                    <option value="blue">蓝色</option>
+                                    <option value="red">红色</option>
+                                    <option value="black">黑色</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">字符颜色</label>
+                                <select class="form-control">
+                                    <option value="white" selected>白色</option>
+                                    <option value="black">黑色</option>
+                                    <option value="yellow">黄色</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required">交货尺寸(mm)</label>
+                                <input type="text" class="form-control" placeholder="例如: 200x150">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">拼板方式</label>
+                                <input type="text" class="form-control" placeholder="例如: 2x2">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">测试要求</label>
+                                <select class="form-control">
+                                    <option value="fly-probe" selected>飞针测试</option>
+                                    <option value="fixture">测试架测试</option>
+                                    <option value="aoi">AOI测试</option>
+                                    <option value="none">无需测试</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">特殊要求</label>
+                                <textarea class="form-control" rows="3" placeholder="请输入特殊工艺要求或注意事项"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- 文件上传区域 -->
+                        <div class="form-group full-width" style="margin-top: 20px;">
+                            <label class="form-label">文件上传</label>
+                            <div class="file-upload-area" id="file-upload-area">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 36px; color: var(--text-secondary); margin-bottom: 15px;"></i>
+                                <div style="color: var(--text-primary); font-size: 16px; margin-bottom: 5px;">点击或拖拽文件到此处上传</div>
+                                <div style="color: var(--text-secondary); font-size: 14px;">支持Gerber、PCB、PDF等格式</div>
+                            </div>
+                            <div class="file-list" id="file-list"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="mi-form-actions">
+                    <button class="btn btn-outline" id="reset-form">
+                        <i class="fas fa-redo"></i>
+                        重置表单
+                    </button>
+                    <button class="btn btn-primary" id="save-draft">
+                        <i class="far fa-save"></i>
+                        保存草稿
+                    </button>
+                    <button class="btn btn-success" id="submit-review">
+                        <i class="fas fa-paper-plane"></i>
+                        提交审核
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MI审核界面 -->
+        <div id="mi-review" class="content-area">
+            <div class="review-container">
+                <!-- MI详细信息 -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-info-circle"></i>
+                                MI详细信息
+                            </div>
+                            <div>
+                                <span class="status-badge status-pending">待审核</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mi-details-grid">
+                                <div class="info-item">
+                                    <div class="info-label">生产编号</div>
+                                    <div class="info-value">PC20251209001</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">客户</div>
+                                    <div class="info-value">华为技术有限公司</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">客户型号</div>
+                                    <div class="info-value">HW-PCB-MAIN-A1</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">生产类型</div>
+                                    <div class="info-value">批量生产</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">PCB类型</div>
+                                    <div class="info-value">刚性板</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">层数</div>
+                                    <div class="info-value">8层</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">板厚</div>
+                                    <div class="info-value">1.6 mm</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">铜厚</div>
+                                    <div class="info-value">2.0 oz</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">表面处理</div>
+                                    <div class="info-value">沉金</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">阻焊颜色</div>
+                                    <div class="info-value">绿色</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">字符颜色</div>
+                                    <div class="info-value">白色</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">交货尺寸</div>
+                                    <div class="info-value">200x150 mm</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">拼板方式</div>
+                                    <div class="info-value">2x2</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">测试要求</div>
+                                    <div class="info-value">飞针测试</div>
+                                </div>
+                                <div class="info-item full-width">
+                                    <div class="info-label">特殊要求</div>
+                                    <div class="info-value">阻抗控制要求: 单端50Ω±10%，差分100Ω±10%；需要做金手指镀金处理；板边要求V-CUT工艺。</div>
+                                </div>
+                                <div class="info-item full-width">
+                                    <div class="info-label">附件文件</div>
+                                    <div class="info-value">
+                                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                            <div class="file-item" style="width: auto;">
+                                                <div class="file-info">
+                                                    <i class="fas fa-file-pdf" style="color: var(--danger-color);"></i>
+                                                    <div>
+                                                        <div class="file-name">Gerber文件.zip</div>
+                                                        <div class="file-size">2.5 MB</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            </div>
+                                            <div class="file-item" style="width: auto;">
+                                                <div class="file-info">
+                                                    <i class="fas fa-file-word" style="color: var(--primary-light);"></i>
+                                                    <div>
+                                                        <div class="file-name">工艺要求.docx</div>
+                                                        <div class="file-size">1.2 MB</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 审核历史 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-history"></i>
+                                审核历史
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="history-list">
+                                <div class="history-item">
+                                    <div class="history-header">
+                                        <div class="history-user">张三 (工程部)</div>
+                                        <div class="history-time">2025-12-08 14:30</div>
+                                    </div>
+                                    <div class="history-action">提交MI审核申请</div>
+                                </div>
+                                <div class="history-item">
+                                    <div class="history-header">
+                                        <div class="history-user">李四 (品质部)</div>
+                                        <div class="history-time">2025-12-08 16:15</div>
+                                    </div>
+                                    <div class="history-action">审核通过</div>
+                                    <div class="history-comment">技术参数符合要求，工艺文件完整，同意进入下一环节。</div>
+                                </div>
+                                <div class="history-item">
+                                    <div class="history-header">
+                                        <div class="history-user">王五 (生产部)</div>
+                                        <div class="history-time">2025-12-09 09:20</div>
+                                    </div>
+                                    <div class="history-action">要求修改</div>
+                                    <div class="history-comment">拼板方式需要优化，建议改为阴阳拼板以提高材料利用率。</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 审核操作区域 -->
+                <div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-check-circle"></i>
+                                审核操作
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label required">审核意见</label>
+                                <textarea class="form-control" id="review-comment" rows="8" placeholder="请输入审核意见..."></textarea>
+                            </div>
+                            
+                            <div class="review-actions">
+                                <button class="btn btn-success" id="approve-mi">
+                                    <i class="fas fa-check-circle"></i>
+                                    通过审核
+                                </button>
+                                <button class="btn btn-danger" id="reject-mi">
+                                    <i class="fas fa-times-circle"></i>
+                                    驳回申请
+                                </button>
+                                <button class="btn btn-warning" id="request-revision">
+                                    <i class="fas fa-edit"></i>
+                                    要求修改
+                                </button>
+                                <button class="btn btn-outline" id="view-attachments">
+                                    <i class="fas fa-paperclip"></i>
+                                    查看附件
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 待审核MI列表 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-clock"></i>
+                                待审核列表
+                            </div>
+                            <span style="background-color: var(--warning-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">3</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="padding: 12px; background-color: #f8f9fa; border-radius: 6px; cursor: pointer; border-left: 4px solid var(--warning-color);">
+                                    <div style="font-weight: 600; margin-bottom: 5px;">PC20251209001</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">华为技术有限公司 | 8层板</div>
+                                </div>
+                                <div style="padding: 12px; background-color: #f8f9fa; border-radius: 6px; cursor: pointer;">
+                                    <div style="font-weight: 600; margin-bottom: 5px;">PC20251208025</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">小米科技 | 6层板</div>
+                                </div>
+                                <div style="padding: 12px; background-color: #f8f9fa; border-radius: 6px; cursor: pointer;">
+                                    <div style="font-weight: 600; margin-bottom: 5px;">PC20251207018</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">中兴通讯 | 10层板</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 报表统计界面 -->
+        <div id="reports" class="content-area">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-chart-bar"></i>
+                        报表统计
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="text-align: center; padding: 50px 20px; color: var(--text-secondary);">
+                        <i class="fas fa-chart-pie" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
+                        <div style="font-size: 18px; margin-bottom: 10px;">报表功能开发中</div>
+                        <div style="font-size: 14px;">MI统计报表、生产效率分析、质量分析等功能即将上线</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 选项卡切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有选项卡按钮
+            const tabs = document.querySelectorAll('.tab');
+            
+            // 点击选项卡切换内容
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 获取目标内容区域的ID
+                    const targetId = this.getAttribute('data-target');
+                    
+                    // 移除所有选项卡的active类
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // 添加当前选项卡的active类
+                    this.classList.add('active');
+                    
+                    // 隐藏所有内容区域
+                    document.querySelectorAll('.content-area').forEach(area => {
+                        area.classList.remove('active');
+                    });
+                    
+                    // 显示目标内容区域
+                    const targetArea = document.getElementById(targetId);
+                    if (targetArea) {
+                        targetArea.classList.add('active');
+                    }
+                });
+            });
+            
+            // 文件上传功能
+            const fileUploadArea = document.getElementById('file-upload-area');
+            const fileList = document.getElementById('file-list');
+            
+            if (fileUploadArea) {
+                fileUploadArea.addEventListener('click', function() {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.multiple = true;
+                    input.accept = '.zip,.rar,.ger,.gbr,.pdf,.doc,.docx,.xls,.xlsx';
+                    
+                    input.addEventListener('change', function(e) {
+                        const files = e.target.files;
+                        if (files.length > 0) {
+                            fileList.innerHTML = '';
+                            for (let i = 0; i < files.length; i++) {
+                                const file = files[i];
+                                const fileItem = document.createElement('div');
+                                fileItem.className = 'file-item';
+                                fileItem.innerHTML = `
+                                    <div class="file-info">
+                                        <i class="fas fa-file" style="color: var(--text-secondary);"></i>
+                                        <div>
+                                            <div class="file-name">${file.name}</div>
+                                            <div class="file-size">(${(file.size / 1024).toFixed(1)} KB)</div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                `;
+                                
+                                // 添加删除按钮事件
+                                const removeBtn = fileItem.querySelector('button');
+                                removeBtn.addEventListener('click', function() {
+                                    fileItem.remove();
+                                });
+                                
+                                fileList.appendChild(fileItem);
+                            }
+                        }
+                    });
+                    
+                    input.click();
+                });
+            }
+            
+            // MI制作界面按钮事件
+            const resetBtn = document.getElementById('reset-form');
+            const saveDraftBtn = document.getElementById('save-draft');
+            const submitReviewBtn = document.getElementById('submit-review');
+            
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    if (confirm('确定要重置表单吗？所有已填写的内容将被清空。')) {
+                        document.querySelectorAll('#mi-creation .form-control').forEach(input => {
+                            if (input.tagName === 'SELECT') {
+                                input.selectedIndex = 0;
+                            } else {
+                                input.value = '';
+                            }
+                        });
+                        
+                        if (fileList) {
+                            fileList.innerHTML = '';
+                        }
+                        
+                        // 生成新的生产编号
+                        generateProductionNumber();
+                    }
+                });
+            }
+            
+            if (saveDraftBtn) {
+                saveDraftBtn.addEventListener('click', function() {
+                    if (validateMIForm()) {
+                        alert('MI保存成功！已保存为草稿。');
+                    }
+                });
+            }
+            
+            if (submitReviewBtn) {
+                submitReviewBtn.addEventListener('click', function() {
+                    if (validateMIForm()) {
+                        if (confirm('确认提交MI进行审核吗？提交后不可修改。')) {
+                            alert('MI已成功提交审核！');
+                            // 在实际应用中，这里会发送数据到服务器
+                        }
+                    }
+                });
+            }
+            
+            // MI审核界面按钮事件
+            const approveBtn = document.getElementById('approve-mi');
+            const rejectBtn = document.getElementById('reject-mi');
+            const requestBtn = document.getElementById('request-revision');
+            
+            if (approveBtn) {
+                approveBtn.addEventListener('click', function() {
+                    const comment = document.getElementById('review-comment').value;
+                    if (!comment.trim()) {
+                        alert('请填写审核意见');
+                        return;
+                    }
+                    
+                    if (confirm('确认通过此MI审核吗？')) {
+                        alert('MI审核通过！');
+                        // 更新状态
+                        document.querySelector('#mi-review .status-badge').textContent = '已批准';
+                        document.querySelector('#mi-review .status-badge').className = 'status-badge status-approved';
+                        
+                        // 添加审核历史
+                        addReviewHistory('审核通过', comment);
+                    }
+                });
+            }
+            
+            if (rejectBtn) {
+                rejectBtn.addEventListener('click', function() {
+                    const comment = document.getElementById('review-comment').value;
+                    if (!comment.trim()) {
+                        alert('请填写驳回原因');
+                        return;
+                    }
+                    
+                    if (confirm('确认驳回此MI申请吗？')) {
+                        alert('MI已驳回！');
+                        // 更新状态
+                        document.querySelector('#mi-review .status-badge').textContent = '已驳回';
+                        document.querySelector('#mi-review .status-badge').className = 'status-badge status-rejected';
+                        
+                        // 添加审核历史
+                        addReviewHistory('驳回申请', comment);
+                    }
+                });
+            }
+            
+            if (requestBtn) {
+                requestBtn.addEventListener('click', function() {
+                    const comment = document.getElementById('review-comment').value;
+                    if (!comment.trim()) {
+                        alert('请填写修改要求');
+                        return;
+                    }
+                    
+                    if (confirm('确认要求修改此MI吗？')) {
+                        alert('已要求修改MI！');
+                        // 更新状态
+                        document.querySelector('#mi-review .status-badge').textContent = '待修改';
+                        document.querySelector('#mi-review .status-badge').className = 'status-badge status-pending';
+                        
+                        // 添加审核历史
+                        addReviewHistory('要求修改', comment);
+                    }
+                });
+            }
+            
+            // 查看附件按钮
+            const viewAttachmentsBtn = document.getElementById('view-attachments');
+            if (viewAttachmentsBtn) {
+                viewAttachmentsBtn.addEventListener('click', function() {
+                    alert('查看附件功能');
+                });
+            }
+            
+            // 初始化生成生产编号
+            generateProductionNumber();
+            
+            // 表单验证
+            function validateMIForm() {
+                const requiredFields = document.querySelectorAll('#mi-creation .required');
+                let isValid = true;
+                
+                for (let field of requiredFields) {
+                    const label = field;
+                    const input = label.closest('.form-group').querySelector('.form-control');
+                    if (!input.value.trim()) {
+                        input.style.borderColor = 'var(--danger-color)';
+                        isValid = false;
+                    } else {
+                        input.style.borderColor = 'var(--border-color)';
+                    }
+                }
+                
+                if (!isValid) {
+                    alert('请填写所有必填字段（标有*的字段）');
+                }
+                
+                return isValid;
+            }
+            
+            // 生成生产编号
+            function generateProductionNumber() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const randomNum = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+                
+                const productionNumberInput = document.querySelector('#mi-creation input[type="text"]');
+                if (productionNumberInput && productionNumberInput.value === 'PC20251209025') {
+                    productionNumberInput.value = `PC${year}${month}${day}${randomNum}`;
+                }
+            }
+            
+            // 添加审核历史
+            function addReviewHistory(action, comment) {
+                const historyList = document.querySelector('.history-list');
+                const now = new Date();
+                const timeString = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div class="history-header">
+                        <div class="history-user">张工 (审核员)</div>
+                        <div class="history-time">${timeString}</div>
+                    </div>
+                    <div class="history-action">${action}</div>
+                    <div class="history-comment">${comment}</div>
+                `;
+                
+                // 插入到历史列表顶部
+                historyList.insertBefore(historyItem, historyList.children[0]);
+                
+                // 清空审核意见框
+                document.getElementById('review-comment').value = '';
+                
+                // 更新待审核数量
+                const pendingBadge = document.querySelector('.tab[data-target="mi-review"] span');
+                if (pendingBadge) {
+                    let count = parseInt(pendingBadge.textContent) || 0;
+                    if (count > 0) {
+                        count--;
+                        pendingBadge.textContent = count;
+                        if (count === 0) {
+                            pendingBadge.style.display = 'none';
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

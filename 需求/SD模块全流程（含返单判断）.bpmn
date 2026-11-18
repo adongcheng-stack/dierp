@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="SD_Process_Definition" targetNamespace="http://bpmn.io/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0">
+  <collaboration id="Collaboration_19yq5e9">
+    <participant id="Participant_1j2hpcl" name="SD模块全流程（含返单判断）" processRef="SD_Sales_Process" />
+  </collaboration>
+  <process id="SD_Sales_Process" name="销售报价流程" isExecutable="true">
+    <documentation>销售报价流程：从客户需求到订单确认的完整流程</documentation>
+    <laneSet id="LaneSet_0m5hyg7">
+      <lane id="Lane_0eponp4" name="总经理">
+        <flowNodeRef>Activity_1e0o1ir</flowNodeRef>
+        <flowNodeRef>Gateway_ReQuoteOrTerminate</flowNodeRef>
+      </lane>
+      <lane id="Lane_1ed211t" name="财务">
+        <flowNodeRef>Activity_117so12</flowNodeRef>
+      </lane>
+      <lane id="Lane_1npvzam" name="销售经理">
+        <flowNodeRef>Activity_1g4q29m</flowNodeRef>
+      </lane>
+      <lane id="Lane_1e41mh9" name="销售">
+        <flowNodeRef>Activity_0oa8ndn</flowNodeRef>
+        <flowNodeRef>Gateway_0fxsh8v</flowNodeRef>
+        <flowNodeRef>Activity_0tc9863</flowNodeRef>
+        <flowNodeRef>Activity_1p0gxvp</flowNodeRef>
+        <flowNodeRef>Gateway_RequirementType</flowNodeRef>
+        <flowNodeRef>Gateway_CustomerConfirmation</flowNodeRef>
+        <flowNodeRef>Activity_0xd0771</flowNodeRef>
+        <flowNodeRef>EndEvent_ReviewPassed</flowNodeRef>
+        <flowNodeRef>Task_ContractReview</flowNodeRef>
+        <flowNodeRef>Task_CreateSalesOrder</flowNodeRef>
+        <flowNodeRef>Gateway_CustomerModel</flowNodeRef>
+        <flowNodeRef>StartEvent_CustomerRequirement</flowNodeRef>
+        <flowNodeRef>Task_ReturnOrder</flowNodeRef>
+      </lane>
+    </laneSet>
+    <userTask id="Task_CollectCustomerInfo" name="收集客户基本信息">
+      <incoming>Flow_NewCustomer</incoming>
+      <outgoing>Flow_AssignCustomerCode</outgoing>
+    </userTask>
+    <userTask id="Task_AssignCustomerCode" name="分配客户编码">
+      <incoming>Flow_AssignCustomerCode</incoming>
+      <outgoing>Flow_SetCreditLimit</outgoing>
+    </userTask>
+    <userTask id="Task_SetCreditLimit" name="设置信用额度">
+      <incoming>Flow_SetCreditLimit</incoming>
+      <outgoing>Flow_CustomerCreated</outgoing>
+    </userTask>
+    <userTask id="Task_UpdateCustomerInfo" name="客户信息维护">
+      <incoming>Flow_UpdateCustomer</incoming>
+      <outgoing>Flow_CustomerUpdated</outgoing>
+    </userTask>
+    <parallelGateway id="Gateway_MergeCustomer" name="客户档案完成">
+      <incoming>Flow_CustomerCreated</incoming>
+      <incoming>Flow_CustomerUpdated</incoming>
+      <outgoing>Flow_To_CreateQuotation</outgoing>
+    </parallelGateway>
+    <userTask id="Task_CreateQuotation" name="销售创建报价单">
+      <documentation>角色：销售
+行动：创建报价单</documentation>
+      <incoming>Flow_To_CreateQuotation</incoming>
+      <incoming>Flow_ReturnToQuotation</incoming>
+      <outgoing>Flow_AutoGenerateCode</outgoing>
+    </userTask>
+    <serviceTask id="Task_AutoGenerateCode" name="系统自动生成本厂编号">
+      <incoming>Flow_AutoGenerateCode</incoming>
+      <outgoing>Flow_To_Approval</outgoing>
+    </serviceTask>
+    <userTask id="Task_SalesManagerApproval" name="销售经理审核">
+      <documentation>角色：销售经理
+行动：审核报价单</documentation>
+      <incoming>Flow_To_Approval</incoming>
+      <outgoing>Flow_To_SalesApprovalGateway</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_SalesApproval" name="销售经理审核通过?">
+      <incoming>Flow_To_SalesApprovalGateway</incoming>
+      <outgoing>Flow_SalesApproved</outgoing>
+      <outgoing>Flow_SalesRejected</outgoing>
+    </exclusiveGateway>
+    <userTask id="Task_FinanceApproval" name="财务审核">
+      <documentation>角色：财务
+行动：审核报价单</documentation>
+      <incoming>Flow_SalesApproved</incoming>
+      <outgoing>Flow_To_FinanceApprovalGateway</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_FinanceApproval" name="财务审核通过?">
+      <incoming>Flow_To_FinanceApprovalGateway</incoming>
+      <outgoing>Flow_FinanceApproved</outgoing>
+      <outgoing>Flow_FinanceRejected</outgoing>
+    </exclusiveGateway>
+    <userTask id="Task_GMApproval" name="总经理审核">
+      <documentation>角色：总经理
+行动：最终审批报价单</documentation>
+      <incoming>Flow_FinanceApproved</incoming>
+      <outgoing>Flow_To_GMApprovalGateway</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_GMApproval" name="最终审批?">
+      <incoming>Flow_To_GMApprovalGateway</incoming>
+      <outgoing>Flow_GMApproved</outgoing>
+      <outgoing>Flow_GMRejected</outgoing>
+    </exclusiveGateway>
+    <parallelGateway id="Gateway_MergeRejections" name="合并拒绝">
+      <incoming>Flow_SalesRejected</incoming>
+      <incoming>Flow_FinanceRejected</incoming>
+      <incoming>Flow_GMRejected</incoming>
+      <outgoing>Flow_ReturnToQuotation</outgoing>
+    </parallelGateway>
+    <userTask id="Task_QuotationEffective" name="报价单生效">
+      <incoming>Flow_GMApproved</incoming>
+      <outgoing>Flow_SendToCustomer</outgoing>
+    </userTask>
+    <serviceTask id="Task_SendToCustomer" name="发送客户确认">
+      <incoming>Flow_SendToCustomer</incoming>
+      <outgoing>Flow_To_CustomerConfirmation</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_NewCustomer" name="否" sourceRef="Gateway_CustomerModel" targetRef="Task_CollectCustomerInfo" />
+    <sequenceFlow id="Flow_UpdateCustomer" name="是" sourceRef="Gateway_CustomerModel" targetRef="Task_UpdateCustomerInfo" />
+    <sequenceFlow id="Flow_AssignCustomerCode" sourceRef="Task_CollectCustomerInfo" targetRef="Task_AssignCustomerCode" />
+    <sequenceFlow id="Flow_SetCreditLimit" sourceRef="Task_AssignCustomerCode" targetRef="Task_SetCreditLimit" />
+    <sequenceFlow id="Flow_CustomerCreated" sourceRef="Task_SetCreditLimit" targetRef="Gateway_MergeCustomer" />
+    <sequenceFlow id="Flow_CustomerUpdated" sourceRef="Task_UpdateCustomerInfo" targetRef="Gateway_MergeCustomer" />
+    <sequenceFlow id="Flow_To_CreateQuotation" sourceRef="Gateway_MergeCustomer" targetRef="Task_CreateQuotation" />
+    <sequenceFlow id="Flow_AutoGenerateCode" sourceRef="Task_CreateQuotation" targetRef="Task_AutoGenerateCode" />
+    <sequenceFlow id="Flow_To_Approval" sourceRef="Task_AutoGenerateCode" targetRef="Task_SalesManagerApproval" />
+    <sequenceFlow id="Flow_To_SalesApprovalGateway" sourceRef="Task_SalesManagerApproval" targetRef="Gateway_SalesApproval" />
+    <sequenceFlow id="Flow_SalesApproved" name="是" sourceRef="Gateway_SalesApproval" targetRef="Task_FinanceApproval" />
+    <sequenceFlow id="Flow_SalesRejected" name="否" sourceRef="Gateway_SalesApproval" targetRef="Gateway_MergeRejections" />
+    <sequenceFlow id="Flow_To_FinanceApprovalGateway" sourceRef="Task_FinanceApproval" targetRef="Gateway_FinanceApproval" />
+    <sequenceFlow id="Flow_FinanceApproved" name="是" sourceRef="Gateway_FinanceApproval" targetRef="Task_GMApproval" />
+    <sequenceFlow id="Flow_FinanceRejected" name="否" sourceRef="Gateway_FinanceApproval" targetRef="Gateway_MergeRejections" />
+    <sequenceFlow id="Flow_To_GMApprovalGateway" sourceRef="Task_GMApproval" targetRef="Gateway_GMApproval" />
+    <sequenceFlow id="Flow_GMApproved" name="是" sourceRef="Gateway_GMApproval" targetRef="Task_QuotationEffective" />
+    <sequenceFlow id="Flow_GMRejected" name="否" sourceRef="Gateway_GMApproval" targetRef="Gateway_MergeRejections" />
+    <sequenceFlow id="Flow_ReturnToQuotation" name="退回修改" sourceRef="Gateway_MergeRejections" targetRef="Task_CreateQuotation" />
+    <sequenceFlow id="Flow_SendToCustomer" sourceRef="Task_QuotationEffective" targetRef="Task_SendToCustomer" />
+    <sequenceFlow id="Flow_To_CustomerConfirmation" sourceRef="Task_SendToCustomer" targetRef="Gateway_CustomerConfirmation" />
+    <sequenceFlow id="Flow_ReturnToCreateQuotation" targetRef="Task_CreateQuotation" />
+    <userTask id="Activity_0oa8ndn" name="新建报价单/重新报价">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_1ybxv0h</incoming>
+      <incoming>Flow_135w806</incoming>
+      <incoming>Flow_1usp9sr</incoming>
+      <incoming>Flow_0hcg6xx</incoming>
+      <incoming>Flow_1a3so4i</incoming>
+      <incoming>Flow_CustomerRejected</incoming>
+      <outgoing>Flow_132d1t1</outgoing>
+    </userTask>
+    <userTask id="Activity_117so12" name="财务审批">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_1o3vsxk</incoming>
+      <outgoing>Flow_1074863</outgoing>
+      <outgoing>Flow_0hcg6xx</outgoing>
+    </userTask>
+    <userTask id="Activity_1e0o1ir" name="总经理审批">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_1074863</incoming>
+      <outgoing>Flow_078j2yy</outgoing>
+    </userTask>
+    <userTask id="Activity_1g4q29m" name="销售审批">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_132d1t1</incoming>
+      <outgoing>Flow_1o3vsxk</outgoing>
+      <outgoing>Flow_1usp9sr</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_0fxsh8v">
+      <incoming>Flow_0s25z0w</incoming>
+      <outgoing>Flow_1ftkshr</outgoing>
+      <outgoing>Flow_1v5lea4</outgoing>
+    </exclusiveGateway>
+    <userTask id="Activity_0tc9863" name="客户建档">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_1ftkshr</incoming>
+      <outgoing>Flow_135w806</outgoing>
+    </userTask>
+    <userTask id="Activity_1p0gxvp" name="客户信息维护">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_1v5lea4</incoming>
+      <outgoing>Flow_1ybxv0h</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_RequirementType" name="需求类型判断">
+      <incoming>Flow_To_RequirementType</incoming>
+      <outgoing>Flow_ReturnOrder</outgoing>
+      <outgoing>Flow_NewOrder</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="Gateway_ReQuoteOrTerminate" name="审批结果判断">
+      <incoming>Flow_078j2yy</incoming>
+      <outgoing>Flow_Terminate</outgoing>
+      <outgoing>Flow_1a3so4i</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="Gateway_CustomerConfirmation" name="客户确认?">
+      <incoming>Flow_To_CustomerConfirmation</incoming>
+      <incoming>Flow_0a9ahhg</incoming>
+      <outgoing>Flow_CustomerConfirmed</outgoing>
+      <outgoing>Flow_CustomerRejected</outgoing>
+    </exclusiveGateway>
+    <userTask id="Activity_0xd0771" name="客户确认">
+      <extensionElements>
+        <zeebe:userTask />
+      </extensionElements>
+      <incoming>Flow_Terminate</incoming>
+      <outgoing>Flow_0a9ahhg</outgoing>
+    </userTask>
+    <endEvent id="EndEvent_ReviewPassed" name="评审通过">
+      <incoming>Flow_ReviewComplete</incoming>
+    </endEvent>
+    <userTask id="Task_ContractReview" name="合同评审">
+      <documentation>角色：订单中心
+行动：评审合同</documentation>
+      <incoming>Flow_To_ContractReview</incoming>
+      <outgoing>Flow_ReviewComplete</outgoing>
+    </userTask>
+    <userTask id="Task_CreateSalesOrder" name="转为销售订单">
+      <documentation>角色：销售
+行动：客户确认后创建销售订单</documentation>
+      <incoming>Flow_CustomerConfirmed</incoming>
+      <outgoing>Flow_To_ContractReview</outgoing>
+    </userTask>
+    <exclusiveGateway id="Gateway_CustomerModel" name="客户型号对应的本厂编号是否存在">
+      <incoming>Flow_NewOrder</incoming>
+      <outgoing>Flow_NewCustomer</outgoing>
+      <outgoing>Flow_UpdateCustomer</outgoing>
+      <outgoing>Flow_0s25z0w</outgoing>
+    </exclusiveGateway>
+    <startEvent id="StartEvent_CustomerRequirement" name="客户需求">
+      <outgoing>Flow_To_RequirementType</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_CustomerRejected" name="否" sourceRef="Gateway_CustomerConfirmation" targetRef="Activity_0oa8ndn" />
+    <sequenceFlow id="Flow_1ybxv0h" sourceRef="Activity_1p0gxvp" targetRef="Activity_0oa8ndn" />
+    <sequenceFlow id="Flow_135w806" sourceRef="Activity_0tc9863" targetRef="Activity_0oa8ndn" />
+    <sequenceFlow id="Flow_1usp9sr" name="不通过" sourceRef="Activity_1g4q29m" targetRef="Activity_0oa8ndn" />
+    <sequenceFlow id="Flow_0hcg6xx" name="不通过" sourceRef="Activity_117so12" targetRef="Activity_0oa8ndn" />
+    <sequenceFlow id="Flow_1a3so4i" name="不通过" sourceRef="Gateway_ReQuoteOrTerminate" targetRef="Activity_0oa8ndn" />
+    <sequenceFlow id="Flow_132d1t1" sourceRef="Activity_0oa8ndn" targetRef="Activity_1g4q29m" />
+    <sequenceFlow id="Flow_1o3vsxk" name="通过" sourceRef="Activity_1g4q29m" targetRef="Activity_117so12" />
+    <sequenceFlow id="Flow_1074863" name="通过" sourceRef="Activity_117so12" targetRef="Activity_1e0o1ir" />
+    <sequenceFlow id="Flow_078j2yy" sourceRef="Activity_1e0o1ir" targetRef="Gateway_ReQuoteOrTerminate" />
+    <sequenceFlow id="Flow_0s25z0w" sourceRef="Gateway_CustomerModel" targetRef="Gateway_0fxsh8v" />
+    <sequenceFlow id="Flow_1ftkshr" name="否" sourceRef="Gateway_0fxsh8v" targetRef="Activity_0tc9863" />
+    <sequenceFlow id="Flow_1v5lea4" name="是" sourceRef="Gateway_0fxsh8v" targetRef="Activity_1p0gxvp" />
+    <sequenceFlow id="Flow_To_RequirementType" sourceRef="StartEvent_CustomerRequirement" targetRef="Gateway_RequirementType" />
+    <sequenceFlow id="Flow_ReturnOrder" name="返单" sourceRef="Gateway_RequirementType" targetRef="Task_ReturnOrder" />
+    <sequenceFlow id="Flow_NewOrder" name="新单" sourceRef="Gateway_RequirementType" targetRef="Gateway_CustomerModel" />
+    <sequenceFlow id="Flow_Terminate" name="通过" sourceRef="Gateway_ReQuoteOrTerminate" targetRef="Activity_0xd0771" />
+    <sequenceFlow id="Flow_0a9ahhg" sourceRef="Activity_0xd0771" targetRef="Gateway_CustomerConfirmation" />
+    <sequenceFlow id="Flow_CustomerConfirmed" name="是" sourceRef="Gateway_CustomerConfirmation" targetRef="Task_CreateSalesOrder" />
+    <sequenceFlow id="Flow_ReviewComplete" sourceRef="Task_ContractReview" targetRef="EndEvent_ReviewPassed" />
+    <sequenceFlow id="Flow_To_ContractReview" sourceRef="Task_ReturnOrder" targetRef="Task_ContractReview" />
+    <sequenceFlow id="Flow_CreateSalesOrder_To_Contract" sourceRef="Task_CreateSalesOrder" targetRef="Task_ContractReview" />
+    <serviceTask id="Task_ReturnOrder" name="根据历史订单快速创建销售订单">
+      <documentation>返单/重复订单：通过本厂编号获取订单信息，创建销售订单</documentation>
+      <incoming>Flow_ReturnOrder</incoming>
+      <outgoing>Flow_To_ContractReview</outgoing>
+    </serviceTask>
+  </process>
+  <bpmndi:BPMNDiagram id="BpmnDiagram_SD">
+    <bpmndi:BPMNPlane id="BpmnPlane_SD" bpmnElement="Collaboration_19yq5e9">
+      <bpmndi:BPMNShape id="Participant_1j2hpcl_di" bpmnElement="Participant_1j2hpcl" isHorizontal="true">
+        <omgdc:Bounds x="160" y="80" width="1680" height="890" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1e41mh9_di" bpmnElement="Lane_1e41mh9" isHorizontal="true">
+        <omgdc:Bounds x="190" y="80" width="1650" height="390" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1npvzam_di" bpmnElement="Lane_1npvzam" isHorizontal="true">
+        <omgdc:Bounds x="190" y="470" width="1650" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1ed211t_di" bpmnElement="Lane_1ed211t" isHorizontal="true">
+        <omgdc:Bounds x="190" y="640" width="1650" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0eponp4_di" bpmnElement="Lane_0eponp4" isHorizontal="true">
+        <omgdc:Bounds x="190" y="800" width="1650" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0oa8ndn_di" bpmnElement="Activity_0oa8ndn">
+        <omgdc:Bounds x="940" y="290" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_117so12_di" bpmnElement="Activity_117so12">
+        <omgdc:Bounds x="940" y="690" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1e0o1ir_di" bpmnElement="Activity_1e0o1ir">
+        <omgdc:Bounds x="940" y="840" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1g4q29m_di" bpmnElement="Activity_1g4q29m">
+        <omgdc:Bounds x="940" y="520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0fxsh8v_di" bpmnElement="Gateway_0fxsh8v" isMarkerVisible="true">
+        <omgdc:Bounds x="625" y="305" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0tc9863_di" bpmnElement="Activity_0tc9863">
+        <omgdc:Bounds x="730" y="235" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1p0gxvp_di" bpmnElement="Activity_1p0gxvp">
+        <omgdc:Bounds x="730" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_RequirementType_di" bpmnElement="Gateway_RequirementType" isMarkerVisible="true">
+        <omgdc:Bounds x="385" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="308" y="243" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ReQuoteOrTerminate_di" bpmnElement="Gateway_ReQuoteOrTerminate" isMarkerVisible="true">
+        <omgdc:Bounds x="1105" y="855" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1102" y="912" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CustomerConfirmation_di" bpmnElement="Gateway_CustomerConfirmation" isMarkerVisible="true">
+        <omgdc:Bounds x="1365" y="285" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1425" y="303" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1j1p29m_di" bpmnElement="Activity_0xd0771">
+        <omgdc:Bounds x="1190" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ReviewPassed_di" bpmnElement="EndEvent_ReviewPassed">
+        <omgdc:Bounds x="1772" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1768" y="325" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ContractReview_di" bpmnElement="Task_ContractReview">
+        <omgdc:Bounds x="1620" y="260" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1645" y="347" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateSalesOrder_di" bpmnElement="Task_CreateSalesOrder">
+        <omgdc:Bounds x="1450" y="370" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1465" y="457" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CustomerModel_di" bpmnElement="Gateway_CustomerModel" isMarkerVisible="true">
+        <omgdc:Bounds x="495" y="305" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="476" y="362" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_CustomerRequirement_di" bpmnElement="StartEvent_CustomerRequirement">
+        <omgdc:Bounds x="252" y="225" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="248" y="268" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nmn4mc_di" bpmnElement="Task_ReturnOrder">
+        <omgdc:Bounds x="1450" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_CustomerRejected_di" bpmnElement="Flow_CustomerRejected">
+        <omgdi:waypoint x="1390" y="285" />
+        <omgdi:waypoint x="1390" y="230" />
+        <omgdi:waypoint x="990" y="230" />
+        <omgdi:waypoint x="990" y="290" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1383" y="258" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ybxv0h_di" bpmnElement="Flow_1ybxv0h">
+        <omgdi:waypoint x="830" y="400" />
+        <omgdi:waypoint x="880" y="400" />
+        <omgdi:waypoint x="880" y="340" />
+        <omgdi:waypoint x="940" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_135w806_di" bpmnElement="Flow_135w806">
+        <omgdi:waypoint x="830" y="275" />
+        <omgdi:waypoint x="880" y="275" />
+        <omgdi:waypoint x="880" y="330" />
+        <omgdi:waypoint x="940" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1usp9sr_di" bpmnElement="Flow_1usp9sr">
+        <omgdi:waypoint x="1040" y="560" />
+        <omgdi:waypoint x="1100" y="560" />
+        <omgdi:waypoint x="1100" y="350" />
+        <omgdi:waypoint x="1040" y="350" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1098" y="452" width="34" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hcg6xx_di" bpmnElement="Flow_0hcg6xx">
+        <omgdi:waypoint x="1040" y="730" />
+        <omgdi:waypoint x="1110" y="730" />
+        <omgdi:waypoint x="1110" y="330" />
+        <omgdi:waypoint x="1040" y="330" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1108" y="527" width="34" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1a3so4i_di" bpmnElement="Flow_1a3so4i">
+        <omgdi:waypoint x="1130" y="855" />
+        <omgdi:waypoint x="1130" y="310" />
+        <omgdi:waypoint x="1040" y="310" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1128" y="580" width="34" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_132d1t1_di" bpmnElement="Flow_132d1t1">
+        <omgdi:waypoint x="990" y="370" />
+        <omgdi:waypoint x="990" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1o3vsxk_di" bpmnElement="Flow_1o3vsxk">
+        <omgdi:waypoint x="990" y="600" />
+        <omgdi:waypoint x="990" y="690" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="994" y="642" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1074863_di" bpmnElement="Flow_1074863">
+        <omgdi:waypoint x="990" y="770" />
+        <omgdi:waypoint x="990" y="840" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="994" y="802" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_078j2yy_di" bpmnElement="Flow_078j2yy">
+        <omgdi:waypoint x="1040" y="880" />
+        <omgdi:waypoint x="1105" y="880" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1173.000000000001" y="592" width="34" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0s25z0w_di" bpmnElement="Flow_0s25z0w">
+        <omgdi:waypoint x="545" y="330" />
+        <omgdi:waypoint x="625" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ftkshr_di" bpmnElement="Flow_1ftkshr">
+        <omgdi:waypoint x="650" y="305" />
+        <omgdi:waypoint x="650" y="275" />
+        <omgdi:waypoint x="730" y="275" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="634" y="282" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1v5lea4_di" bpmnElement="Flow_1v5lea4">
+        <omgdi:waypoint x="650" y="355" />
+        <omgdi:waypoint x="650" y="400" />
+        <omgdi:waypoint x="730" y="400" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="659" y="372" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_RequirementType_di" bpmnElement="Flow_To_RequirementType">
+        <omgdi:waypoint x="288" y="243" />
+        <omgdi:waypoint x="392" y="243" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReturnOrder_di" bpmnElement="Flow_ReturnOrder">
+        <omgdi:waypoint x="410" y="225" />
+        <omgdi:waypoint x="410" y="180" />
+        <omgdi:waypoint x="1450" y="180" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="424" y="196" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NewOrder_di" bpmnElement="Flow_NewOrder">
+        <omgdi:waypoint x="410" y="275" />
+        <omgdi:waypoint x="410" y="330" />
+        <omgdi:waypoint x="495" y="330" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="415" y="305" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Terminate_di" bpmnElement="Flow_Terminate">
+        <omgdi:waypoint x="1155" y="880" />
+        <omgdi:waypoint x="1240" y="880" />
+        <omgdi:waypoint x="1240" y="350" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1229" y="597" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0a9ahhg_di" bpmnElement="Flow_0a9ahhg">
+        <omgdi:waypoint x="1290" y="310" />
+        <omgdi:waypoint x="1365" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CustomerConfirmed_di" bpmnElement="Flow_CustomerConfirmed">
+        <omgdi:waypoint x="1390" y="335" />
+        <omgdi:waypoint x="1390" y="410" />
+        <omgdi:waypoint x="1450" y="410" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1384" y="366" width="12" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReviewComplete_di" bpmnElement="Flow_ReviewComplete">
+        <omgdi:waypoint x="1720" y="300" />
+        <omgdi:waypoint x="1772" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_ContractReview_di" bpmnElement="Flow_To_ContractReview">
+        <omgdi:waypoint x="1550" y="180" />
+        <omgdi:waypoint x="1670" y="180" />
+        <omgdi:waypoint x="1670" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CreateSalesOrder_To_Contract_di" bpmnElement="Flow_CreateSalesOrder_To_Contract">
+        <omgdi:waypoint x="1550" y="410" />
+        <omgdi:waypoint x="1670" y="410" />
+        <omgdi:waypoint x="1670" y="340" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

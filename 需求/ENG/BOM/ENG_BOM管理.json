@@ -1,0 +1,221 @@
+{
+  "system": "某某ERP系统",
+  "version": "MVP 1.3",
+  "module": "ENG模块 - BOM管理",
+  "interface_elements": {
+    "BOM基本信息": {
+      "BOM编号": {
+        "type": "readonly_text_input",
+        "value": "BOM-HS1004-STD",
+        "readonly": true
+      },
+      "版本": {
+        "type": "readonly_text_input",
+        "value": "V1.0",
+        "readonly": true
+      },
+      "状态": {
+        "type": "status_badge",
+        "options": [
+          {
+            "value": "已发布",
+            "css_class": "status-completed",
+            "background": "#d1ecf1",
+            "color": "#0c5460"
+          },
+          {
+            "value": "审核中",
+            "css_class": "status-reviewing",
+            "background": "#fff3cd",
+            "color": "#856404"
+          },
+          {
+            "value": "生产中",
+            "css_class": "status-producing",
+            "background": "#cce5ff",
+            "color": "#004085"
+          },
+          {
+            "value": "新创建",
+            "css_class": "status-new",
+            "background": "#d4edda",
+            "color": "#155724"
+          }
+        ],
+        "current_value": "已发布"
+      },
+      "父项物料": {
+        "type": "readonly_text_input",
+        "value": "HS1004ENIGAB01 - 标准四层板沉金工艺",
+        "readonly": true
+      },
+      "生效日期": {
+        "type": "date_input",
+        "readonly": true,
+        "value": "2025-01-01"
+      },
+      "失效日期": {
+        "type": "date_input",
+        "readonly": true,
+        "value": "2099-12-31"
+      }
+    },
+    "BOM物料清单": {
+      "table_structure": {
+        "columns": ["序号", "物料编码", "物料名称", "单位", "单机用量", "备注"],
+        "sortable": false,
+        "editable": false,
+        "selectable": true
+      },
+      "data_operations": {
+        "add_material": {
+          "enabled": true,
+          "label": "新增物料"
+        },
+        "edit_usage": {
+          "enabled": true,
+          "label": "编辑用量"
+        },
+        "delete_material": {
+          "enabled": false
+        }
+      }
+    },
+    "操作按钮": [
+      {
+        "id": "add_material",
+        "label": "新增物料",
+        "type": "primary",
+        "color": "#3498db",
+        "action": "open_add_material_dialog"
+      },
+      {
+        "id": "edit_usage",
+        "label": "编辑用量",
+        "type": "success",
+        "color": "#27ae60",
+        "action": "edit_selected_material_usage"
+      },
+      {
+        "id": "create_new_version",
+        "label": "创建新版本",
+        "type": "secondary",
+        "color": "#7f8c8d",
+        "action": "clone_bom_as_new_version"
+      },
+      {
+        "id": "export_bom",
+        "label": "导出BOM",
+        "type": "secondary",
+        "color": "#7f8c8d",
+        "action": "export_bom_to_excel_pdf"
+      }
+    ],
+    "信息显示": {
+      "total_materials": {
+        "label": "总计",
+        "format": "{count}项物料",
+        "value": 30
+      },
+      "bom_status_info": {
+        "enabled": true,
+        "display_format": "状态: {status} | 版本: {version} | 生效日期: {effective_date}至{expiry_date}"
+      }
+    }
+  },
+  "sample_data": [
+    {
+      "序号": 1,
+      "物料编码": "MAT-FR4-1.2",
+      "物料名称": "FR4板材1.2mm",
+      "单位": "张",
+      "单机用量": 0.25,
+      "备注": "主材",
+      "material_type": "raw_material"
+    },
+    {
+      "序号": 2,
+      "物料编码": "MAT-CU-1OZ",
+      "物料名称": "铜箔1oz",
+      "单位": "卷",
+      "单机用量": 0.02,
+      "备注": "导电层",
+      "material_type": "raw_material"
+    },
+    {
+      "序号": 3,
+      "物料编码": "MAT-PP-2116",
+      "物料名称": "半固化片2116",
+      "单位": "张",
+      "单机用量": 0.30,
+      "备注": "粘接层",
+      "material_type": "raw_material"
+    },
+    {
+      "序号": 4,
+      "物料编码": "MAT-DRYFILM",
+      "物料名称": "干膜",
+      "单位": "卷",
+      "单机用量": 0.05,
+      "备注": "图形转移",
+      "material_type": "consumable"
+    },
+    {
+      "序号": 5,
+      "物料编码": "MAT-SOLDER",
+      "物料名称": "阻焊油墨",
+      "单位": "公斤",
+      "单机用量": 0.15,
+      "备注": "阻焊层",
+      "material_type": "chemical"
+    }
+  ],
+  "bom_metadata": {
+    "bom_id": "BOM-HS1004-STD",
+    "version": "V1.0",
+    "parent_item": "HS1004ENIGAB01 - 标准四层板沉金工艺",
+    "status": "已发布",
+    "effective_date": "2025-01-01",
+    "expiry_date": "2099-12-31",
+    "created_by": "系统管理员",
+    "created_date": "2024-12-15",
+    "last_modified_by": "工程师张三",
+    "last_modified_date": "2024-12-20"
+  },
+  "ui_specifications": {
+    "layout": {
+      "form_layout": "two_column_responsive",
+      "readonly_fields": "gray_background",
+      "status_indicator": "badge_with_icon"
+    },
+    "styles": {
+      "primary_color": "#3498db",
+      "secondary_color": "#7f8c8d",
+      "success_color": "#27ae60",
+      "completed_status_color": "#d1ecf1",
+      "completed_text_color": "#0c5460",
+      "table_header_bg": "#f8f9fa",
+      "row_hover_bg": "#f8f9fa"
+    },
+    "responsive": true,
+    "accessibility": {
+      "aria_labels": {
+        "add_material": "添加新物料到BOM清单",
+        "edit_usage": "编辑选中物料的用量",
+        "create_new_version": "基于当前BOM创建新版本",
+        "export_bom": "导出BOM表为Excel或PDF格式"
+      }
+    }
+  },
+  "functionality": {
+    "version_management": true,
+    "material_addition": true,
+    "usage_editing": true,
+    "export_capabilities": true,
+    "validation_rules": {
+      "material_duplicate_check": true,
+      "usage_positive_value": true,
+      "effective_date_before_expiry": true
+    }
+  }
+}

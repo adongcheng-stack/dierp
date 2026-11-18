@@ -1,0 +1,60 @@
+' ============================================
+' 某某ERP系统 - 生产版本工作流
+' ============================================
+' 版本：v1.4
+' 创建日期：2025-01-XX
+' 最后更新：2025-01-XX
+' 基于：某某ERP系统MVP版本需求规格说明书 v1.4
+' 模块：ENG（工程管理）
+'
+' 本文档包含生产版本管理模块的业务流程，使用PlantUML活动图格式。
+' ============================================
+
+' 2.4 生产版本管理流程
+@startuml ENG-生产版本管理流程
+!theme plain
+skinparam activity {
+    BackgroundColor #E8F4F8
+    BorderColor #4A90E2
+    FontSize 12
+}
+
+title ENG模块 - 生产版本管理流程
+
+start
+:创建生产版本;
+:选择物料;
+:选择BOM（必须RELEASED）;
+:选择工艺路线（必须RELEASED）;
+:选择MI（可选）;
+
+if (验证生产版本\nBOM和工艺路线必须RELEASED) then (验证失败)
+  :错误：BOM或工艺路线未发布;
+  stop
+else (验证通过)
+endif
+
+if (发布生产版本) then (是)
+  if (MI是否关联且RELEASED?) then (否)
+    :错误：发布时需要MI已关联且RELEASED;
+    stop
+  else (是)
+    :更新状态：RELEASED;
+    :可用于销售订单;
+    :可用于生产订单;
+  endif
+else (否)
+  stop
+endif
+
+stop
+
+note right
+  **关键规则：**
+  1. BOM和工艺路线是必选的，必须为RELEASED状态
+  2. MI在创建时是可选的，但在发布时是必选的
+  3. 发布时需要MI已关联且状态为RELEASED
+end note
+
+@enduml
+

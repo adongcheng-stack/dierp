@@ -1,0 +1,90 @@
+{
+  "bom_id": "BOM-8L-001",
+  "revision": "A",
+  "effective_date": "2024-01-10",
+  "description": "八层HDI PCB板物料清单",
+  
+  "raw_materials": [
+    {
+      "level": 1,
+      "item_no": "RM-FR4-170",
+      "description": "FR-4覆铜板 Tg170",
+      "specification": "0.8mm, 0.5oz铜厚",
+      "uom": "张",
+      "qty_per_unit": 1.2,
+      "waste_factor": "8%",
+      "supplier": "南亚塑胶",
+      "unit_cost": 320.00,
+      "lead_time": "10天"
+    },
+    {
+      "level": 1,
+      "item_no": "RM-PP106",
+      "description": "106半固化片",
+      "specification": "0.05mm",
+      "uom": "张",
+      "qty_per_unit": 3.5,
+      "waste_factor": "5%",
+      "supplier": "台光电子",
+      "unit_cost": 95.00,
+      "lead_time": "7天"
+    },
+    {
+      "level": 2,
+      "item_no": "RM-CU-FOIL-HALF",
+      "description": "电解铜箔",
+      "specification": "0.5oz",
+      "uom": "公斤",
+      "qty_per_unit": 0.018,
+      "waste_factor": "10%",
+      "supplier": "长春石化",
+      "unit_cost": 68.00,
+      "lead_time": "5天"
+    },
+    {
+      "level": 3,
+      "item_no": "RM-LDI-DRY-FILM",
+      "description": "LDI干膜",
+      "specification": "0.8mil",
+      "uom": "平方米",
+      "qty_per_unit": 0.015,
+      "waste_factor": "12%",
+      "supplier": "杜邦",
+      "unit_cost": 45.00,
+      "lead_time": "14天"
+    },
+    {
+      "level": 3,
+      "item_no": "RM-LASER-DRILL",
+      "description": "激光钻孔物料包",
+      "specification": "CO2激光",
+      "uom": "套",
+      "qty_per_unit": 0.0003,
+      "waste_factor": "25%",
+      "supplier": "三菱电机",
+      "unit_cost": 2500.00,
+      "lead_time": "21天"
+    }
+  ],
+  
+  "special_materials": [
+    {
+      "item_no": "SPECIAL-ANYLAYER",
+      "description": "任意层互联材料",
+      "uom": "升",
+      "qty_per_unit": 0.001,
+      "unit_cost": 1800.00
+    },
+    {
+      "item_no": "SPECIAL-BACKDRILL",
+      "description": "背钻专用刀具",
+      "uom": "支",
+      "qty_per_100_units": 1.2,
+      "unit_cost": 280.00
+    }
+  ],
+  
+  "total_material_cost": 75.40,
+  "last_updated": "2024-01-10",
+  "approved_by": "李工"
+}

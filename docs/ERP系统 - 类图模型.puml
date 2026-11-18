@@ -1,0 +1,657 @@
+@startuml 某某ERP系统类图
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title 某某ERP系统 - 完整类图模型 (v1.4)
+
+' ============================================
+' 一、销售与分销模块（SD Module）
+' ============================================
+
+package "销售与分销模块 (SD Module)" {
+    
+    ' 1.1 客户管理类图
+    class Customer {
+        +Integer id
+        +String customer_id
+        +String legal_name
+        +String trade_name
+        +String tax_id
+        +String customer_industry
+        +String customer_website
+        +Enum customer_status
+        +BigDecimal credit_limit
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerAddress {
+        +Integer id
+        +String customer_id
+        +String address_type
+        +String detail_address
+        +String location
+        +String postal_code
+        +String country
+        +String province
+        +String city
+        +String district
+        +Boolean is_default_shipping
+        +Boolean is_default_billing
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerContact {
+        +Integer id
+        +String customer_id
+        +Boolean is_primary_contact
+        +String contact_name
+        +String contact_role
+        +String contact_department
+        +String contact_phone
+        +String contact_email
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerPartnerFunction {
+        +Integer id
+        +String customer_id
+        +String partner_function_type
+        +Date partner_start_date
+        +String partner_name
+        +String partnership_description
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class CustomerSalesData {
+        +Integer id
+        +String customer_id
+        +String sales_organization
+        +String account_manager_name
+        +String sales_assistant_name
+        +String trading_currency
+        +String primary_trade_country
+        +String incoterms
+        +String shipping_conditions
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 1.2 报价与订单类图
+    class Quotation {
+        +Integer id
+        +String quotation_number
+        +String customer_id
+        +String product_number
+        +BigDecimal quantity
+        +BigDecimal unit_price
+        +BigDecimal total_amount
+        +String currency
+        +Date valid_until
+        +Enum status
+        +String sales_approver
+        +Timestamp sales_approved_at
+        +String finance_approver
+        +Timestamp finance_approved_at
+        +String general_manager_approver
+        +Timestamp general_manager_approved_at
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class QuotationItem {
+        +Integer id
+        +String quotation_number
+        +Integer line_number
+        +String material_code
+        +String material_name
+        +BigDecimal quantity
+        +BigDecimal unit_price
+        +BigDecimal total_price
+        +String remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class SalesOrder {
+        +Integer id
+        +String order_number
+        +String quotation_number
+        +String customer_id
+        +String product_number
+        +String material_code
+        +String production_version_id
+        +BigDecimal quantity
+        +String sales_unit
+        +BigDecimal production_quantity
+        +String production_unit
+        +BigDecimal conversion_factor
+        +Date delivery_date
+        +Enum status
+        +Boolean is_return_order
+        +String review_status
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class ContractReview {
+        +Integer id
+        +String sales_order_number
+        +String reviewer_role
+        +String reviewer
+        +String review_result
+        +String review_comment
+        +Timestamp reviewed_at
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 1.3 本厂编号映射类图
+    class FactoryProductMapping {
+        +Integer id
+        +String customer_id
+        +String factory_product_number
+        +String material_code
+        +String production_version_id
+        +Boolean is_default
+        +Timestamp effective_date
+        +Timestamp expiry_date
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    Customer "1" *-- "*" CustomerAddress : has
+    Customer "1" *-- "*" CustomerContact : has
+    Customer "1" *-- "*" CustomerPartnerFunction : has
+    Customer "1" *-- "*" CustomerSalesData : has
+    Customer "1" --> "*" Quotation : places
+    Customer "1" --> "*" SalesOrder : orders
+    Customer "1" --> "*" FactoryProductMapping : has
+    Quotation "1" *-- "*" QuotationItem : contains
+    Quotation "1" --> "*" SalesOrder : converts_to
+    SalesOrder "1" *-- "*" ContractReview : has
+}
+
+' ============================================
+' 二、工程管理模块（ENG Module）
+' ============================================
+
+package "工程管理模块 (ENG Module)" {
+    
+    ' 2.1 物料管理类图
+    class Material {
+        +Integer id
+        +String material_code
+        +String material_name
+        +String material_type
+        +String status
+        +String base_unit
+        +String production_unit
+        +BigDecimal conversion_factor
+        +BigDecimal current_stock
+        +BigDecimal safety_stock
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class BOM {
+        +Integer id
+        +String bom_number
+        +String version
+        +String parent_material_code
+        +BigDecimal base_quantity
+        +String base_uom
+        +Enum status
+        +Date effective_date
+        +Date expiry_date
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class BOMItem {
+        +Integer id
+        +String bom_number
+        +Integer line_number
+        +String material_code
+        +String item_category
+        +BigDecimal quantity
+        +String unit
+        +BigDecimal scrap_rate
+        +String layer_code
+        +String material_type
+        +String process_step
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 2.2 工艺路线类图
+    class Routing {
+        +Integer id
+        +String routing_id
+        +String version
+        +String material_code
+        +String base_unit
+        +BigDecimal base_quantity
+        +Integer units_per_panel
+        +String panel_size
+        +Enum status
+        +Date effective_date
+        +Date expiry_date
+        +String change_request_no
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class RoutingOperation {
+        +Integer id
+        +String routing_id
+        +String operation_no
+        +String operation_code
+        +String operation_name
+        +String operation_type
+        +String work_center_id
+        +String sop_link
+        +BigDecimal setup_time
+        +BigDecimal machine_time
+        +BigDecimal labor_time
+        +BigDecimal queue_time
+        +Boolean cost_relevant
+        +Boolean scheduling_relevant
+        +Boolean needs_reporting
+        +Boolean auto_deduct_material
+        +Boolean trigger_quality_check
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 2.3 生产版本类图
+    class MI {
+        +Integer id
+        +String mi_number
+        +String version
+        +String material_code
+        +String description
+        +Enum status
+        +Date effective_date
+        +Date expiry_date
+        +String content
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class ProductionVersion {
+        +Integer id
+        +String production_version_id
+        +String version
+        +String material_code
+        +String bom_number
+        +String routing_id
+        +String mi_number
+        +String status
+        +Date effective_date
+        +Date expiry_date
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    Material "1" --> "*" BOM : has
+    BOM "1" *-- "*" BOMItem : contains
+    Material "1" --> "*" BOMItem : used_in
+    Material "1" --> "*" Routing : has
+    Routing "1" *-- "*" RoutingOperation : contains
+    Material "1" --> "*" ProductionVersion : has
+    BOM "1" --> "*" ProductionVersion : used_in
+    Routing "1" --> "*" ProductionVersion : used_in
+    MI "1" --> "*" ProductionVersion : used_in
+    Material "1" --> "*" MI : has
+}
+
+' ============================================
+' 三、物料管理模块（MM Module）
+' ============================================
+
+package "物料管理模块 (MM Module)" {
+    
+    class MaterialIssue {
+        +Integer id
+        +String issue_number
+        +String production_order_number
+        +String material_code
+        +BigDecimal quantity
+        +String unit
+        +String warehouse
+        +String issued_by
+        +Timestamp issued_at
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class MaterialTransaction {
+        +Integer id
+        +String transaction_number
+        +String material_code
+        +String transaction_type
+        +BigDecimal quantity
+        +String unit
+        +String reference_number
+        +String reference_type
+        +Timestamp transaction_date
+        +String operator
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    Material "1" --> "*" MaterialIssue : issued
+    Material "1" --> "*" MaterialTransaction : transacted
+}
+
+' ============================================
+' 四、生产计划与控制模块（PP Module）
+' ============================================
+
+package "生产计划与控制模块 (PP Module)" {
+    
+    ' 4.1 工作中心类图
+    class WorkCenter {
+        +Integer id
+        +String work_center_id
+        +String description
+        +String work_center_type
+        +String plant_id
+        +Enum status
+        +String parent_work_center_id
+        +Integer hierarchy_level
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 4.2 生产订单类图
+    class ProductionOrder {
+        +Integer id
+        +String order_number
+        +String sales_order_number
+        +String material_code
+        +String production_version_id
+        +BigDecimal quantity
+        +String unit
+        +BigDecimal sales_quantity
+        +String sales_unit
+        +BigDecimal conversion_factor
+        +Date planned_start_date
+        +Date planned_finish_date
+        +Date actual_start_date
+        +Date actual_finish_date
+        +Enum status
+        +String lot_number
+        +String remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 4.3 LOT卡类图
+    class LotCard {
+        +Integer id
+        +String lot_number
+        +String production_order_number
+        +String mi_number
+        +String material_code
+        +BigDecimal quantity
+        +String unit
+        +Enum status
+        +Text mi_content
+        +Timestamp completed_at
+        +Text remarks
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 4.4 工序报工类图
+    class OperationReport {
+        +Integer id
+        +String report_number
+        +String production_order_number
+        +Integer routing_operation_id
+        +String work_center_id
+        +String lot_number
+        +String operation_no
+        +String operation_name
+        +BigDecimal reported_quantity
+        +BigDecimal good_quantity
+        +BigDecimal defective_quantity
+        +BigDecimal actual_hours
+        +Timestamp report_date
+        +String reported_by
+        +Timestamp reported_at
+        +Enum status
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    WorkCenter "1" --> "*" WorkCenter : parent
+    SalesOrder "1" --> "*" ProductionOrder : creates
+    Material "1" --> "*" ProductionOrder : produces
+    ProductionVersion "1" --> "*" ProductionOrder : uses
+    MI "1" --> "*" LotCard : generates
+    ProductionOrder "1" --> "1" LotCard : "关联(1:1)"
+    ProductionOrder "1" --> "*" MaterialIssue : generates
+    ProductionOrder "1" --> "*" OperationReport : generates
+    LotCard "1" --> "*" OperationReport : "关联"
+    RoutingOperation "1" --> "*" OperationReport : reported_for
+    WorkCenter "1" --> "*" OperationReport : reports_to
+}
+
+' ============================================
+' 五、用户与权限管理模块
+' ============================================
+
+package "用户与权限管理模块" {
+    
+    class User {
+        +Integer id
+        +String username
+        +String email
+        +String password_hash
+        +String full_name
+        +Enum role
+        +String department
+        +Boolean is_active
+        +String phone
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+}
+
+' ============================================
+' 六、工作流模块
+' ============================================
+
+package "工作流模块" {
+    
+    class Workflow {
+        +Integer id
+        +String workflow_id
+        +String workflow_name
+        +String module
+        +String description
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class WorkflowNode {
+        +Integer id
+        +String workflow_id
+        +String node_id
+        +String node_name
+        +String node_type
+        +String approver_role
+        +Integer order
+        +JSON config
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    class WorkflowInstance {
+        +Integer id
+        +String instance_id
+        +String workflow_id
+        +String business_id
+        +String business_type
+        +Enum status
+        +String current_node_id
+        +String created_by
+        +Timestamp created_at
+        +Timestamp completed_at
+        +Boolean is_deleted
+    }
+    
+    class WorkflowInstanceNode {
+        +Integer id
+        +String instance_id
+        +String node_id
+        +Enum status
+        +String approver
+        +Timestamp approved_at
+        +String comment
+        +Integer order
+        +String created_by
+        +Timestamp created_at
+        +String updated_by
+        +Timestamp updated_at
+        +Boolean is_deleted
+    }
+    
+    ' 关系定义
+    Workflow "1" *-- "*" WorkflowNode : contains
+    Workflow "1" --> "*" WorkflowInstance : instantiates
+    WorkflowInstance "1" *-- "*" WorkflowInstanceNode : has
+}
+
+' ============================================
+' 跨模块关系
+' ============================================
+
+' 销售订单与物料关系
+SalesOrder --> Material : references
+SalesOrder --> ProductionVersion : uses
+
+' 生产版本与物料关系
+FactoryProductMapping --> Material : mapped_by
+FactoryProductMapping --> ProductionVersion : mapped_by
+
+' 工艺路线与工作中心关系
+RoutingOperation --> WorkCenter : uses
+
+' 物料与物料事务关系
+Material --> MaterialIssue
+Material --> MaterialTransaction
+
+note right of Customer
+  销售与分销模块核心实体
+  关联多个子实体
+end note
+
+note right of Material
+  工程管理模块核心实体
+  关联BOM、Routing、MI等
+end note
+
+note right of ProductionVersion
+  整合BOM、Routing、MI
+  连接销售和生产
+end note
+
+note right of SalesOrder
+  连接客户和生产的桥梁
+end note
+
+note right of ProductionOrder
+  连接销售和生产执行
+end note
+
+@enduml
+
