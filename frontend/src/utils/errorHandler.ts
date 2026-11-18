@@ -52,7 +52,7 @@ export const handleApiError = (error: any, notifier?: MessageNotifier): void => 
 export const getErrorMessage = (error: any): string => {
   if (error?.response?.data) {
     const errorData: ErrorResponse = error.response.data
-    
+
     if (typeof errorData.detail === 'object' && errorData.detail?.message) {
       return errorData.detail.message
     } else if (typeof errorData.detail === 'string') {
@@ -61,7 +61,11 @@ export const getErrorMessage = (error: any): string => {
       return errorData.message
     }
   }
-  
+
+  if (error?.response?.status === 403) {
+    return '权限不足：当前角色无权执行该操作'
+  }
+
   return error?.message || '操作失败'
 }
 

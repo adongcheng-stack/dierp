@@ -1,7 +1,7 @@
 """
 认证路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -79,15 +79,76 @@ def get_current_user(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     try:
         user = db.query(User).filter(User.username == username).first()
         if user is None:
             raise credentials_exception
         return user
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Database query error in get_current_user: {e}")
         raise credentials_exception
+
+
+# ── RBAC：按域的写操作权限门（GET 不受限，保持既有只读行为） ──────────────
+# 策略：域前缀 → 允许执行写操作（POST/PUT/DELETE/PATCH）的角色集合。
+# ADMIN 恒通过；未纳入策略的域（auth/dashboard/traceability 等）不限制。
+WRITE_ROLE_POLICY: dict[str, set[str]] = {
+    "sd": {"SALES", "SALES_MANAGER", "GENERAL_MANAGER", "ADMIN"},
+    "eng": {"ENGINEER", "GENERAL_MANAGER", "ADMIN"},
+    "pp": {"PRODUCTION", "PLANNER", "GENERAL_MANAGER", "ADMIN"},
+    "mm": {"WAREHOUSE", "PRODUCTION", "PLANNER", "GENERAL_MANAGER", "ADMIN"},
+    "planning": {"PLANNER", "GENERAL_MANAGER", "ADMIN"},
+    "qms": {"PRODUCTION", "PLANNER", "GENERAL_MANAGER", "ADMIN"},
+    "users": {"ADMIN"},
+}
+
+WRITE_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
+
+
+def _role_of(user: User) -> str:
+    return user.role.value if hasattr(user.role, "value") else str(user.role)
+
+
+def require_role(*roles: str):
+    """固定角色要求（供路由级 Depends 使用）。"""
+
+    def _checker(current_user: User = Depends(get_current_user)) -> User:
+        if _role_of(current_user) == UserRole.ADMIN.value:
+            return current_user
+        if _role_of(current_user) not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"当前角色({_role_of(current_user)})无权执行该操作",
+            )
+        return current_user
+
+    return _checker
+
+
+async def require_write_permission(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """按域限制写操作角色；GET/HEAD/OPTIONS 一律放行。"""
+    if request.method not in WRITE_METHODS:
+        return current_user
+    role = _role_of(current_user)
+    if role == UserRole.ADMIN.value:
+        return current_user
+    parts = request.url.path.strip("/").split("/")
+    domain = parts[1] if len(parts) > 1 and parts[0] == "api" else ""
+    allowed = WRITE_ROLE_POLICY.get(domain)
+    if allowed is None:
+        return current_user
+    if role not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"当前角色({role})无权在「{domain}」域执行写操作",
+        )
+    return current_user
 
 
 @router.post("/login", response_model=Token)
