@@ -13,6 +13,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.common.database.base import get_db
+from backend.api.routers.auth import get_current_user
+from backend.common.models.user import User
 from backend.common.models.mm import Material, MaterialTransaction
 from backend.common.models.planning import (
     PurchaseOrder,
@@ -26,6 +28,8 @@ from backend.common.models.planning import (
     ReturnType,
     ReturnStatus,
     Supplier,
+    SupplierInvoice,
+    SupplierInvoiceStatus,
 )
 from backend.common.utils.number_generator import NumberGenerator
 
@@ -1318,3 +1322,183 @@ def close_purchase_return(return_number: str, db: Session = Depends(get_db)):
     db.commit()
     ret, lines = _load_return(db, return_number)
     return _return_dict(ret, lines)
+
+
+# ── 采购发票（三单匹配表头口径 + confirm 进应付） ──────────────────────
+class SupplierInvoiceCreate(BaseModel):
+    purchase_order_number: str = Field(..., description="来源采购单")
+    amount: float = Field(..., gt=0, description="发票金额(含税)")
+    tax_amount: Optional[float] = Field(None, ge=0, description="税额")
+    remarks: Optional[str] = None
+
+
+def _supplier_invoice_dict(i: SupplierInvoice) -> dict:
+    return {
+        "invoice_number": i.invoice_number,
+        "purchase_order_number": i.purchase_order_number,
+        "supplier_id": i.supplier_id,
+        "supplier_name": i.supplier_name,
+        "amount": _f(i.amount),
+        "tax_amount": _f(i.tax_amount),
+        "status": _s(i.status),
+        "invoice_date": i.invoice_date.isoformat() if i.invoice_date else None,
+        "remarks": i.remarks,
+        "created_at": i.created_at.isoformat() if i.created_at else None,
+    }
+
+
+def _received_value(db: Session, po_number: str) -> float:
+    """采购单已收货价值（三单匹配上限）：Σ 行已收量×单价。"""
+    lines = (
+        db.query(PurchaseOrderLine)
+        .filter(PurchaseOrderLine.purchase_order_number == po_number)
+        .all()
+    )
+    return sum(_f(l.received_quantity) * _f(l.unit_price) for l in lines)
+
+
+def _po_invoiced_amount(db: Session, po_number: str, exclude: Optional[str] = None) -> float:
+    query = db.query(SupplierInvoice).filter(
+        SupplierInvoice.purchase_order_number == po_number,
+        SupplierInvoice.is_deleted.is_(False),
+        SupplierInvoice.status != SupplierInvoiceStatus.CANCELLED,
+    )
+    if exclude:
+        query = query.filter(SupplierInvoice.invoice_number != exclude)
+    return sum(_f(i.amount) for i in query.all())
+
+
+def _check_supplier_invoice_cap(
+    db: Session, po_number: str, amount: float, exclude: Optional[str] = None
+) -> None:
+    cap = _received_value(db, po_number)
+    already = _po_invoiced_amount(db, po_number, exclude)
+    if already + amount > cap + 1e-6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"三单匹配不通过：已收货价值上限 {cap:.2f}，已开票 {already:.2f}，本次 {amount:.2f}",
+        )
+
+
+def _load_supplier_invoice(db: Session, number: str) -> SupplierInvoice:
+    i = (
+        db.query(SupplierInvoice)
+        .filter(
+            SupplierInvoice.invoice_number == number,
+            SupplierInvoice.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not i:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"采购发票不存在: {number}")
+    return i
+
+
+@router.get("/supplier-invoices")
+def list_supplier_invoices(
+    supplier_id: Optional[str] = None,
+    po_number: Optional[str] = None,
+    invoice_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(SupplierInvoice).filter(SupplierInvoice.is_deleted.is_(False))
+    if supplier_id:
+        query = query.filter(SupplierInvoice.supplier_id == supplier_id)
+    if po_number:
+        query = query.filter(SupplierInvoice.purchase_order_number == po_number)
+    if invoice_status:
+        query = query.filter(SupplierInvoice.status == SupplierInvoiceStatus(invoice_status))
+    total = query.count()
+    rows = query.order_by(SupplierInvoice.id.desc()).offset(offset).limit(limit).all()
+    return {"total": total, "items": [_supplier_invoice_dict(i) for i in rows]}
+
+
+@router.get("/supplier-invoices/{invoice_number}")
+def get_supplier_invoice(invoice_number: str, db: Session = Depends(get_db)):
+    return _supplier_invoice_dict(_load_supplier_invoice(db, invoice_number))
+
+
+@router.post("/supplier-invoices", status_code=status.HTTP_201_CREATED)
+def create_supplier_invoice(
+    payload: SupplierInvoiceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建采购发票（DRAFT）：PO 存在 + 三单匹配（发票额 ≤ 已收货价值）。"""
+    po = (
+        db.query(PurchaseOrder)
+        .filter(
+            PurchaseOrder.purchase_order_number == payload.purchase_order_number,
+            PurchaseOrder.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not po:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"采购单不存在: {payload.purchase_order_number}",
+        )
+    _check_supplier_invoice_cap(db, po.purchase_order_number, payload.amount)
+    supplier = db.query(Supplier).filter(Supplier.supplier_code == po.supplier_id).first()
+    number = NumberGenerator.generate_document_number(
+        db, SupplierInvoice, "invoice_number", "PI", 4
+    )
+    i = SupplierInvoice(
+        invoice_number=number,
+        purchase_order_number=po.purchase_order_number,
+        supplier_id=po.supplier_id,
+        supplier_name=supplier.supplier_name if supplier else None,
+        amount=payload.amount,
+        tax_amount=payload.tax_amount if payload.tax_amount is not None else 0,
+        status=SupplierInvoiceStatus.DRAFT,
+        invoice_date=datetime.now(),
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(i)
+    db.flush()  # 坑2
+    db.commit()
+    return _supplier_invoice_dict(i)
+
+
+@router.post("/supplier-invoices/{invoice_number}/confirm")
+def confirm_supplier_invoice(
+    invoice_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """确认发票：DRAFT → CONFIRMED（三单匹配复查），进入应付口径。"""
+    i = _load_supplier_invoice(db, invoice_number)
+    if i.status != SupplierInvoiceStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"发票状态为 {_s(i.status)}，不允许确认",
+        )
+    _check_supplier_invoice_cap(db, i.purchase_order_number, _f(i.amount), i.invoice_number)
+    i.status = SupplierInvoiceStatus.CONFIRMED
+    i.updated_by = current_user.username
+    i.updated_at = datetime.now()
+    db.commit()
+    return _supplier_invoice_dict(i)
+
+
+@router.post("/supplier-invoices/{invoice_number}/cancel")
+def cancel_supplier_invoice(
+    invoice_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """作废：仅 DRAFT 可作废；CONFIRMED 发票已进应付口径，需红字流程（未在 P1 范围）。"""
+    i = _load_supplier_invoice(db, invoice_number)
+    if i.status != SupplierInvoiceStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"发票状态为 {_s(i.status)}，不允许作废",
+        )
+    i.status = SupplierInvoiceStatus.CANCELLED
+    i.updated_by = current_user.username
+    i.updated_at = datetime.now()
+    db.commit()
+    return _supplier_invoice_dict(i)

@@ -2,7 +2,7 @@
 ## Current Task
 （空）
 ## Pending Tasks
-- [ ] T203 P1 采购发票+三单匹配+confirm（30min）
+- [ ] T204 P1 付款/收款+核销+视图升级（40min）
 - [ ] T202 P1 TTL/SHACL 同步（20min）
 - [ ] T203 P1 采购发票+三单匹配+confirm（30min）
 - [ ] T204 P1 付款/收款+核销+视图升级（40min）
@@ -41,6 +41,7 @@
 - [x] T110 P0 全门禁+日志+提交（02:20 完成）— 证据：17 项门禁全绿（本体双校验/alembic/pytest 28/六冒烟/parity 31 项/rbac parity/tsc/双构建/mock-rbac/三探针 8+6+6）；docs/夜间开发日志-20261120.md；设计文档 §十 P0 置 ✅
 - [x] T201 P1 本体 5 表+2 枚举（02:30 完成）— 证据：generate_models 44 实体；upgrade_planning EXIT=0；alembic check EXIT=0；generate-types 48 枚举；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed。注：分表 receipt_allocations（设计决策）；付款/收款 status 用 string 内联；踩坑：types.ts 必须用 ontology 生成器单独重生成（generate_models 不覆盖它）
 - [x] T202 P1 TTL/SHACL 双绿（02:40 完成）— 证据：validate-type-sync EXIT=0（KEY_ENUMS 含 PaymentMethod 双形状限定）+ validate-consistency EXIT=0；S40-S44 五形状 PI/PAY/RC pattern
+- [x] T203 P1 采购发票+三单匹配（03:00 完成）— 证据：probe_purchase_invoice 6/6 EXIT=0（创建PI/超匹配400/confirm/重复confirm400/cancel/未收货PO400）；pytest 28 passed；smoke_purchase_loop 回归 EXIT=0。注：Supplier 主键列名为 supplier_code（非 supplier_id）；purchase.py 需补 User/get_current_user 导入（既有文件从未用过）；5 新表已入 reset 清理列表（核销明细先于父单据、供应商发票先于采购单）；探针遵循 T109 教训起点+终点双 reset
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
