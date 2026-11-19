@@ -124,7 +124,11 @@ def _reset_production_orders(db: Session) -> int:
         baseline = PRODUCTION_ORDER_BASELINE.get(order.order_number)
         if baseline is None:
             continue
-        if order.status != baseline["status"] or order.actual_finish_date is not None and baseline["finish"] is None:
+        changed_status = order.status != baseline["status"]
+        changed_finish = (
+            order.actual_finish_date is not None and baseline["finish"] is None
+        )
+        if changed_status or changed_finish:
             order.status = baseline["status"]
             order.actual_finish_date = (
                 datetime.fromisoformat(baseline["finish"]) if baseline["finish"] else None

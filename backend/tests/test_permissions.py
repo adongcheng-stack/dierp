@@ -69,11 +69,41 @@ def test_admin_passes_gate_on_qms_domain():
 
 
 def test_get_remains_open_for_smoke_scripts():
-    """只读端点保持无鉴权可用（冒烟脚本契约）。"""
-    resp = client.get("/api/traceability/overview")
-    assert resp.status_code == 200
-    resp = client.get("/api/dashboard/management")
-    assert resp.status_code == 200
+    """只读端点保持无鉴权可用（既有 API 契约 + 冒烟脚本契约）。
+
+    回归背景：写权限门若依赖 get_current_user（auto_error=True），
+    匿名 GET 会被连带 401。因此必须逐个域断言，不能只测两个新路由。
+    """
+    for path in [
+        "/api/sd/customers",
+        "/api/pp/production-orders",
+        "/api/mm/materials",
+        "/api/eng/boms",
+        "/api/planning/planned-orders",
+        "/api/qms/inspections",
+        "/api/purchase/purchase-orders",
+        "/api/traceability/overview",
+        "/api/dashboard/management",
+    ]:
+        resp = client.get(path)
+        assert resp.status_code == 200, f"{path} 匿名 GET 应放行，实际 {resp.status_code}"
+
+
+def test_cors_preflight_is_anonymous():
+    """浏览器 CORS 预检（OPTIONS）不能要求 token，否则前端写操作全挂。"""
+    resp = client.options(
+        "/api/sd/customers",
+        headers={
+            "Origin": "http://localhost:3200",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert resp.status_code in (200, 204), resp.text[:200]
+    assert resp.headers.get("access-control-allow-origin") in (
+        "http://localhost:3200",
+        "*",
+    )
 
 
 def test_anonymous_write_rejected():

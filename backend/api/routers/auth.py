@@ -22,6 +22,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # 使用pbkdf2_sha256作为密码哈希方案（更稳定，不依赖bcrypt版本）
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# 只读请求允许匿名：该 scheme 在缺少 token 时不抛 401
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 class Token(BaseModel):
@@ -62,34 +64,40 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
+def _unauthorized(detail: str = "Could not validate credentials") -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=detail,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def _resolve_user_from_token(token: str, db: Session) -> User:
+    """JWT → User；任何失败路径统一 401（登录态唯一入口）。"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+    except JWTError:
+        raise _unauthorized()
+    if not username:
+        raise _unauthorized()
+
+    try:
+        user = db.query(User).filter(User.username == username).first()
+    except Exception as e:
+        print(f"Database query error in get_current_user: {e}")
+        raise _unauthorized()
+    if user is None:
+        raise _unauthorized()
+    return user
+
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
-    """获取当前用户"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-
-    try:
-        user = db.query(User).filter(User.username == username).first()
-        if user is None:
-            raise credentials_exception
-        return user
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Database query error in get_current_user: {e}")
-        raise credentials_exception
+    """获取当前用户（强制登录）。"""
+    return _resolve_user_from_token(token, db)
 
 
 # ── RBAC：按域的写操作权限门（GET 不受限，保持既有只读行为） ──────────────
@@ -131,11 +139,19 @@ def require_role(*roles: str):
 
 async def require_write_permission(
     request: Request,
-    current_user: User = Depends(get_current_user),
-) -> User:
-    """按域限制写操作角色；GET/HEAD/OPTIONS 一律放行。"""
+    token: str | None = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """按域限制写操作角色；只读请求（GET/HEAD/OPTIONS）匿名放行。
+
+    关键：这里**不能**依赖 `get_current_user`（其 OAuth2 scheme auto_error=True
+    会让匿名 GET 直接 401）。只读请求必须零鉴权代价，才能保持既有 API 契约。
+    """
     if request.method not in WRITE_METHODS:
-        return current_user
+        return None
+    if not token:
+        raise _unauthorized("未提供访问令牌")
+    current_user = _resolve_user_from_token(token, db)
     role = _role_of(current_user)
     if role == UserRole.ADMIN.value:
         return current_user

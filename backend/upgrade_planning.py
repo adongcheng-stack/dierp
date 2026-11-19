@@ -1061,12 +1061,17 @@ def seed_purchase_demo_data(db: Session) -> int:
     created = 0
     today = datetime.now()
 
-    def _has_line(material_code: str) -> bool:
+    def _has_demo_order(marker: str) -> bool:
+        """按演示备注标记判重。
+
+        不能用「物料出现过」判重：MRP release 自动生成的采购单可能恰好含同一物料，
+        会导致演示单被静默跳过。
+        """
         return (
-            db.query(PurchaseOrderLine)
+            db.query(PurchaseOrder)
             .filter(
-                PurchaseOrderLine.material_code == material_code,
-                PurchaseOrderLine.is_deleted == False,  # noqa: E712
+                PurchaseOrder.remarks.like(f"%{marker}%"),
+                PurchaseOrder.is_deleted == False,  # noqa: E712
             )
             .first()
             is not None
@@ -1078,7 +1083,7 @@ def seed_purchase_demo_data(db: Session) -> int:
         )
 
     # ── 1) FR-4 覆铜板 100 张 ────────────────────────────────────────────
-    if not _has_line("RM-FR4-150"):
+    if not _has_demo_order("采购闭环演示：整单到货"):
         number = _next_number()
         db.add(
             PurchaseOrder(
@@ -1112,7 +1117,7 @@ def seed_purchase_demo_data(db: Session) -> int:
         created += 1
 
     # ── 2) 半固化片 + 铜箔 两行 ─────────────────────────────────────────
-    if not _has_line("RM-PP1080"):
+    if not _has_demo_order("采购闭环演示：分批到货"):
         number = _next_number()
         db.add(
             PurchaseOrder(

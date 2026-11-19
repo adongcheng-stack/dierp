@@ -951,7 +951,6 @@ async def complete_production_order(
     order.updated_by = current_user.username
 
     # N4 成品入库：完工即回冲成品库存（口径 = 报工良品合计；无报工时按工单数量）
-    from decimal import Decimal
     from backend.common.models.mm import Material
     good_qty = (
         db.query(func.coalesce(func.sum(OperationReport.good_quantity), 0))

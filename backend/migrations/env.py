@@ -30,9 +30,21 @@ target_metadata = Base.metadata
 
 
 def include_object(obj, name, type_, reflected, compare_to):
-    """白名单：只管理应用元数据里的表/对象。"""
+    """白名单：只管理应用元数据里的表/对象。
+
+    - 表：必须在 Base.metadata 中登记（历史遗留表永不纳入）；
+    - 索引 / 约束 / 列：MVP 手写脚本创建、元数据中没有的对象
+      （reflected=True 且 compare_to=None）一律忽略。否则 autogenerate 会生成
+      `drop_index idx_sales_order_production_version`、`drop_column mi_content`
+      这类破坏性操作——这是本基线最大的踩坑点。
+    """
     if type_ == "table":
         return name in Base.metadata.tables
+    if reflected and compare_to is None:
+        return False
+    table = getattr(obj, "table", None)
+    if table is not None:
+        return table.name in Base.metadata.tables
     return True
 
 

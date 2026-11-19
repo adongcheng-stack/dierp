@@ -70,6 +70,8 @@ const PurchaseOrderList: React.FC = () => {
 
   const openReceive = (order: PurchaseOrder) => {
     setReceiveTarget(order)
+    // 表单改由 forceRender 常驻挂载，打开前先清空再回填余量
+    receiveForm.resetFields()
     const defaults: Record<string, number | undefined> = {}
     for (const line of order.lines) {
       if (line.outstanding_quantity > 0) {
@@ -90,6 +92,15 @@ const PurchaseOrderList: React.FC = () => {
           line_number: line.line_number,
           quantity: values[`qty_${line.line_number}`],
         }))
+        .filter((item) => Number(item.quantity) > 0)
+
+      // 全部为 0 时后端会静默跳过并返回原状态，前端必须先拦住（否则提示“部分到货”是误导）
+      if (lines.length === 0) {
+        message.warning('请至少为一行填写大于 0 的收货数量')
+        setSubmitting(false)
+        return
+      }
+
       const response = await api.post(
         `/purchase/purchase-orders/${receiveTarget.purchase_order_number}/receive`,
         { lines, received_by: 'web' }
@@ -227,7 +238,7 @@ const PurchaseOrderList: React.FC = () => {
         onCancel={() => setReceiveTarget(null)}
         confirmLoading={submitting}
         okText="确认收货"
-        destroyOnClose
+        forceRender
       >
         <Form form={receiveForm} layout="vertical">
           {(receiveTarget?.lines ?? [])
