@@ -1285,6 +1285,39 @@ def seed_sales_delivery_demo(db: Session) -> int:
     return created
 
 
+def seed_gl_accounts(db: Session) -> int:
+    """总账科目 + 当月会计期间种子（幂等，按编码判重）。P2 demo：8 个一级明细科目。"""
+    from backend.common.models.planning import Account, FiscalPeriod, PeriodStatus
+    from backend.services.finance.gl_rules import GL_ACCOUNTS
+
+    created = 0
+    for code, name, account_type in GL_ACCOUNTS:
+        if db.query(Account).filter(Account.account_code == code).first():
+            continue
+        db.add(Account(
+            account_code=code,
+            account_name=name,
+            account_type=account_type,
+            parent_code=None,
+            is_leaf=True,
+            created_by="system",
+        ))
+        created += 1
+
+    now = datetime.now()
+    period_code = now.strftime("%Y-%m")
+    if db.query(FiscalPeriod).filter(FiscalPeriod.period_code == period_code).first() is None:
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = start.replace(year=start.year + 1, month=1) if now.month == 12 else start.replace(month=start.month + 1)
+        db.add(FiscalPeriod(
+            period_code=period_code, start_date=start, end_date=end,
+            status=PeriodStatus.OPEN, created_by="system",
+        ))
+        created += 1
+    db.commit()
+    return created
+
+
 def seed_suppliers(db: Session) -> int:
     """供应商主数据演示种子（幂等）。
 
@@ -1545,6 +1578,7 @@ def main() -> None:
         print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
         print(f"[OK] 库存流水基线新增 {seed_material_transactions(db)} 条")
         print(f"[OK] 销售发货演示新增 {seed_sales_delivery_demo(db)} 张")
+        print(f"[OK] 总账科目/期间新增 {seed_gl_accounts(db)} 条")
         db.commit()
 
         print("-" * 56)

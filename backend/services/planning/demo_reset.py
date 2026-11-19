@@ -27,6 +27,8 @@ from backend.common.models.planning import (
     MaintenanceOrder,
     MaintenancePlan,
     NonConformanceReport,
+    JournalEntry,
+    JournalLine,
     PaymentAllocation,
     ReceivableEntry,
     Receipt,
@@ -108,6 +110,9 @@ def _clear(db: Session) -> dict[str, int]:
         ("supplier_invoices", SupplierInvoice),
         ("supplier_payments", SupplierPayment),
         ("receipts", Receipt),
+        # 总账凭证运行时表（P2：科目/期间为种子保留，仅清凭证+分录行）
+        ("gl_journal_lines", JournalLine),
+        ("gl_journal_entries", JournalEntry),
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
         ("suppliers", Supplier),
@@ -212,6 +217,7 @@ def _rebuild_master_seed(db: Session) -> None:
         seed_purchase_demo_data,
         seed_purchase_requests,
         seed_qms_demo_data,
+        seed_gl_accounts,
         seed_sales_delivery_demo,
         seed_suppliers,
     )
@@ -225,6 +231,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_suppliers(db)
     seed_material_transactions(db)
     seed_sales_delivery_demo(db)
+    seed_gl_accounts(db)
 
 
 def _build_demo_run(

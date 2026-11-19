@@ -2,7 +2,7 @@
 ## Current Task
 （空）
 ## Pending Tasks
-- [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
+- [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
 - [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T304 P2★ 全门禁+提交（10min）【stretch】
@@ -50,6 +50,7 @@
 - [x] T206 P1 mock v15+parity（04:20 完成）— 证据：probe-mock-finance 9/9（含前置）EXIT=0；probe-mock-sd 回归 6/6；check:mock-rbac EXIT=0；check_demo_parity EXIT=0（集合存在 +5）；tsc EXIT=0；pytest 28 passed。注：snapshot v15 +5 空集合（种子延后决策见偏差记录）；mock ap-view 同步 P1 口径；探针 cap 须取 PO 详情（列表行无单价）
 - [x] T207 P1 smoke_finance_loop+全门禁（04:55 完成）— 证据：smoke_finance_loop 15/15 EXIT=0（三单匹配/确认/付款核销/AP 递减/收款核销/账龄勾稽/复位）；全门禁 20 项全绿（本体双校验/alembic/pytest/七冒烟/parity×2/前端×4/六探针）；日志与里程碑已更新
 - [x] T301 P2★ 总账实体（05:05 完成）— 证据：generate_models 48 实体；generate-types 52 枚举；upgrade_planning EXIT=0（4 新表）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed
+- [x] T302 P2★ 科目种子+gl_rules+GlEngine（05:20 完成）— 证据：gl_rules.py（8 科目+8 事件映射）；gl_engine.py 幂等/平衡/拒绝路径直调验证全过；reset 后 accounts=8/periods=1 保留、entries=0 清空；pytest 28 passed。注：凭证+分录行入 _clear（科目/期间为种子保留）
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
