@@ -3,7 +3,8 @@
 （空）
 
 ## Pending Tasks
-- [ ] T304 P2★ 全门禁+提交（10min）【stretch】
+- [ ] P2 前端补齐（下一夜班）：财务管理新一级菜单 3 页（科目表 / 凭证查询含来源单据跳转 / 余额表试算）+ mock 同构 v16——后端 /finance/* 6 端点与引擎已全绿，纯前端工作
+- [ ] P3 批次拆解：库存补强 + 经营看板资金维度（设计 §六未拆原子任务）
 - [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
 - [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T304 P2★ 全门禁+提交（10min）【stretch】
@@ -53,7 +54,14 @@
 - [x] T301 P2★ 总账实体（05:05 完成）— 证据：generate_models 48 实体；generate-types 52 枚举；upgrade_planning EXIT=0（4 新表）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed
 - [x] T302 P2★ 科目种子+gl_rules+GlEngine（05:20 完成）— 证据：gl_rules.py（8 科目+8 事件映射）；gl_engine.py 幂等/平衡/拒绝路径直调验证全过；reset 后 accounts=8/periods=1 保留、entries=0 清空；pytest 28 passed。注：凭证+分录行入 _clear（科目/期间为种子保留）
 - [x] T303 P2★ 挂分录 5 处+finance 路由 6 端点+smoke_gl（05:45 完成）— 证据：smoke_gl_loop 11/11 EXIT=0（科目/发票确认分录/金额勾稽/开票分录/发货标准成本分录/付款/收款/试算平衡/发生额/期间/复位）；smoke_finance/sd/purchase 回归 EXIT=0；parity EXIT=0；tsc EXIT=0；pytest 28 passed。注：新路由 finance.py 挂 /api/finance；发货分录=数量×物料标准成本（无成本则跳过并打日志——非沉默，stdout 可见）；GL 失败不阻断业务事务；踩坑 InstrumentedAttribute 无枚举属性（须 import JournalStatus）
+- [x] T304 P2★ 全门禁终验（06:00 完成）— 证据：全门禁 24 项全绿（本体×2/alembic/pytest/八冒烟/parity×2/前端×4/六探针）；里程碑 P2 已勾稽（注明前端页未做的边界）
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 04:55：P0+P1 十七任务全部完成（22:03 起 6h52m，预算 9h 余 2h08m ≥45min → P2★ stretch 符合启动条件）。下一任务：T301 总账实体。DIERP-demo.html 用户未提交改动，全程未触碰。
+2026-11-20 06:05 收尾：P0+P1+P2★ 全部 21 任务完成（22:03–06:05，7h02m/9h）。提交链 T101→T304 共 21 个 night commit（23348ad…9ceed69+本提交）。
+
+## 交接摘要（2026-11-20 06:05）
+- **完成**：P0 发货/销售发票/应收三线打通（后端 11 端点+前端 3 页+mock v14）；P1 应付/核销双闭环（采购发票三单匹配、付款/收款核销 13 端点、AP 新口径、前端 3 页、mock v15）；P2★ 总账引擎（4 实体、8 科目种子、GlEngine 幂等/平衡、5 业务钩子、/finance 6 端点、smoke_gl 11 断言）。全门禁 24 项绿。
+- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic 基线绿；本体 mappings v1.4.0（52 枚举）；planning.yaml 48 实体。
+- **未完成/移交**：① P2 前端财务管理 3 页+mock v16（后端 /finance/* 已就绪）② P3 库存补强+看板资金维度（需先拆原子任务）③ 发票 cancel 红字流程（P1 设计明确未含）④ 期初 opening entry 未做（demo 口径，增量入账）。
+- **建议下一步**：下一夜班先补 P2 前端 3 页（约 35min，端点契约见 backend/api/routers/finance.py），再拆 P3 任务清单（对齐 §六+坑清单）。
