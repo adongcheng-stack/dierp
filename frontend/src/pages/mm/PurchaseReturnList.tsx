@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
 import { CheckOutlined, CloseOutlined, FileProtectOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
 
@@ -51,6 +52,7 @@ const PurchaseReturnList: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [form] = Form.useForm()
+  const navigate = useNavigate()
 
   const selectedPo = Form.useWatch('purchase_order_number', form)
   const selectedType = Form.useWatch('return_type', form)
@@ -133,7 +135,15 @@ const PurchaseReturnList: React.FC = () => {
 
   const columns = [
     { title: '单号', dataIndex: 'return_number', key: 'n', width: 170 },
-    { title: '采购单', dataIndex: 'purchase_order_number', key: 'po', width: 165 },
+    {
+      title: '采购单', dataIndex: 'purchase_order_number', key: 'po', width: 165,
+      render: (v: string) =>
+        v ? (
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate('/mm/purchase-orders')}>
+            {v}
+          </Button>
+        ) : ('-'),
+    },
     { title: '供应商', dataIndex: 'supplier_name', key: 'sup', width: 140, render: (v: string | null) => v || '-' },
     {
       title: '类型', dataIndex: 'return_type', key: 't', width: 90,

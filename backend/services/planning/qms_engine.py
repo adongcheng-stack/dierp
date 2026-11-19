@@ -119,6 +119,14 @@ class QmsEngine:
 
         rejected = dec(quantity_rejected)
         ok = dec(quantity_ok)
+        # 业务铁律：数量守恒——合格/不合格非负，且合计不得超过检验总数（检验总数已填时）
+        inspected = dec(row.quantity_inspected)
+        if ok < ZERO or rejected < ZERO:
+            raise ValueError(f"合格/不合格数量不能为负数: {inspection_number}")
+        if inspected > ZERO and ok + rejected > inspected:
+            raise ValueError(
+                f"合格({ok})+不合格({rejected})不能超过检验总数({inspected}): {inspection_number}"
+            )
         row.quantity_ok = ok
         row.quantity_rejected = rejected
         if quantity_ok is not None or quantity_rejected is not None:

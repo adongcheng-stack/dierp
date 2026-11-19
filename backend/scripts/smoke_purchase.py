@@ -52,6 +52,14 @@ def _material_stock(code: str) -> float:
 
 
 def main() -> int:
+    # 幂等起点：先复位演示基线（收货/关闭残留会让后续断言失效）
+    import subprocess
+    subprocess.run(
+        [sys.executable, str(project_root / "backend" / "scripts" / "reset_demo.py")],
+        check=True,
+        capture_output=True,
+    )
+    print("[0] reset_demo 幂等起点 OK")
     st, data = client.post("/api/auth/login", data={"username": "admin", "password": "admin123"}).json(), None
     token = client.post("/api/auth/login", data={"username": "admin", "password": "admin123"}).json()["access_token"]
     print("[1] 登录 OK；GET 采购单列表")
@@ -99,6 +107,15 @@ def main() -> int:
     st, again = call("POST", f"/api/purchase/purchase-orders/{po1}/receive", token, {})
     assert st == 400, f"关闭后收货未被拒绝: {st}"
     print("    RECEIVED / CLOSED / 拒绝收货 全部符合预期")
+
+    # 自清理：复位演示基线（收货/关闭残留会污染 parity 与后续演示）
+    import subprocess
+    subprocess.run(
+        [sys.executable, str(project_root / "backend" / "scripts" / "reset_demo.py")],
+        check=True,
+        capture_output=True,
+    )
+    print("[7] reset_demo 恢复基线 OK")
 
     print("\n采购闭环冒烟通过")
     return 0

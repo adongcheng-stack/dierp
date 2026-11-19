@@ -1,8 +1,107 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, message } from 'antd'
 import { PlusOutlined, ReloadOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
+
+const pct = (v: number | null | undefined) => (v == null ? '-' : `${(v * 100).toFixed(1)}%`)
+
+/** 采购绩效 Tab：到货及时率（库存流水首到 vs 期望日期）+ 来料合格率（已完成 IQC）。 */
+const SupplierPerformance: React.FC = () => {
+  const [rows, setRows] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const response = await api.get('/purchase/suppliers/performance')
+      setRows(response.data.items ?? [])
+    } catch (error) {
+      message.error(getErrorMessage(error) || '获取供应商绩效失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const columns = [
+    { title: '供应商编码', dataIndex: 'supplier_id', key: 'sid', width: 120 },
+    { title: '供应商', dataIndex: 'supplier_name', key: 'name' },
+    {
+      title: '评级',
+      dataIndex: 'rating',
+      key: 'rating',
+      width: 100,
+      render: (v: number) => '★'.repeat(Math.max(0, Number(v || 0))),
+    },
+    {
+      title: '有收货采购单',
+      dataIndex: 'po_received_count',
+      key: 'po',
+      width: 120,
+      align: 'right' as const,
+    },
+    {
+      title: '到货及时率',
+      key: 'on_time',
+      width: 150,
+      render: (_: unknown, row: any) =>
+        row.on_time_rate == null ? (
+          '-'
+        ) : (
+          <span>
+            {pct(row.on_time_rate)}
+            <span className="ml-1 text-xs text-ink-faint">
+              ({row.on_time_count}/{row.on_time_total})
+            </span>
+          </span>
+        ),
+    },
+    {
+      title: '来料合格率',
+      key: 'iqc',
+      width: 150,
+      render: (_: unknown, row: any) =>
+        row.iqc_pass_rate == null ? (
+          '-'
+        ) : (
+          <span>
+            {pct(row.iqc_pass_rate)}
+            <span className="ml-1 text-xs text-ink-faint">({row.iqc_count} 批)</span>
+          </span>
+        ),
+    },
+    {
+      title: '累计到货金额',
+      dataIndex: 'received_amount',
+      key: 'amt',
+      width: 140,
+      align: 'right' as const,
+      render: (v: number) => `¥${Number(v ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    },
+  ]
+
+  return (
+    <>
+      <div className="mb-3 text-xs text-ink-faint">
+        到货及时率 = 首到日期 ≤ 采购单期望日期（数据来自库存流水，reset 后需重新收货才有数据）；
+        来料合格率 = 已完成来料检验（IQC）的 Σ合格数 ÷ Σ检验数
+      </div>
+      <Table
+        rowKey="supplier_id"
+        columns={columns}
+        dataSource={rows}
+        loading={loading}
+        pagination={false}
+        size="middle"
+        scroll={{ x: 900 }}
+      />
+    </>
+  )
+}
 
 const SUPPLIER_TYPE: Record<string, { text: string; color: string }> = {
   MATERIAL: { text: '物料供应商', color: 'blue' },
@@ -159,13 +258,29 @@ const SupplierList: React.FC = () => {
         }
       />
 
-      <Table
-        rowKey="supplier_code"
-        columns={columns}
-        dataSource={rows}
-        loading={loading}
-        pagination={{ pageSize: 15, showSizeChanger: false, showTotal: (t) => `共 ${t} 家` }}
-        scroll={{ x: 1050 }}
+      <Tabs
+        defaultActiveKey="master"
+        items={[
+          {
+            key: 'master',
+            label: '供应商主数据',
+            children: (
+              <Table
+                rowKey="supplier_code"
+                columns={columns}
+                dataSource={rows}
+                loading={loading}
+                pagination={{ pageSize: 15, showSizeChanger: false, showTotal: (t) => `共 ${t} 家` }}
+                scroll={{ x: 1050 }}
+              />
+            ),
+          },
+          {
+            key: 'performance',
+            label: '采购绩效',
+            children: <SupplierPerformance />,
+          },
+        ]}
       />
 
       <Modal

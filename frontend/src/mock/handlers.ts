@@ -5308,6 +5308,84 @@ route('GET', '/purchase/suppliers/refs', () => {
   return ok(rows.map((s: any) => ({ supplier_code: s.supplier_code, supplier_name: s.supplier_name })))
 })
 
+// 供应商绩效（双指标：到货及时率 / 来料合格率；注意必须注册在 :code 之前）
+route('GET', '/purchase/suppliers/performance', () => {
+  const db = getDb()
+  const suppliers = listOf(db, 'suppliers').filter((s: any) => !s.is_deleted)
+  const orders = listOf(db, 'purchaseOrders')
+  const lines = listOf(db, 'purchaseOrderLines').filter((l: any) => !l.is_deleted)
+
+  const receivedAmount: Record<string, number> = {}
+  const receivedPos: Record<string, Set<string>> = {}
+  for (const line of lines) {
+    const po = orders.find((o: any) => !o.is_deleted && o.purchase_order_number === line.purchase_order_number)
+    if (!po || !po.supplier_id) continue
+    const sid = po.supplier_id
+    receivedAmount[sid] = (receivedAmount[sid] ?? 0) + toNumber(line.received_quantity) * toNumber(line.unit_price)
+    if (toNumber(line.received_quantity) > 0) {
+      ;(receivedPos[sid] ??= new Set()).add(po.purchase_order_number)
+    }
+  }
+
+  // 及时率：RECEIPT 流水首到日期 vs 单据期望日期
+  const firstReceipt: Record<string, string> = {}
+  for (const tx of listOf(db, 'materialTransactions')) {
+    if (tx.is_deleted || tx.reference_type !== 'PURCHASE_ORDER' || tx.transaction_type !== 'RECEIPT') continue
+    const prev = firstReceipt[tx.reference_number]
+    if (!prev || String(tx.transaction_date) < prev) {
+      firstReceipt[tx.reference_number] = String(tx.transaction_date)
+    }
+  }
+  const onTime: Record<string, number> = {}
+  const counted: Record<string, number> = {}
+  for (const [poNumber, firstDate] of Object.entries(firstReceipt)) {
+    const po = orders.find((o: any) => !o.is_deleted && o.purchase_order_number === poNumber)
+    if (!po || !po.supplier_id) continue
+    const sid = po.supplier_id
+    counted[sid] = (counted[sid] ?? 0) + 1
+    if (!po.expected_date || firstDate <= String(po.expected_date)) {
+      onTime[sid] = (onTime[sid] ?? 0) + 1
+    }
+  }
+
+  // 来料合格率：INCOMING + COMPLETED 检验单，经采购单归属供应商
+  const iqcTotal: Record<string, number> = {}
+  const iqcOk: Record<string, number> = {}
+  const iqcCount: Record<string, number> = {}
+  for (const insp of listOf(db, 'inspectionOrders')) {
+    if (insp.is_deleted || insp.inspection_type !== 'INCOMING' || insp.status !== 'COMPLETED') continue
+    const po = orders.find((o: any) => !o.is_deleted && o.purchase_order_number === insp.purchase_order_number)
+    if (!po || !po.supplier_id) continue
+    const inspected = toNumber(insp.quantity_inspected)
+    if (inspected <= 0) continue
+    const sid = po.supplier_id
+    iqcCount[sid] = (iqcCount[sid] ?? 0) + 1
+    iqcTotal[sid] = (iqcTotal[sid] ?? 0) + inspected
+    iqcOk[sid] = (iqcOk[sid] ?? 0) + toNumber(insp.quantity_ok)
+  }
+
+  return ok({
+    items: suppliers.map((s: any) => {
+      const sid = s.supplier_code
+      const countedN = counted[sid] ?? 0
+      const onTimeN = onTime[sid] ?? 0
+      const inspectedTotal = iqcTotal[sid] ?? 0
+      return {
+        supplier_id: sid,
+        supplier_name: s.supplier_name,
+        rating: s.rating ?? 3,
+        po_received_count: receivedPos[sid]?.size ?? 0,
+        on_time_count: onTimeN,
+        on_time_total: countedN,
+        on_time_rate: countedN ? round(onTimeN / countedN, 4) : null,
+        iqc_count: iqcCount[sid] ?? 0,
+        iqc_pass_rate: inspectedTotal > 0 ? round((iqcOk[sid] ?? 0) / inspectedTotal, 4) : null,
+        received_amount: round(receivedAmount[sid] ?? 0, 2),
+      }
+    }),
+  })
+})
+
 route('GET', '/purchase/suppliers/:code', (_ctx, params) => {
   const s = listOf(getDb(), 'suppliers').find(
     (x: any) => !x.is_deleted && x.supplier_code === params.code

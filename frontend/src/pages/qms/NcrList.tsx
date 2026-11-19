@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Form, Input, InputNumber, Modal, Select, Space, Switch, Table, message } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import { CheckOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
@@ -12,6 +13,7 @@ import {
 } from './shared'
 
 const NcrList: React.FC = () => {
+  const navigate = useNavigate()
   const [rows, setRows] = useState<any[]>([])
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
   const [materials, setMaterials] = useState<any[]>([])
@@ -172,7 +174,30 @@ const NcrList: React.FC = () => {
       width: 90,
       render: (v: string) => <StatusTag value={v} map={NCR_SOURCE} />,
     },
-    { title: '来源单据', dataIndex: 'source_ref', key: 'source_ref', width: 170, render: (v: string) => v || '-' },
+    {
+      title: '来源单据',
+      dataIndex: 'source_ref',
+      key: 'source_ref',
+      width: 170,
+      render: (v: string, row: any) => {
+        if (!v) return '-'
+        const target =
+          row.source_type === 'INSPECTION'
+            ? '/qms/inspections'
+            : row.source_type === 'REPORT'
+              ? '/pp/operation-reports'
+              : row.source_type === 'LOT_CARD'
+                ? '/pp/lot-cards'
+                : null
+        return target ? (
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(target)}>
+            {v}
+          </Button>
+        ) : (
+          v
+        )
+      },
+    },
     { title: '物料', dataIndex: 'material_code', key: 'material_code', width: 150 },
     { title: 'LOT卡', dataIndex: 'lot_number', key: 'lot_number', width: 140, render: (v: string) => v || '-' },
     { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 80, align: 'right' as const },

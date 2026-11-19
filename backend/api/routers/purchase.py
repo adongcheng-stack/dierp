@@ -230,6 +230,9 @@ def receive_purchase_order(
         return _order_dict(order, lines)
 
     # ── 第二阶段：落库（此时已无校验失败可能） ──
+    from backend.common.models.mm import MaterialTransaction
+    from backend.common.utils.number_generator import NumberGenerator
+
     for line, quantity in planned:
         # 库存回冲（原料入库）
         material = (
@@ -242,6 +245,27 @@ def receive_purchase_order(
         )
         if material is not None:
             material.current_stock = _f(material.current_stock) + quantity
+
+        # 库存流水账本：到货即记 RECEIPT 入库（供应商绩效的及时率也依赖此账本）
+        db.add(
+            MaterialTransaction(
+                transaction_number=NumberGenerator.generate_document_number(
+                    db, MaterialTransaction, "transaction_number", "TR", 4
+                ),
+                material_code=line.material_code,
+                transaction_type="RECEIPT",
+                quantity=quantity,
+                unit=line.unit,
+                reference_number=purchase_order_number,
+                reference_type="PURCHASE_ORDER",
+                transaction_date=datetime.now(),
+                operator=payload.received_by or "web",
+                remarks=f"采购到货: {purchase_order_number}",
+                created_by=payload.received_by or "web",
+            )
+        )
+        # 同事务连续生成单号：flush 让下一条 generate 能看到刚插入的序号
+        db.flush()
 
         line.received_quantity = _f(line.received_quantity) + quantity
         line.status = "RECEIVED" if _f(line.received_quantity) >= _f(line.quantity) else "PARTIAL"
@@ -398,6 +422,133 @@ def list_supplier_refs(db: Session = Depends(get_db)):
     return [
         {"supplier_code": r.supplier_code, "supplier_name": r.supplier_name} for r in rows
     ]
+
+
+
+# ── 供应商绩效 ──────────────────────────────────────────────────────────
+@router.get("/suppliers/performance")
+def supplier_performance(db: Session = Depends(get_db)):
+    """供应商绩效视图（纯读计算，双指标）：
+
+    - 到货及时率：有 RECEIPT 流水的采购单，首到日期（流水最早时间）≤ 单据期望日期即及时；
+      无到货记录的采购单不计入。数据来自库存流水账本，reset 后为空属预期。
+    - 来料合格率：INCOMING 且 COMPLETED 的检验单，经采购单归属供应商；
+      合格率 = Σ合格数 / Σ检验数（检验数>0 才计入）。
+    - 累计到货金额：全部采购行 received_quantity × unit_price 之和。
+    """
+    from sqlalchemy import func
+
+    from backend.common.models.mm import MaterialTransaction
+    from backend.common.models.planning import InspectionOrder, InspectionStatus, InspectionType
+
+    suppliers = (
+        db.query(Supplier)
+        .filter(Supplier.is_deleted == False)  # noqa: E712
+        .order_by(Supplier.supplier_code)
+        .all()
+    )
+    orders = {
+        o.purchase_order_number: o
+        for o in db.query(PurchaseOrder)
+        .filter(PurchaseOrder.is_deleted == False)  # noqa: E712
+        .all()
+    }
+    lines = (
+        db.query(PurchaseOrderLine)
+        .filter(PurchaseOrderLine.is_deleted == False)  # noqa: E712
+        .all()
+    )
+
+    # 到货金额 / 有收货行的采购单集合（按供应商归属）
+    received_amount: dict[str, float] = {}
+    received_pos: dict[str, set[str]] = {}
+    for line in lines:
+        order = orders.get(line.purchase_order_number)
+        if order is None or not order.supplier_id:
+            continue
+        sid = order.supplier_id
+        received_amount[sid] = received_amount.get(sid, 0.0) + _f(line.received_quantity) * _f(line.unit_price)
+        if _f(line.received_quantity) > 0:
+            received_pos.setdefault(sid, set()).add(order.purchase_order_number)
+
+    # 及时率：RECEIPT 流水首到日期 vs 单据期望日期
+    first_receipt: dict[str, datetime] = {}
+    receipt_rows = (
+        db.query(
+            MaterialTransaction.reference_number,
+            func.min(MaterialTransaction.transaction_date),
+        )
+        .filter(
+            MaterialTransaction.reference_type == "PURCHASE_ORDER",
+            MaterialTransaction.transaction_type == "RECEIPT",
+            MaterialTransaction.is_deleted == False,  # noqa: E712
+        )
+        .group_by(MaterialTransaction.reference_number)
+        .all()
+    )
+    for po_number, first_date in receipt_rows:
+        if po_number and first_date:
+            first_receipt[po_number] = first_date
+
+    on_time_count: dict[str, int] = {}
+    total_counted: dict[str, int] = {}
+    for po_number, first_date in first_receipt.items():
+        order = orders.get(po_number)
+        if order is None or not order.supplier_id:
+            continue
+        sid = order.supplier_id
+        total_counted[sid] = total_counted.get(sid, 0) + 1
+        expected = order.expected_date
+        if expected is None or first_date <= expected:
+            on_time_count[sid] = on_time_count.get(sid, 0) + 1
+
+    # 来料合格率：INCOMING + COMPLETED 检验单，经采购单归属供应商
+    iqc_total: dict[str, float] = {}
+    iqc_ok: dict[str, float] = {}
+    iqc_count: dict[str, int] = {}
+    inspections = (
+        db.query(InspectionOrder)
+        .filter(
+            InspectionOrder.is_deleted == False,  # noqa: E712
+            InspectionOrder.inspection_type == InspectionType.INCOMING,
+            InspectionOrder.status == InspectionStatus.COMPLETED,
+        )
+        .all()
+    )
+    for insp in inspections:
+        order = orders.get(insp.purchase_order_number or "")
+        if order is None or not order.supplier_id:
+            continue
+        sid = order.supplier_id
+        inspected = _f(insp.quantity_inspected)
+        if inspected <= 0:
+            continue
+        iqc_count[sid] = iqc_count.get(sid, 0) + 1
+        iqc_total[sid] = iqc_total.get(sid, 0.0) + inspected
+        iqc_ok[sid] = iqc_ok.get(sid, 0.0) + _f(insp.quantity_ok)
+
+    items = []
+    for s in suppliers:
+        sid = s.supplier_code
+        counted = total_counted.get(sid, 0)
+        on_time = on_time_count.get(sid, 0)
+        inspected_total = iqc_total.get(sid, 0.0)
+        ok_total = iqc_ok.get(sid, 0.0)
+        items.append(
+            {
+                "supplier_id": sid,
+                "supplier_name": s.supplier_name,
+                "rating": s.rating,
+                "po_received_count": len(received_pos.get(sid, set())),
+                "on_time_count": on_time,
+                "on_time_total": counted,
+                "on_time_rate": round(on_time / counted, 4) if counted else None,
+                "iqc_count": iqc_count.get(sid, 0),
+                "iqc_pass_rate": round(ok_total / inspected_total, 4) if inspected_total > 0 else None,
+                "received_amount": round(received_amount.get(sid, 0.0), 2),
+            }
+        )
+    return {"items": items}
 
 
 @router.get("/suppliers/{supplier_code}")

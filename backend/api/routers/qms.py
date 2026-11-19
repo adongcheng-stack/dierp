@@ -144,6 +144,22 @@ def list_inspections(
     return {"total": total, "items": [_inspection(row) for row in rows]}
 
 
+@router.get("/inspections/{inspection_number}")
+def get_inspection(inspection_number: str, db: Session = Depends(get_db)):
+    """检验单详情（单条）。"""
+    row = (
+        db.query(InspectionOrder)
+        .filter(
+            InspectionOrder.inspection_number == inspection_number,
+            InspectionOrder.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"检验单不存在: {inspection_number}")
+    return _inspection(row)
+
+
 @router.post("/inspections", status_code=status.HTTP_201_CREATED)
 def create_inspection(
     payload: dict,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Form, Input, InputNumber, Modal, Select, Space, Table, message } from 'antd'
 import { CheckOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
 import {
@@ -14,6 +14,7 @@ import {
 
 const InspectionList: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [rows, setRows] = useState<any[]>([])
   const [typeFilter, setTypeFilter] = useState<string | undefined>()
   const [materials, setMaterials] = useState<any[]>([])
@@ -130,9 +131,33 @@ const InspectionList: React.FC = () => {
       render: (v: string) => <StatusTag value={v} map={INSPECTION_TYPE} />,
     },
     { title: '物料', dataIndex: 'material_code', key: 'material_code', width: 150 },
-    { title: 'LOT卡', dataIndex: 'lot_number', key: 'lot_number', width: 140, render: (v: string) => v || '-' },
-    { title: '采购单', dataIndex: 'purchase_order_number', key: 'purchase_order_number', width: 150, render: (v: string) => v || '-' },
-    { title: '报工单', dataIndex: 'report_number', key: 'report_number', width: 170, render: (v: string) => v || '-' },
+    {
+      title: 'LOT卡', dataIndex: 'lot_number', key: 'lot_number', width: 140,
+      render: (v: string) =>
+        v ? (
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate('/pp/lot-cards')}>
+            {v}
+          </Button>
+        ) : ('-'),
+    },
+    {
+      title: '采购单', dataIndex: 'purchase_order_number', key: 'purchase_order_number', width: 150,
+      render: (v: string) =>
+        v ? (
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate('/mm/purchase-orders')}>
+            {v}
+          </Button>
+        ) : ('-'),
+    },
+    {
+      title: '报工单', dataIndex: 'report_number', key: 'report_number', width: 170,
+      render: (v: string) =>
+        v ? (
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate('/pp/operation-reports')}>
+            {v}
+          </Button>
+        ) : ('-'),
+    },
     { title: '检验数', dataIndex: 'quantity_inspected', key: 'quantity_inspected', width: 90, align: 'right' as const },
     { title: '合格', dataIndex: 'quantity_ok', key: 'quantity_ok', width: 80, align: 'right' as const },
     { title: '不合格', dataIndex: 'quantity_rejected', key: 'quantity_rejected', width: 90, align: 'right' as const },
