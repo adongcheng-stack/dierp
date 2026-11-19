@@ -3,8 +3,9 @@
 （空）
 
 ## Pending Tasks
-- [ ] P2 前端补齐（下一夜班）：财务管理新一级菜单 3 页（科目表 / 凭证查询含来源单据跳转 / 余额表试算）+ mock 同构 v16——后端 /finance/* 6 端点与引擎已全绿，纯前端工作
-- [ ] P3 批次拆解：库存补强 + 经营看板资金维度（设计 §六未拆原子任务）
+- [ ] T402 mock v16 资金域同构（5 钩子+/finance 4 端点+parity）+探针（30min）— 探针≥6 断言
+- [ ] T403 全门禁+交接更新+提交（20min）
+- [ ] P3 批次拆解（下夜班）：盘点/调拨/批次效期视图/看板资金 KPI（设计 §六，约 4 任务）
 - [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
 - [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T304 P2★ 全门禁+提交（10min）【stretch】
@@ -55,6 +56,7 @@
 - [x] T302 P2★ 科目种子+gl_rules+GlEngine（05:20 完成）— 证据：gl_rules.py（8 科目+8 事件映射）；gl_engine.py 幂等/平衡/拒绝路径直调验证全过；reset 后 accounts=8/periods=1 保留、entries=0 清空；pytest 28 passed。注：凭证+分录行入 _clear（科目/期间为种子保留）
 - [x] T303 P2★ 挂分录 5 处+finance 路由 6 端点+smoke_gl（05:45 完成）— 证据：smoke_gl_loop 11/11 EXIT=0（科目/发票确认分录/金额勾稽/开票分录/发货标准成本分录/付款/收款/试算平衡/发生额/期间/复位）；smoke_finance/sd/purchase 回归 EXIT=0；parity EXIT=0；tsc EXIT=0；pytest 28 passed。注：新路由 finance.py 挂 /api/finance；发货分录=数量×物料标准成本（无成本则跳过并打日志——非沉默，stdout 可见）；GL 失败不阻断业务事务；踩坑 InstrumentedAttribute 无枚举属性（须 import JournalStatus）
 - [x] T304 P2★ 全门禁终验（06:00 完成）— 证据：全门禁 24 项全绿（本体×2/alembic/pytest/八冒烟/parity×2/前端×4/六探针）；里程碑 P2 已勾稽（注明前端页未做的边界）
+- [x] T401 P2 前端财务管理 3 页（05:30 完成）— 证据：npx tsc --noEmit EXIT=0；/finance 四数据源真实后端 200。注：AccountList/JournalEntryList（展开行分录）/TrialBalance（Σ借=Σ贷 铁律横幅+合计行）；新一级菜单「财务管理」3 项；路由 ×3。P2 前端缺口关闭
 ## Blocked Tasks
 （空）
 ## Last Checkpoint

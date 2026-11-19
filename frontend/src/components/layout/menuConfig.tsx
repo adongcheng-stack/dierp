@@ -12,6 +12,10 @@ import {
   FileSpreadsheet,
   Banknote,
   HandCoins,
+  Landmark,
+  BookText,
+  FileSearch,
+  Scale,
   Factory,
   Boxes,
   Route,
@@ -169,6 +173,16 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/mm/ap-view', label: '应付账款', icon: FileText, path: '/mm/ap-view' },
       { key: '/mm/materials', label: '物料主数据', icon: Boxes, path: '/mm/materials' },
       { key: '/mm/material-issues', label: '生产领料', icon: PackageMinus, path: '/mm/material-issues' },
+    ],
+  },
+  {
+    key: 'finance',
+    label: '财务管理',
+    icon: Landmark,
+    children: [
+      { key: '/finance/accounts', label: '会计科目', icon: BookText, path: '/finance/accounts' },
+      { key: '/finance/journal-entries', label: '凭证查询', icon: FileSearch, path: '/finance/journal-entries' },
+      { key: '/finance/trial-balance', label: '余额表', icon: Scale, path: '/finance/trial-balance' },
     ],
   },
   {

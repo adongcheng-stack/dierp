@@ -26,6 +26,9 @@ const ReceivableView = lazy(() => import('./pages/sd/ReceivableView'))
 const ReceiptList = lazy(() => import('./pages/sd/ReceiptList'))
 const SupplierInvoiceList = lazy(() => import('./pages/mm/SupplierInvoiceList'))
 const PaymentList = lazy(() => import('./pages/mm/PaymentList'))
+const AccountList = lazy(() => import('./pages/finance/AccountList'))
+const JournalEntryList = lazy(() => import('./pages/finance/JournalEntryList'))
+const TrialBalance = lazy(() => import('./pages/finance/TrialBalance'))
 const MaterialList = lazy(() => import('./pages/mm/MaterialList'))
 const MaterialForm = lazy(() => import('./pages/mm/MaterialForm'))
 const MaterialIssueList = lazy(() => import('./pages/mm/MaterialIssueList'))
@@ -143,6 +146,9 @@ function App() {
                       <Route path="/sd/receivables" element={<ReceivableView />} />
                       <Route path="/mm/supplier-invoices" element={<SupplierInvoiceList />} />
                       <Route path="/mm/payments" element={<PaymentList />} />
+                      <Route path="/finance/accounts" element={<AccountList />} />
+                      <Route path="/finance/journal-entries" element={<JournalEntryList />} />
+                      <Route path="/finance/trial-balance" element={<TrialBalance />} />
                       <Route path="/mm/materials" element={<MaterialList />} />
                       <Route path="/mm/materials/new" element={<MaterialForm />} />
                       <Route path="/mm/materials/:code/edit" element={<MaterialForm />} />
