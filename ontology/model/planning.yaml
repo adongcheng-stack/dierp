@@ -685,3 +685,56 @@ entities:
       reviewed_at: {type: datetime, comment: 评审时间}
       closed_by: {type: string, length: 50, comment: 关闭人}
       closed_at: {type: datetime, comment: 关闭时间}
+
+  SalesDelivery:
+    table: sales_deliveries
+    label: 发货单
+    ontology_class: SalesDelivery
+    top_category: Document
+    fields:
+      delivery_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 发货单号(DK 前缀)}
+      sales_order_number: {type: string, length: 50, required: true, index: true, fk: "sales_orders.order_number", comment: 来源销售订单}
+      customer_id: {type: string, length: 50, index: true, fk: "customers.customer_id", comment: 客户编码}
+      customer_name: {type: string, length: 200, comment: 客户名称}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 物料编码}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true, comment: 发货数量}
+      unit: {type: string, length: 20, required: true, comment: 单位}
+      unit_price: {type: decimal, precision: 15, scale: 4, default: 0, comment: 销售单价}
+      status: {type: enum, enum: DeliveryStatus, default: DRAFT, index: true, comment: 发货状态(DRAFT/SHIPPED/DELIVERED/CANCELLED)}
+      ship_date: {type: datetime, comment: 发货时间}
+      delivery_date: {type: datetime, comment: 签收时间}
+      remarks: {type: text, comment: 备注}
+
+  SalesInvoice:
+    table: sales_invoices
+    label: 销售发票
+    ontology_class: SalesInvoice
+    top_category: Document
+    fields:
+      invoice_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 发票号(INV 前缀)}
+      sales_order_number: {type: string, length: 50, required: true, index: true, fk: "sales_orders.order_number", comment: 来源销售订单}
+      delivery_number: {type: string, length: 50, index: true, fk: "sales_deliveries.delivery_number", comment: 关联发货单(可空)}
+      customer_id: {type: string, length: 50, index: true, fk: "customers.customer_id", comment: 客户编码}
+      customer_name: {type: string, length: 200, comment: 客户名称}
+      amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 开票金额}
+      currency: {type: string, length: 10, default: CNY, comment: 币种}
+      status: {type: enum, enum: InvoiceStatus, default: DRAFT, index: true, comment: 发票状态(DRAFT/ISSUED/PARTIALLY_PAID/PAID/CANCELLED)}
+      invoice_date: {type: datetime, comment: 开票日期}
+      due_date: {type: datetime, comment: 到期日(按订单交付期或客户条款)}
+      received_amount: {type: decimal, precision: 15, scale: 2, default: 0, comment: 已核销金额(默认0,P1 收款核销回写)}
+      remarks: {type: text, comment: 备注}
+
+  ReceivableEntry:
+    table: receivable_entries
+    label: 应收流水
+    ontology_class: ReceivableEntry
+    top_category: EventRecord
+    fields:
+      entry_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 流水号(AR 前缀)}
+      invoice_number: {type: string, length: 50, required: true, index: true, fk: "sales_invoices.invoice_number", comment: 关联发票}
+      customer_id: {type: string, length: 50, index: true, fk: "customers.customer_id", comment: 客户编码}
+      entry_type: {type: enum, enum: ReceivableEntryType, default: INVOICE, index: true, comment: 流水类型(INVOICE/RECEIPT/ADJUST)}
+      amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 金额(正开票/负收款)}
+      entry_date: {type: datetime, comment: 流水日期}
+      reference_number: {type: string, length: 50, index: true, comment: 参考单号(如收款单号)}
+      remarks: {type: text, comment: 备注}

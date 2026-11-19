@@ -33,6 +33,9 @@ import type {
   ReturnType,
   ReturnStatus,
   SupplierStatus,
+  DeliveryStatus,
+  InvoiceStatus,
+  ReceivableEntryType,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -79,6 +82,9 @@ export type {
   ReturnType,
   ReturnStatus,
   SupplierStatus,
+  DeliveryStatus,
+  InvoiceStatus,
+  ReceivableEntryType,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -767,6 +773,59 @@ export interface NonConformanceReport {
   reviewed_at?: string
   closed_by?: string
   closed_at?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 发货单 */
+export interface SalesDelivery {
+  delivery_number: string
+  sales_order_number: string
+  customer_id?: string
+  customer_name?: string
+  material_code: string
+  quantity: number
+  unit: string
+  unit_price?: number
+  status?: DeliveryStatus
+  ship_date?: string
+  delivery_date?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 销售发票 */
+export interface SalesInvoice {
+  invoice_number: string
+  sales_order_number: string
+  delivery_number?: string
+  customer_id?: string
+  customer_name?: string
+  amount: number
+  currency?: string
+  status?: InvoiceStatus
+  invoice_date?: string
+  due_date?: string
+  received_amount?: number
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 应收流水 */
+export interface ReceivableEntry {
+  entry_number: string
+  invoice_number: string
+  customer_id?: string
+  entry_type?: ReceivableEntryType
+  amount: number
+  entry_date?: string
+  reference_number?: string
+  remarks?: string
   id?: number
   created_at?: string
   updated_at?: string

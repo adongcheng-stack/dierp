@@ -160,6 +160,27 @@ class ReturnStatus(str, Enum):
     REJECTED = "REJECTED"
     CLOSED = "CLOSED"
 
+class DeliveryStatus(str, Enum):
+    """DeliveryStatus"""
+    DRAFT = "DRAFT"
+    SHIPPED = "SHIPPED"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"
+
+class InvoiceStatus(str, Enum):
+    """InvoiceStatus"""
+    DRAFT = "DRAFT"
+    ISSUED = "ISSUED"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"
+
+class ReceivableEntryType(str, Enum):
+    """ReceivableEntryType"""
+    INVOICE = "INVOICE"
+    RECEIPT = "RECEIPT"
+    ADJUST = "ADJUST"
+
 class ResourceStatus(str, Enum):
     """ResourceStatus"""
     ACTIVE = "ACTIVE"
@@ -1337,4 +1358,86 @@ class NonConformanceReport(BaseModel):
     closed_by = Column(String(50), comment="关闭人")
 
     closed_at = Column(DateTime, comment="关闭时间")
+
+
+
+class SalesDelivery(BaseModel):
+    """发货单"""
+    __tablename__ = "sales_deliveries"
+
+    delivery_number = Column(String(50), nullable=False, unique=True, index=True, comment="发货单号(DK 前缀)")
+
+    sales_order_number = Column(String(50), ForeignKey("sales_orders.order_number"), nullable=False, index=True, comment="来源销售订单")
+
+    customer_id = Column(String(50), ForeignKey("customers.customer_id"), index=True, comment="客户编码")
+
+    customer_name = Column(String(200), comment="客户名称")
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, index=True, comment="物料编码")
+
+    quantity = Column(Numeric(15, 2), nullable=False, comment="发货数量")
+
+    unit = Column(String(20), nullable=False, comment="单位")
+
+    unit_price = Column(Numeric(15, 4), default=0, comment="销售单价")
+
+    status = Column(SQLEnum(DeliveryStatus), index=True, default=DeliveryStatus.DRAFT, comment="发货状态(DRAFT/SHIPPED/DELIVERED/CANCELLED)")
+
+    ship_date = Column(DateTime, comment="发货时间")
+
+    delivery_date = Column(DateTime, comment="签收时间")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class SalesInvoice(BaseModel):
+    """销售发票"""
+    __tablename__ = "sales_invoices"
+
+    invoice_number = Column(String(50), nullable=False, unique=True, index=True, comment="发票号(INV 前缀)")
+
+    sales_order_number = Column(String(50), ForeignKey("sales_orders.order_number"), nullable=False, index=True, comment="来源销售订单")
+
+    delivery_number = Column(String(50), ForeignKey("sales_deliveries.delivery_number"), index=True, comment="关联发货单(可空)")
+
+    customer_id = Column(String(50), ForeignKey("customers.customer_id"), index=True, comment="客户编码")
+
+    customer_name = Column(String(200), comment="客户名称")
+
+    amount = Column(Numeric(15, 2), nullable=False, comment="开票金额")
+
+    currency = Column(String(10), default="CNY", comment="币种")
+
+    status = Column(SQLEnum(InvoiceStatus), index=True, default=InvoiceStatus.DRAFT, comment="发票状态(DRAFT/ISSUED/PARTIALLY_PAID/PAID/CANCELLED)")
+
+    invoice_date = Column(DateTime, comment="开票日期")
+
+    due_date = Column(DateTime, comment="到期日(按订单交付期或客户条款)")
+
+    received_amount = Column(Numeric(15, 2), default=0, comment="已核销金额(默认0")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class ReceivableEntry(BaseModel):
+    """应收流水"""
+    __tablename__ = "receivable_entries"
+
+    entry_number = Column(String(50), nullable=False, unique=True, index=True, comment="流水号(AR 前缀)")
+
+    invoice_number = Column(String(50), ForeignKey("sales_invoices.invoice_number"), nullable=False, index=True, comment="关联发票")
+
+    customer_id = Column(String(50), ForeignKey("customers.customer_id"), index=True, comment="客户编码")
+
+    entry_type = Column(SQLEnum(ReceivableEntryType), index=True, default=ReceivableEntryType.INVOICE, comment="流水类型(INVOICE/RECEIPT/ADJUST)")
+
+    amount = Column(Numeric(15, 2), nullable=False, comment="金额(正开票/负收款)")
+
+    entry_date = Column(DateTime, comment="流水日期")
+
+    reference_number = Column(String(50), index=True, comment="参考单号(如收款单号)")
+
+    remarks = Column(Text, comment="备注")
 
