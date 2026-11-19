@@ -18,6 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from backend.common.models.planning import (
@@ -46,6 +47,7 @@ from backend.common.models.planning import (
 )
 from backend.common.models.mm import Material, MaterialTransaction
 from backend.common.models.pp import OperationReport, ProductionOrder, ProductionOrderStatus
+from backend.common.models.sd import SalesOrder
 from backend.services.planning.aps_engine import ApsEngine
 
 # 生产订单状态演示基线（N4：完工入库演示可重复——每次 reset 复位状态与实际完工日）
@@ -108,6 +110,20 @@ def _clear(db: Session) -> dict[str, int]:
     ]
     for key, model in models:
         cleared[key] = db.query(model).delete(synchronize_session=False)
+    # 探针/冒烟自建的销售订单（备注标记）不属于演示基线，定向清理
+    # （发货单/发票已在上方清空，不会违反 FK；评审记录仅审批动作产生）
+    stale_orders = (
+        db.query(SalesOrder)
+        .filter(
+            SalesOrder.is_deleted.is_(False),
+            or_(SalesOrder.remarks.like("%探针%"), SalesOrder.remarks.like("%冒烟%")),
+        )
+        .all()
+    )
+    for order_row in stale_orders:
+        db.delete(order_row)
+    if stale_orders:
+        cleared["stale_sales_orders"] = len(stale_orders)
     # 清掉 QMS 演示专用的带报废报工单（不影响基础演示报工）
     qms_report = (
         db.query(OperationReport)

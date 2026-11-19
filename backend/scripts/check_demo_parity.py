@@ -29,6 +29,9 @@ from backend.common.models.planning import (  # noqa: E402
     EquipmentFailure,
     InspectionOrder,
     NonConformanceReport,
+    ReceivableEntry,
+    SalesDelivery,
+    SalesInvoice,
 )
 from backend.common.models.pp import LotCard, OperationReport, ProductionOrder  # noqa: E402
 from backend.common.models.sd import SalesOrder  # noqa: E402
@@ -201,8 +204,43 @@ def main() -> int:
         for collection in ["inspectionOrders", "nonConformanceReports", "operationReports",
                            "lotCards", "productionOrders", "salesOrders", "customers", "materials",
                            "suppliers", "purchaseRequests", "purchaseRequestLines",
-                           "materialTransactions"]:
+                           "materialTransactions", "salesDeliveries", "salesInvoices",
+                           "receivableEntries"]:
             check(f"快照含集合 {collection}", collection in mock, True)
+
+        # ── 11) 销售域三线打通：发货单 / 发票 / 应收流水 ─────────────────
+        db_dv_facts = sorted(
+            (d.customer_id or "", d.status.value if hasattr(d.status, "value") else str(d.status),
+             float(d.quantity or 0))
+            for d in live(SalesDelivery)
+        )
+        mock_dv_facts = sorted(
+            (d.get("customer_id") or "", d["status"], float(d["quantity"]))
+            for d in mock.get("salesDeliveries", [])
+        )
+        check("发货单(客户/状态/数量)", db_dv_facts, mock_dv_facts)
+
+        db_inv_facts = sorted(
+            (i.customer_id or "", i.status.value if hasattr(i.status, "value") else str(i.status),
+             float(i.amount or 0))
+            for i in live(SalesInvoice)
+        )
+        mock_inv_facts = sorted(
+            (i.get("customer_id") or "", i["status"], float(i["amount"]))
+            for i in mock.get("salesInvoices", [])
+        )
+        check("发票(客户/状态/金额)", db_inv_facts, mock_inv_facts)
+
+        db_ar_facts = sorted(
+            (a.entry_type.value if hasattr(a.entry_type, "value") else str(a.entry_type),
+             float(a.amount or 0))
+            for a in live(ReceivableEntry)
+        )
+        mock_ar_facts = sorted(
+            (a["entry_type"], float(a["amount"]))
+            for a in mock.get("receivableEntries", [])
+        )
+        check("应收流水(类型/金额)", db_ar_facts, mock_ar_facts)
 
         print(f"共 {checks} 项事实对比")
         if errors:

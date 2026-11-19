@@ -11,6 +11,10 @@ import { pathToFileURL } from 'node:url'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const frontendRoot = path.resolve(here, '..')
 
 globalThis.window = {
   localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
@@ -22,7 +26,7 @@ const workDir = await mkdtemp(path.join(tmpdir(), 'mock-sd-probe-'))
 const outfile = path.join(workDir, 'handlers.mjs')
 
 await build({
-  entryPoints: [path.resolve('src/mock/handlers.ts')],
+  entryPoints: [path.join(frontendRoot, 'src/mock/handlers.ts')],
   bundle: true,
   format: 'esm',
   platform: 'node',
