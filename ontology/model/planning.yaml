@@ -806,3 +806,53 @@ entities:
       invoice_number: {type: string, length: 50, required: true, index: true, fk: "sales_invoices.invoice_number", comment: 核销销售发票}
       allocated_amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 核销金额}
       remarks: {type: text, comment: 备注}
+
+  Account:
+    table: gl_accounts
+    label: 会计科目
+    ontology_class: Account
+    top_category: Document
+    fields:
+      account_code: {type: string, length: 20, required: true, unique: true, index: true, comment: 科目编码(如 1122)}
+      account_name: {type: string, length: 100, required: true, comment: 科目名称}
+      account_type: {type: enum, enum: AccountType, required: true, index: true, comment: 科目类别(ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE)}
+      parent_code: {type: string, length: 20, index: true, comment: 上级科目编码(可空)}
+      is_leaf: {type: boolean, default: false, comment: 是否明细科目(叶子)}
+
+  JournalEntry:
+    table: gl_journal_entries
+    label: 记账凭证
+    ontology_class: JournalEntry
+    top_category: Document
+    fields:
+      entry_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 凭证号(JE 前缀)}
+      entry_date: {type: datetime, required: true, comment: 记账日期}
+      period_code: {type: string, length: 7, required: true, index: true, comment: 会计期间(YYYY-MM)}
+      status: {type: enum, enum: JournalStatus, default: DRAFT, index: true, comment: 凭证状态(DRAFT/POSTED)}
+      source_type: {type: enum, enum: GlSourceType, required: true, index: true, comment: 业务事件来源}
+      source_ref: {type: string, length: 50, required: true, index: true, comment: 来源单据号}
+      remarks: {type: text, comment: 备注}
+
+  JournalLine:
+    table: gl_journal_lines
+    label: 分录行
+    ontology_class: JournalLine
+    top_category: DocumentLine
+    fields:
+      entry_number: {type: string, length: 50, required: true, index: true, fk: "gl_journal_entries.entry_number", comment: 所属凭证}
+      line_number: {type: integer, required: true, comment: 行号}
+      account_code: {type: string, length: 20, required: true, index: true, fk: "gl_accounts.account_code", comment: 科目编码}
+      debit: {type: decimal, precision: 15, scale: 2, default: 0, comment: 借方金额}
+      credit: {type: decimal, precision: 15, scale: 2, default: 0, comment: 贷方金额}
+      summary: {type: string, length: 200, comment: 摘要}
+
+  FiscalPeriod:
+    table: gl_fiscal_periods
+    label: 会计期间
+    ontology_class: FiscalPeriod
+    top_category: Document
+    fields:
+      period_code: {type: string, length: 7, required: true, unique: true, index: true, comment: 期间编码(YYYY-MM)}
+      start_date: {type: datetime, required: true, comment: 起始日}
+      end_date: {type: datetime, required: true, comment: 截止日}
+      status: {type: enum, enum: PeriodStatus, default: OPEN, index: true, comment: 期间状态(OPEN/CLOSED)}

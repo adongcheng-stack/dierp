@@ -193,6 +193,35 @@ class PaymentMethod(str, Enum):
     CASH = "CASH"
     BILL = "BILL"
 
+class AccountType(str, Enum):
+    """AccountType"""
+    ASSET = "ASSET"
+    LIABILITY = "LIABILITY"
+    EQUITY = "EQUITY"
+    REVENUE = "REVENUE"
+    EXPENSE = "EXPENSE"
+
+class JournalStatus(str, Enum):
+    """JournalStatus"""
+    DRAFT = "DRAFT"
+    POSTED = "POSTED"
+
+class PeriodStatus(str, Enum):
+    """PeriodStatus"""
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+
+class GlSourceType(str, Enum):
+    """GlSourceType"""
+    SALES_INVOICE_ISSUED = "SALES_INVOICE_ISSUED"
+    SALES_DELIVERY_SHIPPED = "SALES_DELIVERY_SHIPPED"
+    SUPPLIER_INVOICE_CONFIRMED = "SUPPLIER_INVOICE_CONFIRMED"
+    SUPPLIER_PAYMENT_PAID = "SUPPLIER_PAYMENT_PAID"
+    RECEIPT_PAID = "RECEIPT_PAID"
+    MATERIAL_ISSUE = "MATERIAL_ISSUE"
+    STOCK_ADJUST = "STOCK_ADJUST"
+    PRODUCTION_COMPLETE = "PRODUCTION_COMPLETE"
+
 class ResourceStatus(str, Enum):
     """ResourceStatus"""
     ACTIVE = "ACTIVE"
@@ -1548,4 +1577,72 @@ class ReceiptAllocation(BaseModel):
     allocated_amount = Column(Numeric(15, 2), nullable=False, comment="核销金额")
 
     remarks = Column(Text, comment="备注")
+
+
+
+class Account(BaseModel):
+    """会计科目"""
+    __tablename__ = "gl_accounts"
+
+    account_code = Column(String(20), nullable=False, unique=True, index=True, comment="科目编码(如 1122)")
+
+    account_name = Column(String(100), nullable=False, comment="科目名称")
+
+    account_type = Column(SQLEnum(AccountType), nullable=False, index=True, comment="科目类别(ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE)")
+
+    parent_code = Column(String(20), index=True, comment="上级科目编码(可空)")
+
+    is_leaf = Column(Boolean, default=False, comment="是否明细科目(叶子)")
+
+
+
+class JournalEntry(BaseModel):
+    """记账凭证"""
+    __tablename__ = "gl_journal_entries"
+
+    entry_number = Column(String(50), nullable=False, unique=True, index=True, comment="凭证号(JE 前缀)")
+
+    entry_date = Column(DateTime, nullable=False, comment="记账日期")
+
+    period_code = Column(String(7), nullable=False, index=True, comment="会计期间(YYYY-MM)")
+
+    status = Column(SQLEnum(JournalStatus), index=True, default=JournalStatus.DRAFT, comment="凭证状态(DRAFT/POSTED)")
+
+    source_type = Column(SQLEnum(GlSourceType), nullable=False, index=True, comment="业务事件来源")
+
+    source_ref = Column(String(50), nullable=False, index=True, comment="来源单据号")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class JournalLine(BaseModel):
+    """分录行"""
+    __tablename__ = "gl_journal_lines"
+
+    entry_number = Column(String(50), ForeignKey("gl_journal_entries.entry_number"), nullable=False, index=True, comment="所属凭证")
+
+    line_number = Column(Integer, nullable=False, comment="行号")
+
+    account_code = Column(String(20), ForeignKey("gl_accounts.account_code"), nullable=False, index=True, comment="科目编码")
+
+    debit = Column(Numeric(15, 2), default=0, comment="借方金额")
+
+    credit = Column(Numeric(15, 2), default=0, comment="贷方金额")
+
+    summary = Column(String(200), comment="摘要")
+
+
+
+class FiscalPeriod(BaseModel):
+    """会计期间"""
+    __tablename__ = "gl_fiscal_periods"
+
+    period_code = Column(String(7), nullable=False, unique=True, index=True, comment="期间编码(YYYY-MM)")
+
+    start_date = Column(DateTime, nullable=False, comment="起始日")
+
+    end_date = Column(DateTime, nullable=False, comment="截止日")
+
+    status = Column(SQLEnum(PeriodStatus), index=True, default=PeriodStatus.OPEN, comment="期间状态(OPEN/CLOSED)")
 

@@ -66,6 +66,14 @@ export type SupplierInvoiceStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
 export type PaymentMethod = 'TRANSFER' | 'CASH' | 'BILL';
 
+export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+
+export type JournalStatus = 'DRAFT' | 'POSTED';
+
+export type PeriodStatus = 'OPEN' | 'CLOSED';
+
+export type GlSourceType = 'SALES_INVOICE_ISSUED' | 'SALES_DELIVERY_SHIPPED' | 'SUPPLIER_INVOICE_CONFIRMED' | 'SUPPLIER_PAYMENT_PAID' | 'RECEIPT_PAID' | 'MATERIAL_ISSUE' | 'STOCK_ADJUST' | 'PRODUCTION_COMPLETE';
+
 export type ResourceStatus = 'ACTIVE' | 'MAINTENANCE' | 'DOWN';
 
 export type ScheduleRunStatus = 'DRAFT' | 'RUNNING' | 'COMPLETED' | 'PUBLISHED' | 'FAILED';

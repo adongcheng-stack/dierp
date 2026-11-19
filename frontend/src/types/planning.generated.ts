@@ -38,6 +38,10 @@ import type {
   ReceivableEntryType,
   SupplierInvoiceStatus,
   PaymentMethod,
+  AccountType,
+  JournalStatus,
+  PeriodStatus,
+  GlSourceType,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -89,6 +93,10 @@ export type {
   ReceivableEntryType,
   SupplierInvoiceStatus,
   PaymentMethod,
+  AccountType,
+  JournalStatus,
+  PeriodStatus,
+  GlSourceType,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -898,6 +906,56 @@ export interface ReceiptAllocation {
   invoice_number: string
   allocated_amount: number
   remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 会计科目 */
+export interface Account {
+  account_code: string
+  account_name: string
+  account_type: AccountType
+  parent_code?: string
+  is_leaf?: boolean
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 记账凭证 */
+export interface JournalEntry {
+  entry_number: string
+  entry_date: string
+  period_code: string
+  status?: JournalStatus
+  source_type: GlSourceType
+  source_ref: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 分录行 */
+export interface JournalLine {
+  entry_number: string
+  line_number: number
+  account_code: string
+  debit?: number
+  credit?: number
+  summary?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 会计期间 */
+export interface FiscalPeriod {
+  period_code: string
+  start_date: string
+  end_date: string
+  status?: PeriodStatus
   id?: number
   created_at?: string
   updated_at?: string
