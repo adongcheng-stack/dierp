@@ -36,6 +36,8 @@ import type {
   DeliveryStatus,
   InvoiceStatus,
   ReceivableEntryType,
+  SupplierInvoiceStatus,
+  PaymentMethod,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -85,6 +87,8 @@ export type {
   DeliveryStatus,
   InvoiceStatus,
   ReceivableEntryType,
+  SupplierInvoiceStatus,
+  PaymentMethod,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -825,6 +829,74 @@ export interface ReceivableEntry {
   amount: number
   entry_date?: string
   reference_number?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 采购发票 */
+export interface SupplierInvoice {
+  invoice_number: string
+  purchase_order_number: string
+  supplier_id?: string
+  supplier_name?: string
+  amount: number
+  tax_amount?: number
+  status?: SupplierInvoiceStatus
+  invoice_date?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 付款单 */
+export interface SupplierPayment {
+  payment_number: string
+  supplier_id?: string
+  supplier_name?: string
+  amount: number
+  payment_date?: string
+  method?: PaymentMethod
+  status?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 付款核销明细 */
+export interface PaymentAllocation {
+  payment_number: string
+  invoice_number: string
+  allocated_amount: number
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 收款单 */
+export interface Receipt {
+  receipt_number: string
+  customer_id?: string
+  customer_name?: string
+  amount: number
+  receipt_date?: string
+  method?: PaymentMethod
+  status?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 收款核销明细 */
+export interface ReceiptAllocation {
+  receipt_number: string
+  invoice_number: string
+  allocated_amount: number
   remarks?: string
   id?: number
   created_at?: string

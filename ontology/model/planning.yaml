@@ -738,3 +738,71 @@ entities:
       entry_date: {type: datetime, comment: 流水日期}
       reference_number: {type: string, length: 50, index: true, comment: 参考单号(如收款单号)}
       remarks: {type: text, comment: 备注}
+
+  SupplierInvoice:
+    table: supplier_invoices
+    label: 采购发票
+    ontology_class: SupplierInvoice
+    top_category: Document
+    fields:
+      invoice_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 发票号(PI 前缀)}
+      purchase_order_number: {type: string, length: 50, required: true, index: true, fk: "purchase_orders.purchase_order_number", comment: 来源采购单}
+      supplier_id: {type: string, length: 50, index: true, comment: 供应商编码}
+      supplier_name: {type: string, length: 200, comment: 供应商名称}
+      amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 发票金额(含税)}
+      tax_amount: {type: decimal, precision: 15, scale: 2, default: 0, comment: 税额}
+      status: {type: enum, enum: SupplierInvoiceStatus, default: DRAFT, index: true, comment: 发票状态(DRAFT/CONFIRMED/CANCELLED)}
+      invoice_date: {type: datetime, comment: 开票日期}
+      remarks: {type: text, comment: 备注}
+
+  SupplierPayment:
+    table: supplier_payments
+    label: 付款单
+    ontology_class: SupplierPayment
+    top_category: Document
+    fields:
+      payment_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 付款单号(PAY 前缀)}
+      supplier_id: {type: string, length: 50, index: true, comment: 供应商编码}
+      supplier_name: {type: string, length: 200, comment: 供应商名称}
+      amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 付款金额}
+      payment_date: {type: datetime, comment: 付款日期}
+      method: {type: enum, enum: PaymentMethod, default: TRANSFER, index: true, comment: 付款方式(TRANSFER/CASH/BILL)}
+      status: {type: string, length: 20, default: DRAFT, index: true, comment: 单据状态(DRAFT/PAID/CANCELLED)}
+      remarks: {type: text, comment: 备注}
+
+  PaymentAllocation:
+    table: payment_allocations
+    label: 付款核销明细
+    ontology_class: PaymentAllocation
+    top_category: EventRecord
+    fields:
+      payment_number: {type: string, length: 50, required: true, index: true, fk: "supplier_payments.payment_number", comment: 所属付款单}
+      invoice_number: {type: string, length: 50, required: true, index: true, fk: "supplier_invoices.invoice_number", comment: 核销采购发票}
+      allocated_amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 核销金额}
+      remarks: {type: text, comment: 备注}
+
+  Receipt:
+    table: receipts
+    label: 收款单
+    ontology_class: Receipt
+    top_category: Document
+    fields:
+      receipt_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 收款单号(RC 前缀)}
+      customer_id: {type: string, length: 50, index: true, fk: "customers.customer_id", comment: 客户编码}
+      customer_name: {type: string, length: 200, comment: 客户名称}
+      amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 收款金额}
+      receipt_date: {type: datetime, comment: 收款日期}
+      method: {type: enum, enum: PaymentMethod, default: TRANSFER, index: true, comment: 收款方式(TRANSFER/CASH/BILL)}
+      status: {type: string, length: 20, default: DRAFT, index: true, comment: 单据状态(DRAFT/PAID/CANCELLED)}
+      remarks: {type: text, comment: 备注}
+
+  ReceiptAllocation:
+    table: receipt_allocations
+    label: 收款核销明细
+    ontology_class: ReceiptAllocation
+    top_category: EventRecord
+    fields:
+      receipt_number: {type: string, length: 50, required: true, index: true, fk: "receipts.receipt_number", comment: 所属收款单}
+      invoice_number: {type: string, length: 50, required: true, index: true, fk: "sales_invoices.invoice_number", comment: 核销销售发票}
+      allocated_amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 核销金额}
+      remarks: {type: text, comment: 备注}

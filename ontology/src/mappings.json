@@ -1,6 +1,6 @@
 {
   "namespace": "https://dierp.local/ontology/erp/v1#",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "DIERP 制造 ERP 领域本体枚举唯一事实源。修改枚举必须先改本文件，再同步 generated/types.ts 与 src/shapes.ttl。",
   "enumerations": {
     "MaterialType": ["FG", "SEMI", "RAW", "PACKAGING", "SERVICE"],
@@ -32,6 +32,8 @@
     "DeliveryStatus": ["DRAFT", "SHIPPED", "DELIVERED", "CANCELLED"],
     "InvoiceStatus": ["DRAFT", "ISSUED", "PARTIALLY_PAID", "PAID", "CANCELLED"],
     "ReceivableEntryType": ["INVOICE", "RECEIPT", "ADJUST"],
+    "SupplierInvoiceStatus": ["DRAFT", "CONFIRMED", "CANCELLED"],
+    "PaymentMethod": ["TRANSFER", "CASH", "BILL"],
     "ResourceStatus": ["ACTIVE", "MAINTENANCE", "DOWN"],
     "ScheduleRunStatus": ["DRAFT", "RUNNING", "COMPLETED", "PUBLISHED", "FAILED"],
     "ScheduleAlgorithm": ["FORWARD", "BACKWARD", "MIXED"],

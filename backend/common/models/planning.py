@@ -181,6 +181,18 @@ class ReceivableEntryType(str, Enum):
     RECEIPT = "RECEIPT"
     ADJUST = "ADJUST"
 
+class SupplierInvoiceStatus(str, Enum):
+    """SupplierInvoiceStatus"""
+    DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+
+class PaymentMethod(str, Enum):
+    """PaymentMethod"""
+    TRANSFER = "TRANSFER"
+    CASH = "CASH"
+    BILL = "BILL"
+
 class ResourceStatus(str, Enum):
     """ResourceStatus"""
     ACTIVE = "ACTIVE"
@@ -1438,6 +1450,102 @@ class ReceivableEntry(BaseModel):
     entry_date = Column(DateTime, comment="流水日期")
 
     reference_number = Column(String(50), index=True, comment="参考单号(如收款单号)")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class SupplierInvoice(BaseModel):
+    """采购发票"""
+    __tablename__ = "supplier_invoices"
+
+    invoice_number = Column(String(50), nullable=False, unique=True, index=True, comment="发票号(PI 前缀)")
+
+    purchase_order_number = Column(String(50), ForeignKey("purchase_orders.purchase_order_number"), nullable=False, index=True, comment="来源采购单")
+
+    supplier_id = Column(String(50), index=True, comment="供应商编码")
+
+    supplier_name = Column(String(200), comment="供应商名称")
+
+    amount = Column(Numeric(15, 2), nullable=False, comment="发票金额(含税)")
+
+    tax_amount = Column(Numeric(15, 2), default=0, comment="税额")
+
+    status = Column(SQLEnum(SupplierInvoiceStatus), index=True, default=SupplierInvoiceStatus.DRAFT, comment="发票状态(DRAFT/CONFIRMED/CANCELLED)")
+
+    invoice_date = Column(DateTime, comment="开票日期")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class SupplierPayment(BaseModel):
+    """付款单"""
+    __tablename__ = "supplier_payments"
+
+    payment_number = Column(String(50), nullable=False, unique=True, index=True, comment="付款单号(PAY 前缀)")
+
+    supplier_id = Column(String(50), index=True, comment="供应商编码")
+
+    supplier_name = Column(String(200), comment="供应商名称")
+
+    amount = Column(Numeric(15, 2), nullable=False, comment="付款金额")
+
+    payment_date = Column(DateTime, comment="付款日期")
+
+    method = Column(SQLEnum(PaymentMethod), index=True, default=PaymentMethod.TRANSFER, comment="付款方式(TRANSFER/CASH/BILL)")
+
+    status = Column(String(20), index=True, default="DRAFT", comment="单据状态(DRAFT/PAID/CANCELLED)")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class PaymentAllocation(BaseModel):
+    """付款核销明细"""
+    __tablename__ = "payment_allocations"
+
+    payment_number = Column(String(50), ForeignKey("supplier_payments.payment_number"), nullable=False, index=True, comment="所属付款单")
+
+    invoice_number = Column(String(50), ForeignKey("supplier_invoices.invoice_number"), nullable=False, index=True, comment="核销采购发票")
+
+    allocated_amount = Column(Numeric(15, 2), nullable=False, comment="核销金额")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class Receipt(BaseModel):
+    """收款单"""
+    __tablename__ = "receipts"
+
+    receipt_number = Column(String(50), nullable=False, unique=True, index=True, comment="收款单号(RC 前缀)")
+
+    customer_id = Column(String(50), ForeignKey("customers.customer_id"), index=True, comment="客户编码")
+
+    customer_name = Column(String(200), comment="客户名称")
+
+    amount = Column(Numeric(15, 2), nullable=False, comment="收款金额")
+
+    receipt_date = Column(DateTime, comment="收款日期")
+
+    method = Column(SQLEnum(PaymentMethod), index=True, default=PaymentMethod.TRANSFER, comment="收款方式(TRANSFER/CASH/BILL)")
+
+    status = Column(String(20), index=True, default="DRAFT", comment="单据状态(DRAFT/PAID/CANCELLED)")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class ReceiptAllocation(BaseModel):
+    """收款核销明细"""
+    __tablename__ = "receipt_allocations"
+
+    receipt_number = Column(String(50), ForeignKey("receipts.receipt_number"), nullable=False, index=True, comment="所属收款单")
+
+    invoice_number = Column(String(50), ForeignKey("sales_invoices.invoice_number"), nullable=False, index=True, comment="核销销售发票")
+
+    allocated_amount = Column(Numeric(15, 2), nullable=False, comment="核销金额")
 
     remarks = Column(Text, comment="备注")
 

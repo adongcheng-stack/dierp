@@ -62,6 +62,10 @@ export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'CA
 
 export type ReceivableEntryType = 'INVOICE' | 'RECEIPT' | 'ADJUST';
 
+export type SupplierInvoiceStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
+
+export type PaymentMethod = 'TRANSFER' | 'CASH' | 'BILL';
+
 export type ResourceStatus = 'ACTIVE' | 'MAINTENANCE' | 'DOWN';
 
 export type ScheduleRunStatus = 'DRAFT' | 'RUNNING' | 'COMPLETED' | 'PUBLISHED' | 'FAILED';

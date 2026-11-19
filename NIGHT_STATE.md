@@ -1,11 +1,8 @@
 # Night State
 ## Current Task
-T110 P0 全门禁+日志+提交 — 计划（自审通过 02:05）
-- 改动：无代码（仅文档）：docs/夜间开发日志-20261120.md 新建（T101-T110 证据链+偏差决策记录）；设计文档 十 里程碑 P0 置 ✅；NIGHT_STATE 收尾
-- 验证（全门禁顺序跑）：①validate-type-sync+validate-consistency ②alembic check ③pytest ④冒烟 smoke_sd_delivery→purchase_loop→qms→receipt→traceability→planning ⑤check_demo_parity+check_rbac_parity ⑥tsc+build+build:mock+check:mock-rbac ⑦三探针
-- 自审：覆盖验收（全部 EXIT=0 证据）✓ 无超范围✓ 可证伪✓ 边界（冒烟互不污染——各自 reset；构建失败则记录阻塞不硬闯）✓
+（空）
 ## Pending Tasks
-- [ ] T201 P1 本体 4 实体+2 枚举（25min）
+- [ ] T202 P1 TTL/SHACL 同步（20min）
 - [ ] T202 P1 TTL/SHACL 同步（20min）
 - [ ] T203 P1 采购发票+三单匹配+confirm（30min）
 - [ ] T204 P1 付款/收款+核销+视图升级（40min）
@@ -42,6 +39,7 @@ T110 P0 全门禁+日志+提交 — 计划（自审通过 02:05）
 - [x] T108 P0 mock 同构+snapshot v14（01:25 完成）— 证据：probe-mock-sd.mjs 6/6 EXIT=0（种子2单/创建DK/超发400/ship扣库存+流水/issue+应收聚合/超开400）；check:mock-rbac EXIT=0；tsc EXIT=0。注：版本按实际 13→14（任务行 v15 系笔误，见偏差记录）；探针曾因漏传 query:{} 全 500，已修；snapshot 外科手术式编辑保持原格式
 - [x] T109 P0 smoke+parity（01:55 完成）— 证据：smoke_sd_delivery.py 14/14 EXIT=0（设计 3.6 全序列+reset 复位基线 2/1/1）；check_demo_parity.py EXIT=0（31 项含发货单/发票/AR 扩项）；probe-mock-sd 回归 6/6（双目录可跑）；pytest 28 passed。注：reset 新增探针/冒烟标记订单定向清理（修复 parity 残留错配）；冒烟改为起点+终点双 reset 且失败也复位
 - [x] T110 P0 全门禁+日志+提交（02:20 完成）— 证据：17 项门禁全绿（本体双校验/alembic/pytest 28/六冒烟/parity 31 项/rbac parity/tsc/双构建/mock-rbac/三探针 8+6+6）；docs/夜间开发日志-20261120.md；设计文档 §十 P0 置 ✅
+- [x] T201 P1 本体 5 表+2 枚举（02:30 完成）— 证据：generate_models 44 实体；upgrade_planning EXIT=0；alembic check EXIT=0；generate-types 48 枚举；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed。注：分表 receipt_allocations（设计决策）；付款/收款 status 用 string 内联；踩坑：types.ts 必须用 ontology 生成器单独重生成（generate_models 不覆盖它）
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
