@@ -2,7 +2,10 @@
 ## Current Task
 （空）
 ## Pending Tasks
-- [ ] T207 P1 smoke_finance_loop≥14+全门禁+提交（20min）
+- [ ] T301 P2★ 总账实体（30min）【stretch：仅剩余≥45min】
+- [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
+- [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
+- [ ] T304 P2★ 全门禁+提交（10min）【stretch】
 - [ ] T202 P1 TTL/SHACL 同步（20min）
 - [ ] T203 P1 采购发票+三单匹配+confirm（30min）
 - [ ] T204 P1 付款/收款+核销+视图升级（40min）
@@ -45,7 +48,8 @@
 - [x] T204 P1 付款/收款+核销+视图升级（03:25 完成）— 证据：probe_finance_payments 8/8 EXIT=0（付款创建/核销PAID+明细/超发票额400/收款创建/核销→PARTIALLY_PAID+AR负流水/超收核销400/补足→PAID/AP新口径+应收递减）；smoke_purchase_loop 33 OK（AP 断言升级为 P1 口径）；smoke_sd_delivery EXIT=0；parity EXIT=0；pytest 28 passed。注：ap-view 未开票暂估按 PO 净额（扣已批退货）；收款核销同事务冲减 received_amount+状态联动+RECEIPT 流水
 - [x] T205 P1 前端 3 页+AP 台账升级（03:55 完成）— 证据：npx tsc --noEmit EXIT=0。注：SupplierInvoiceList/PaymentList（核销对话框 Form.List 多行+合计校验）/ReceiptList；ApView +4 列（已确认发票/已核销/未核销/未开票暂估）；菜单采购+2 销售+1；路由 ×3
 - [x] T206 P1 mock v15+parity（04:20 完成）— 证据：probe-mock-finance 9/9（含前置）EXIT=0；probe-mock-sd 回归 6/6；check:mock-rbac EXIT=0；check_demo_parity EXIT=0（集合存在 +5）；tsc EXIT=0；pytest 28 passed。注：snapshot v15 +5 空集合（种子延后决策见偏差记录）；mock ap-view 同步 P1 口径；探针 cap 须取 PO 详情（列表行无单价）
+- [x] T207 P1 smoke_finance_loop+全门禁（04:55 完成）— 证据：smoke_finance_loop 15/15 EXIT=0（三单匹配/确认/付款核销/AP 递减/收款核销/账龄勾稽/复位）；全门禁 20 项全绿（本体双校验/alembic/pytest/七冒烟/parity×2/前端×4/六探针）；日志与里程碑已更新
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 02:20：P0 十任务全部完成（22:03–02:20，4h17m，预算 9h 余 4h40m）。提交链 23348ad→a778ac7→7ccc71a→a25ea82→5747545→f564fce→670c2e4→a70d3d5→637c6d6→(T110 本提交)。下一任务：T201 P1 本体 4 实体+2 枚举。DIERP-demo.html 用户未提交改动，全程未触碰。
+2026-11-20 04:55：P0+P1 十七任务全部完成（22:03 起 6h52m，预算 9h 余 2h08m ≥45min → P2★ stretch 符合启动条件）。下一任务：T301 总账实体。DIERP-demo.html 用户未提交改动，全程未触碰。
