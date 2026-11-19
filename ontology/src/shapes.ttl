@@ -928,3 +928,73 @@
         sh:in ( "OPEN" "UNDER_REVIEW" "DISPOSITIONED" "CLOSED" ) ;
         sh:message "S36 状态必须来自 NcrStatus 枚举"
     ] .
+
+# S37 销售发货单
+:SalesDeliveryShape a sh:NodeShape ;
+    sh:targetClass :SalesDelivery ;
+    sh:property [
+        sh:path :deliveryNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^DK-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S37 发货单号必须符合 DK-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :salesOrderNumber ; sh:minCount 1 ;
+        sh:message "S37 发货单必须关联销售订单"
+    ] ;
+    sh:property [
+        sh:path :materialCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S37 发货单必须关联物料"
+    ] ;
+    sh:property [
+        sh:path :quantity ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S37 发货数量必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "SHIPPED" "DELIVERED" "CANCELLED" ) ;
+        sh:message "S37 发货状态必须来自 DeliveryStatus 枚举"
+    ] .
+
+# S38 销售发票
+:SalesInvoiceShape a sh:NodeShape ;
+    sh:targetClass :SalesInvoice ;
+    sh:property [
+        sh:path :invoiceNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^INV-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S38 发票号必须符合 INV-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :salesOrderNumber ; sh:minCount 1 ;
+        sh:message "S38 发票必须关联销售订单"
+    ] ;
+    sh:property [
+        sh:path :amount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S38 开票金额必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "ISSUED" "PARTIALLY_PAID" "PAID" "CANCELLED" ) ;
+        sh:message "S38 发票状态必须来自 InvoiceStatus 枚举"
+    ] .
+
+# S39 应收流水
+:ReceivableEntryShape a sh:NodeShape ;
+    sh:targetClass :ReceivableEntry ;
+    sh:property [
+        sh:path :entryNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^AR-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S39 应收流水号必须符合 AR-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :invoiceNumber ; sh:minCount 1 ;
+        sh:message "S39 应收流水必须关联发票"
+    ] ;
+    sh:property [
+        sh:path :amount ; sh:minCount 1 ;
+        sh:message "S39 应收流水必须有金额（正开票/负收款）"
+    ] ;
+    sh:property [
+        sh:path :entryType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "INVOICE" "RECEIPT" "ADJUST" ) ;
+        sh:message "S39 流水类型必须来自 ReceivableEntryType 枚举"
+    ] .

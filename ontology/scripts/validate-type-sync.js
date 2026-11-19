@@ -79,6 +79,10 @@ const CONFIG = {
     { name: 'PurchaseRequestStatus', prop: 'status', shape: 'PurchaseRequestShape' },
     { name: 'ReturnType', prop: 'returnType', shape: 'PurchaseReturnShape' },
     { name: 'ReturnStatus', prop: 'status', shape: 'PurchaseReturnShape' },
+    // 销售域：发货/发票/应收（三线打通）
+    { name: 'DeliveryStatus', prop: 'status', shape: 'SalesDeliveryShape' },
+    { name: 'InvoiceStatus', prop: 'status', shape: 'SalesInvoiceShape' },
+    { name: 'ReceivableEntryType', prop: 'entryType', shape: 'ReceivableEntryShape' },
   ],
   // 必须存在的 NodeShape 名 (Check4)
   REQUIRED_SHAPES: [
@@ -95,6 +99,7 @@ const CONFIG = {
     'MaintenancePlanShape', 'MaintenanceOrderShape', 'EquipmentFailureShape',
     'InspectionOrderShape', 'NonConformanceReportShape',
     'SupplierShape', 'PurchaseRequestShape', 'PurchaseReturnShape',
+    'SalesDeliveryShape', 'SalesInvoiceShape', 'ReceivableEntryShape',
   ],
   // 业务数量基线: 类名 -> 期望实例数 (Check8; 0 表示不检查该项可删除)
   BASELINE: {

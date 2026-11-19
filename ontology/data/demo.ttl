@@ -451,3 +451,33 @@
     :rootCause "传输滚轮磨损导致板面擦伤" ;
     :status "OPEN" ;
     :reviewedBy "王质检" ; :reviewedAt "2026-01-07T11:00:00"^^xsd:dateTime .
+
+# ── 销售域：发货单 / 销售发票 / 应收流水（三线打通演示） ──────
+:DK-20260106-0001 a :SalesDelivery, :Document ;
+    :deliveryNumber "DK-20260106-0001" ;
+    :salesOrderNumber "SO-20260105-0001" ;
+    :customerId "CUST-HF001" ; :customerName "鸿飞电子" ;
+    :materialCode "HF1004ENIGAB01" ; :quantity 120 ; :uom "PCS" ;
+    :unitPrice 25.50 ; :status "SHIPPED" ;
+    :shipDate "2026-01-10T09:00:00"^^xsd:dateTime ;
+    :remarks "整单发货，出库扣减成品库存" .
+
+:INV-20260106-0001 a :SalesInvoice, :Document ;
+    :invoiceNumber "INV-20260106-0001" ;
+    :salesOrderNumber "SO-20260105-0001" ;
+    :deliveryNumber "DK-20260106-0001" ;
+    :customerId "CUST-HF001" ; :customerName "鸿飞电子" ;
+    :amount 3060.00 ; :currency "CNY" ; :status "ISSUED" ;
+    :invoiceDate "2026-01-11T10:00:00"^^xsd:dateTime ;
+    :dueDate "2026-02-10"^^xsd:date ;
+    :receivedAmount 0 ;
+    :remarks "按已发货数量全额开票" .
+
+:AR-20260106-0001 a :ReceivableEntry, :EventRecord ;
+    :entryNumber "AR-20260106-0001" ;
+    :invoiceNumber "INV-20260106-0001" ;
+    :customerId "CUST-HF001" ;
+    :entryType "INVOICE" ; :amount 3060.00 ;
+    :entryDate "2026-01-11T10:00:00"^^xsd:dateTime ;
+    :referenceNumber "INV-20260106-0001" ;
+    :remarks "开票生成应收（正金额）" .
