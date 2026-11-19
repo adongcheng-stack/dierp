@@ -56,6 +56,12 @@ export type ReturnStatus = 'DRAFT' | 'APPROVED' | 'REJECTED' | 'CLOSED';
 
 export type SupplierStatus = 'ACTIVE' | 'INACTIVE';
 
+export type DeliveryStatus = 'DRAFT' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
+
+export type ReceivableEntryType = 'INVOICE' | 'RECEIPT' | 'ADJUST';
+
 export type ResourceStatus = 'ACTIVE' | 'MAINTENANCE' | 'DOWN';
 
 export type ScheduleRunStatus = 'DRAFT' | 'RUNNING' | 'COMPLETED' | 'PUBLISHED' | 'FAILED';

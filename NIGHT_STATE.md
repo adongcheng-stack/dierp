@@ -2,7 +2,6 @@
 ## Current Task
 （空）
 ## Pending Tasks
-- [ ] T101 P0 本体枚举+3（15min）— 验收：validate-type-sync EXIT=0
 - [ ] T102 P0 实体+3→生成→create_all→alembic 绿（30min）
 - [ ] T103 P0 TTL/SHACL/demo 同步双绿（30min）
 - [ ] T104 P0 发货单后端 4 端点（45min）— 探针 8 断言
@@ -24,8 +23,8 @@
 - [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T304 P2★ 全门禁+提交（10min）【stretch】
 ## Completed Tasks
-（空）
+- [x] T101 P0 本体枚举+3（22:08 完成）— 证据：generate-types EXIT=0（46 枚举含 3 新）；validate-type-sync EXIT=0；validate-consistency EXIT=0；mappings v1.2.0
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-（启动时写入时间戳）
+2026-11-19 22:03:54 启动（9h 预算至 2026-11-20 07:04）。注意：DIERP-demo.html 有用户未提交改动，不触碰。
