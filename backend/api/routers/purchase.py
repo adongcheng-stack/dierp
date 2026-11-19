@@ -106,11 +106,15 @@ class ReceiveItem(BaseModel):
 
 
 class ReceivePayload(BaseModel):
-    """到货请求：不传 quantity 时按「未收余量」整行收货。"""
+    """到货请求：不传 quantity 时按「未收余量」整行收货。
+
+    auto_iqc=True 时为每个收货行自动生成 INCOMING 来料检验单（DRAFT）。
+    """
 
     lines: list[ReceiveItem] = Field(default_factory=list)
     remarks: Optional[str] = None
     received_by: Optional[str] = None
+    auto_iqc: bool = False
 
 
 # ── 端点 ───────────────────────────────────────────────────────────────
@@ -252,9 +256,31 @@ def receive_purchase_order(
         order.remarks = payload.remarks
     order.updated_at = datetime.now()
 
+    # 到货自动来料检验（IQC）：每个收货行生成一张 DRAFT 检验单，与收货同事务提交
+    auto_iqc_numbers: list[str] = []
+    if payload.auto_iqc:
+        from backend.common.models.planning import InspectionType
+        from backend.services.planning.qms_engine import QmsEngine
+
+        for line, quantity in planned:
+            row = QmsEngine.create_inspection(
+                db,
+                inspection_type=InspectionType.INCOMING,
+                material_code=line.material_code,
+                purchase_order_number=purchase_order_number,
+                quantity_inspected=quantity,
+                inspector=payload.received_by or "system",
+                remarks=f"收货自动生成: {purchase_order_number}#{line.line_number}",
+                created_by=payload.received_by or "web",
+            )
+            auto_iqc_numbers.append(row.inspection_number)
+
     db.commit()
     order, lines = _load_order(db, purchase_order_number)
-    return _order_dict(order, lines)
+    result = _order_dict(order, lines)
+    if auto_iqc_numbers:
+        result["auto_iqc_inspections"] = auto_iqc_numbers
+    return result
 
 
 @router.post("/purchase-orders/{purchase_order_number}/close")

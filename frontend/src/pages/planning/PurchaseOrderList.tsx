@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Form, InputNumber, Modal, Space, Table, Tag, message } from 'antd'
+import { Button, Card, Checkbox, Form, InputNumber, Modal, Space, Table, Tag, message } from 'antd'
 import { CheckOutlined, PlusOutlined, ReloadOutlined, FileSearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import api, { getErrorMessage } from '../../services/api'
@@ -51,6 +51,7 @@ const PurchaseOrderList: React.FC = () => {
   const [receiveTarget, setReceiveTarget] = useState<PurchaseOrder | null>(null)
   const [receiveForm] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
+  const [autoIqc, setAutoIqc] = useState(true)
   const navigate = useNavigate()
 
   const fetchData = async () => {
@@ -105,9 +106,13 @@ const PurchaseOrderList: React.FC = () => {
 
       const response = await api.post(
         `/purchase/purchase-orders/${receiveTarget.purchase_order_number}/receive`,
-        { lines, received_by: 'web' }
+        { lines, received_by: 'web', auto_iqc: autoIqc }
       )
-      message.success(`收货成功：${response.data.status === 'RECEIVED' ? '整单到货' : '部分到货'}`)
+      const iqcNumbers: string[] = response.data?.auto_iqc_inspections ?? []
+      message.success(
+        `收货成功：${response.data.status === 'RECEIVED' ? '整单到货' : '部分到货'}` +
+          (iqcNumbers.length ? `，已自动生成来料检验单 ${iqcNumbers.join('、')}` : '')
+      )
       setReceiveTarget(null)
       fetchData()
     } catch (error) {
@@ -275,6 +280,12 @@ const PurchaseOrderList: React.FC = () => {
                 <InputNumber min={0} max={line.outstanding_quantity} style={{ width: '100%' }} addonAfter={line.unit} />
               </Form.Item>
             ))}
+          <Checkbox
+            checked={autoIqc}
+            onChange={(e) => setAutoIqc(e.target.checked)}
+          >
+            到货自动生成来料检验单（IQC · 待质检）
+          </Checkbox>
         </Form>
       </Modal>
 

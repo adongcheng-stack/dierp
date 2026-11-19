@@ -5224,8 +5224,47 @@ route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/receive', (ctx, pa
     if (body.remarks) po.remarks = body.remarks
     po.updated_at = nowIso()
   }
+
+  // 到货自动来料检验（IQC）：每个收货行生成一张 DRAFT 检验单（与后端同构）
+  const autoIqcNumbers: string[] = []
+  if (body.auto_iqc) {
+    for (const item of targets) {
+      const line = lineMap.get(item.line_number)
+      if (!line) continue
+      const quantity =
+        item.quantity != null ? toNumber(item.quantity) : toNumber(line.quantity) - toNumber(line.received_quantity)
+      if (quantity <= 0) continue
+      const inspections = listOf(db, 'inspectionOrders')
+      inspections.unshift({
+        id: nextId(inspections),
+        inspection_number: nextNumber(inspections, 'inspection_number', 'IQC'),
+        inspection_type: 'INCOMING',
+        material_code: line.material_code,
+        lot_number: null,
+        purchase_order_number: number,
+        report_number: null,
+        quantity_inspected: quantity,
+        quantity_ok: null,
+        quantity_rejected: null,
+        inspector: body.received_by || 'system',
+        inspected_at: null,
+        result: null,
+        status: 'DRAFT',
+        remarks: `收货自动生成: ${number}#${line.line_number}`,
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        updated_by: null,
+        updated_at: nowIso(),
+        is_deleted: false,
+      })
+      autoIqcNumbers.push(listOf(db, 'inspectionOrders')[0].inspection_number)
+    }
+  }
+
   saveDb()
-  return ok(purchaseOrderDict(db, po))
+  const result: any = purchaseOrderDict(db, po)
+  if (autoIqcNumbers.length) result.auto_iqc_inspections = autoIqcNumbers
+  return ok(result)
 })
 
 route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/close', (_ctx, params) => {
