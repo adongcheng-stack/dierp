@@ -16,7 +16,14 @@ from backend.common.models.sd import (
     SalesOrder, ContractReview, CustomerStatus, QuotationStatus, SalesOrderStatus
 )
 from backend.common.models.mm import Material, MaterialTransaction
-from backend.common.models.planning import SalesDelivery, DeliveryStatus
+from backend.common.models.planning import (
+    SalesDelivery,
+    DeliveryStatus,
+    SalesInvoice,
+    InvoiceStatus,
+    ReceivableEntry,
+    ReceivableEntryType,
+)
 from backend.common.models.eng import ProductionVersion
 from sqlalchemy import or_
 from backend.common.utils.number_generator import NumberGenerator
@@ -3482,4 +3489,271 @@ def cancel_delivery(
     _sync_order_ship_status(db, d.sales_order_number)
     db.commit()
     return _delivery_dict(d)
+
+
+# ── 销售发票 + 应收台账（开票生成应收流水；核销 P1） ──────────────────
+class InvoiceCreate(BaseModel):
+    sales_order_number: str = Field(..., description="来源销售订单号")
+    delivery_number: Optional[str] = Field(None, description="关联发货单（可空）")
+    amount: float = Field(..., gt=0, description="开票金额")
+    due_date: Optional[datetime] = Field(None, description="到期日（默认取订单交付期）")
+    remarks: Optional[str] = None
+
+
+def _invoice_dict(i: SalesInvoice) -> dict:
+    return {
+        "invoice_number": i.invoice_number,
+        "sales_order_number": i.sales_order_number,
+        "delivery_number": i.delivery_number,
+        "customer_id": i.customer_id,
+        "customer_name": i.customer_name,
+        "amount": float(i.amount or 0),
+        "currency": i.currency,
+        "status": i.status.value if hasattr(i.status, "value") else str(i.status),
+        "invoice_date": i.invoice_date.isoformat() if i.invoice_date else None,
+        "due_date": i.due_date.isoformat() if i.due_date else None,
+        "received_amount": float(i.received_amount or 0),
+        "remarks": i.remarks,
+        "created_at": i.created_at.isoformat() if i.created_at else None,
+    }
+
+
+def _shipped_value(db: Session, order_number: str) -> float:
+    """订单已发货量（SHIPPED+DELIVERED）× 单价 的可开票上限。"""
+    rows = (
+        db.query(SalesDelivery)
+        .filter(
+            SalesDelivery.sales_order_number == order_number,
+            SalesDelivery.is_deleted.is_(False),
+            SalesDelivery.status.in_([DeliveryStatus.SHIPPED, DeliveryStatus.DELIVERED]),
+        )
+        .all()
+    )
+    return float(sum(float(d.quantity or 0) * float(d.unit_price or 0) for d in rows))
+
+
+def _invoiced_amount(db: Session, order_number: str) -> float:
+    rows = (
+        db.query(SalesInvoice)
+        .filter(
+            SalesInvoice.sales_order_number == order_number,
+            SalesInvoice.is_deleted.is_(False),
+            SalesInvoice.status != InvoiceStatus.CANCELLED,
+        )
+        .all()
+    )
+    return float(sum(float(i.amount or 0) for i in rows))
+
+
+def _check_invoice_cap(
+    db: Session, order_number: str, amount: float, exclude_invoice_number: Optional[str] = None
+) -> None:
+    order = (
+        db.query(SalesOrder)
+        .filter(SalesOrder.order_number == order_number, SalesOrder.is_deleted.is_(False))
+        .first()
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail=f"销售订单不存在: {order_number}")
+    cap = _shipped_value(db, order_number)
+    already = _invoiced_amount(db, order_number)
+    if exclude_invoice_number:
+        # issue 复查时排除自身（自身金额已含在 already 中）
+        self_row = (
+            db.query(SalesInvoice)
+            .filter(SalesInvoice.invoice_number == exclude_invoice_number)
+            .first()
+        )
+        if self_row:
+            already -= float(self_row.amount or 0)
+    if already + amount > cap + 1e-6:
+        raise HTTPException(
+            status_code=400,
+            detail=f"超开：已发货可开票上限 {cap:.2f}，已开 {already:.2f}，本次 {amount:.2f}",
+        )
+
+
+@router.get("/invoices")
+def list_invoices(
+    customer_id: Optional[str] = None,
+    order_number: Optional[str] = None,
+    invoice_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(SalesInvoice).filter(SalesInvoice.is_deleted.is_(False))
+    if customer_id:
+        query = query.filter(SalesInvoice.customer_id == customer_id)
+    if order_number:
+        query = query.filter(SalesInvoice.sales_order_number == order_number)
+    if invoice_status:
+        query = query.filter(SalesInvoice.status == InvoiceStatus(invoice_status))
+    total = query.count()
+    rows = query.order_by(SalesInvoice.id.desc()).offset(offset).limit(limit).all()
+    return {"total": total, "items": [_invoice_dict(i) for i in rows]}
+
+
+@router.get("/receivables")
+def receivables_summary(
+    customer_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """应收台账：按客户聚合 发票额/已收/未收/账龄分段（核销 P1）。"""
+    query = db.query(SalesInvoice).filter(SalesInvoice.is_deleted.is_(False))
+    if customer_id:
+        query = query.filter(SalesInvoice.customer_id == customer_id)
+    invoices = query.all()
+    by_customer: dict[str, dict] = {}
+    now = datetime.now()
+    for i in invoices:
+        if i.status == InvoiceStatus.CANCELLED:
+            continue
+        row = by_customer.setdefault(
+            i.customer_id,
+            {
+                "customer_id": i.customer_id,
+                "customer_name": i.customer_name,
+                "invoiced_amount": 0.0,
+                "received_amount": 0.0,
+                "outstanding_amount": 0.0,
+                "aging": {"current": 0.0, "d30": 0.0, "d60": 0.0, "d90": 0.0, "d90p": 0.0},
+                "invoice_count": 0,
+            },
+        )
+        amount = float(i.amount or 0)
+        outstanding = amount - float(i.received_amount or 0)
+        row["invoiced_amount"] += amount
+        row["received_amount"] += float(i.received_amount or 0)
+        row["outstanding_amount"] += outstanding
+        row["invoice_count"] += 1
+        bucket = "current"
+        if i.due_date and outstanding > 0:
+            overdue_days = (now - i.due_date).days
+            if overdue_days > 90:
+                bucket = "d90p"
+            elif overdue_days > 60:
+                bucket = "d90"
+            elif overdue_days > 30:
+                bucket = "d60"
+            elif overdue_days > 0:
+                bucket = "d30"
+        row["aging"][bucket] += outstanding
+    items = sorted(by_customer.values(), key=lambda r: r["outstanding_amount"], reverse=True)
+    return {
+        "total": len(items),
+        "items": items,
+        "totals": {
+            "invoiced_amount": round(sum(r["invoiced_amount"] for r in items), 2),
+            "received_amount": round(sum(r["received_amount"] for r in items), 2),
+            "outstanding_amount": round(sum(r["outstanding_amount"] for r in items), 2),
+        },
+    }
+
+
+@router.get("/invoices/{invoice_number}")
+def get_invoice(invoice_number: str, db: Session = Depends(get_db)):
+    i = (
+        db.query(SalesInvoice)
+        .filter(SalesInvoice.invoice_number == invoice_number, SalesInvoice.is_deleted.is_(False))
+        .first()
+    )
+    if not i:
+        raise HTTPException(status_code=404, detail=f"发票不存在: {invoice_number}")
+    return _invoice_dict(i)
+
+
+@router.post("/invoices", status_code=http_status.HTTP_201_CREATED)
+def create_invoice(
+    payload: InvoiceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建销售发票（DRAFT）：挂单校验 + 超开校验。"""
+    order = (
+        db.query(SalesOrder)
+        .filter(
+            SalesOrder.order_number == payload.sales_order_number,
+            SalesOrder.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail=f"销售订单不存在: {payload.sales_order_number}")
+    if payload.delivery_number:
+        d = (
+            db.query(SalesDelivery)
+            .filter(
+                SalesDelivery.delivery_number == payload.delivery_number,
+                SalesDelivery.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if not d:
+            raise HTTPException(status_code=404, detail=f"发货单不存在: {payload.delivery_number}")
+        if d.status not in (DeliveryStatus.SHIPPED, DeliveryStatus.DELIVERED):
+            raise HTTPException(
+                status_code=400,
+                detail=f"发货单 {payload.delivery_number} 状态为 {d.status.value}，未发货不得开票",
+            )
+    _check_invoice_cap(db, order.order_number, payload.amount)
+    customer = db.query(Customer).filter(Customer.customer_id == order.customer_id).first()
+    number = NumberGenerator.generate_document_number(db, SalesInvoice, "invoice_number", "INV", 4)
+    due = payload.due_date or order.delivery_date or datetime.now()
+    i = SalesInvoice(
+        invoice_number=number,
+        sales_order_number=order.order_number,
+        delivery_number=payload.delivery_number,
+        customer_id=order.customer_id,
+        customer_name=(customer.trade_name or customer.legal_name) if customer else None,
+        amount=payload.amount,
+        currency=order.currency or "CNY",
+        status=InvoiceStatus.DRAFT,
+        invoice_date=datetime.now(),
+        due_date=due,
+        received_amount=0,
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(i)
+    db.flush()  # 坑2：同事务生成流水号前先落库
+    db.commit()
+    return _invoice_dict(i)
+
+
+@router.post("/invoices/{invoice_number}/issue")
+def issue_invoice(
+    invoice_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """确认开票：DRAFT → ISSUED，生成应收流水（INVOICE，正金额）。"""
+    i = (
+        db.query(SalesInvoice)
+        .filter(SalesInvoice.invoice_number == invoice_number, SalesInvoice.is_deleted.is_(False))
+        .first()
+    )
+    if not i:
+        raise HTTPException(status_code=404, detail=f"发票不存在: {invoice_number}")
+    if i.status != InvoiceStatus.DRAFT:
+        raise HTTPException(status_code=400, detail=f"发票状态为 {i.status.value}，不允许开票")
+    _check_invoice_cap(db, i.sales_order_number, float(i.amount or 0), exclude_invoice_number=i.invoice_number)
+    i.status = InvoiceStatus.ISSUED
+    i.updated_by = current_user.username
+    i.updated_at = datetime.now()
+    db.flush()
+    db.add(ReceivableEntry(
+        entry_number=NumberGenerator.generate_document_number(
+            db, ReceivableEntry, "entry_number", "AR", 4),
+        invoice_number=i.invoice_number,
+        customer_id=i.customer_id,
+        entry_type=ReceivableEntryType.INVOICE,
+        amount=float(i.amount or 0),
+        entry_date=datetime.now(),
+        reference_number=i.invoice_number,
+        remarks=f"开票应收 {i.invoice_number}",
+        created_by=current_user.username,
+    ))
+    db.commit()
+    return _invoice_dict(i)
 
