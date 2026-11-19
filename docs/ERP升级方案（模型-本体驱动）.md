@@ -331,6 +331,9 @@ cd frontend && npm run build && npm run build:mock
 | QMS 双向联动（报工→NCR、NCR→EAM 故障） | 已完成，`smoke_qms.py` 全链路验证 |
 | P2 双向追溯（批次/物料/订单 正向+反向全链路） | 已完成，`smoke_traceability.py` + `smoke_traceability_api.py` 验证 |
 | P2 经营看板（六域 KPI + 自动点评） | 已完成，`smoke_dashboard.py` 验证 |
+| N1 工程化加固（git/pytest/parity 校验） | 已完成，`backend/tests` 25 用例 + `check_demo_parity.py` 19 项事实 |
+| N2 权限收紧（RBAC 域写权限门 + CORS 白名单） | 已完成，`test_permissions.py` 6 用例 |
+| N3 采购闭环（采购单页面/收货/库存回冲） | 已完成，`smoke_purchase.py` 全链路验证 |
 | 演示数据一键重置（菜单 + CLI + API） | 已完成，支持幂等与管理员校验 |
 | 前端分包与首屏优化 | 已完成，全部 chunk < 500KB，无构建告警 |
 
@@ -578,6 +581,19 @@ QMS 把「质量」从终检记录升级为贯穿 **来料 → 过程 → 终检
 页面 `frontend/src/pages/dashboard/ManagementDashboard.tsx`（`/dashboard/management`，菜单「生产执行 → 经营看板」）含 KPI 卡、分中心 OEE 条、状态分布、差异构成与**自动经营点评**（规则生成演示话术，如「DRILL-B OEE 31%，建议优先排维」）。mock 侧 `GET /dashboard/management` 与引擎同构，OEE 直接复用 mock 的 `eamOeeSnapshot`。
 
 验证：`python backend/scripts/smoke_dashboard.py`（引擎 KPI 断言 + 自动点评 + TestClient API 一致性）。注意：真实后端需重启以加载新路由 `/api/dashboard/*`、`/api/traceability/*`。
+
+### N1-N3 工程化加固 / 权限收紧 / 采购闭环（已完成）
+
+| 项 | 内容 |
+|---|---|
+| N1 版本控制 | `git init` + 全量基线提交；此后每个夜间任务独立提交，可回滚 |
+| N1 单元测试 | `backend/tests/`（SQLite 内存库夹具，模型无方言依赖）：编号生成 6 例、QMS 闭环 4 例（含报工→NCR 物料解析、设备联动幂等）、看板点评规则 4 例、追溯图容器 3 例、RBAC 6 例 |
+| N1 演示数据一致性 | `check_demo_parity.py`：mock 快照 ↔ 数据库种子 19 项关键事实对比（APS 工单销售关联、检验/NCR 事实、采购单、库存等），不一致即退出码 1 |
+| N1 冒烟去日期化 | traceability 冒烟断言改为「静态单据精确 + 动态单据前缀」，消除跨午夜失效 |
+| N2 RBAC | `auth.py` 新增 `WRITE_ROLE_POLICY` + `require_write_permission`（按域 × 写方法），`main.py` 单点挂载；GET 保持开放（冒烟契约）；CORS 收敛为 `ERP_CORS_ORIGINS` 白名单；前端 403 统一文案 |
+| N3 采购闭环 | 新增 `api/routers/purchase.py`（列表/详情/收货/关闭），收货实时回冲 `Material.current_stock`，超量与状态机保护；`PurchaseOrderList.tsx` 页面（`/pp/purchase-orders`）；`seed_purchase_demo_data` 两张 RELEASED 演示单；`demo_reset` 清理采购表 + **物料库存基线复位**（领料/到货多轮演示可重复） |
+
+权限矩阵（写操作）：sd=SALES/SALES_MANAGER/总经理，eng=ENGINEER，pp/mm/purchase=PRODUCTION/PLANNER/WAREHOUSE 系，planning/qms=PLANNER/总经理，users=仅 ADMIN；ADMIN 恒通过。多账号演示时注意：用非授权角色执行写操作会得到 403（演示话术可顺势讲权限设计）。
 
 ### 前端交付优化（已完成）
 

@@ -4,7 +4,7 @@ API网关 - 主入口
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api.routers import sd, eng, pp, mm, auth, users, planning, qms, traceability, dashboard
+from backend.api.routers import sd, eng, pp, mm, auth, users, planning, qms, traceability, dashboard, purchase
 from backend.api.routers.auth import require_write_permission
 from backend.common.exceptions import BusinessException
 import os
@@ -49,6 +49,7 @@ app.include_router(pp.router, prefix="/api/pp", tags=["生产计划与控制"], 
 app.include_router(mm.router, prefix="/api/mm", tags=["物料管理"], dependencies=_write_gate)
 app.include_router(planning.router, prefix="/api/planning", tags=["计划与控制"], dependencies=_write_gate)
 app.include_router(qms.router, prefix="/api/qms", tags=["质量管理"], dependencies=_write_gate)
+app.include_router(purchase.router, prefix="/api/purchase", tags=["采购管理"], dependencies=_write_gate)
 app.include_router(traceability.router, prefix="/api/traceability", tags=["双向追溯"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["经营看板"])
 

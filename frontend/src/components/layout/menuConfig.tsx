@@ -76,6 +76,7 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/pp/mps', label: '主生产计划', icon: CalendarClock, path: '/pp/mps' },
       { key: '/pp/mrp', label: 'MRP 运算', icon: Activity, path: '/pp/mrp' },
       { key: '/pp/planned-orders', label: '计划订单', icon: ClipboardList, path: '/pp/planned-orders' },
+      { key: '/pp/purchase-orders', label: '采购订单', icon: Boxes, path: '/pp/purchase-orders' },
       {
         key: '/pp/planning-exceptions',
         label: '计划异常',

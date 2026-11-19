@@ -125,6 +125,34 @@ def main() -> int:
                   (db_rep.production_order_number, float(db_rep.scrap_quantity or 0), db_rep.lot_number),
                   (mock_rep["production_order_number"], float(mock_rep.get("scrap_quantity") or 0), mock_rep.get("lot_number")))
 
+        # ── 9.5) 采购演示单据（N3 闭环；忽略动态单号） ────────────────────
+        from backend.common.models.planning import PurchaseOrder, PurchaseOrderLine  # noqa: E402
+
+        db_pos = live(PurchaseOrder)
+        db_lines = {
+            po.purchase_order_number: sorted(
+                (l.material_code, float(l.quantity), float(l.received_quantity or 0))
+                for l in live(PurchaseOrderLine)
+                if l.purchase_order_number == po.purchase_order_number
+            )
+            for po in db_pos
+        }
+        db_purchase = sorted(
+            (po.supplier_name, po.status.value, tuple(db_lines[po.purchase_order_number]))
+            for po in db_pos
+        )
+        mock_pos = mock.get("purchaseOrders", [])
+        mock_lines_map = {}
+        for line in mock.get("purchaseOrderLines", []):
+            mock_lines_map.setdefault(line["purchase_order_number"], []).append(
+                (line["material_code"], float(line["quantity"]), float(line.get("received_quantity") or 0))
+            )
+        mock_purchase = sorted(
+            (po["supplier_name"], po["status"], tuple(sorted(mock_lines_map.get(po["purchase_order_number"], []))))
+            for po in mock_pos
+        )
+        check("采购演示单据(供应商/状态/行)", db_purchase, mock_purchase)
+
         # ── 10) 快照版本与结构 ───────────────────────────────────────────
         for collection in ["inspectionOrders", "nonConformanceReports", "operationReports",
                            "lotCards", "productionOrders", "salesOrders", "customers", "materials"]:

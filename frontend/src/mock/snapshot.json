@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "generatedAt": "2026-11-17T23:49:35",
   "customers": [
     {
@@ -6189,8 +6189,100 @@
       "remarks": "计划模块演示预测"
     }
   ],
-  "purchaseOrders": [],
-  "purchaseOrderLines": [],
+  "purchaseOrders": [
+    {
+      "id": 1,
+      "purchase_order_number": "PUR-20261119-0001",
+      "supplier_id": "SUP-HQ",
+      "supplier_name": "华强覆铜板贸易",
+      "status": "RELEASED",
+      "order_date": "2026-11-19T09:00:00",
+      "expected_date": "2026-11-24T00:00:00",
+      "currency": "CNY",
+      "total_amount": 3850.0,
+      "source_planned_order": null,
+      "remarks": "N3 采购闭环演示：整单到货（RM-FR4-150 ×100）",
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "updated_by": null,
+      "updated_at": null,
+      "is_deleted": false
+    },
+    {
+      "id": 2,
+      "purchase_order_number": "PUR-20261119-0002",
+      "supplier_id": "SUP-HQ",
+      "supplier_name": "华强覆铜板贸易",
+      "status": "RELEASED",
+      "order_date": "2026-11-19T09:00:00",
+      "expected_date": "2026-11-26T00:00:00",
+      "currency": "CNY",
+      "total_amount": 6700.0,
+      "source_planned_order": null,
+      "remarks": "N3 采购闭环演示：分批到货（RM-PP1080 ×200 / RM-CU-FOIL ×50）",
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "updated_by": null,
+      "updated_at": null,
+      "is_deleted": false
+    }
+  ],
+  "purchaseOrderLines": [
+    {
+      "id": 1,
+      "purchase_order_number": "PUR-20261119-0001",
+      "line_number": 1,
+      "material_code": "RM-FR4-150",
+      "quantity": 100,
+      "received_quantity": 0,
+      "unit": "张",
+      "unit_price": 38.5,
+      "expected_date": "2026-11-24T00:00:00",
+      "status": "OPEN",
+      "remarks": null,
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "updated_by": null,
+      "updated_at": null,
+      "is_deleted": false
+    },
+    {
+      "id": 2,
+      "purchase_order_number": "PUR-20261119-0002",
+      "line_number": 1,
+      "material_code": "RM-PP1080",
+      "quantity": 200,
+      "received_quantity": 0,
+      "unit": "张",
+      "unit_price": 12.0,
+      "expected_date": "2026-11-26T00:00:00",
+      "status": "OPEN",
+      "remarks": null,
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "updated_by": null,
+      "updated_at": null,
+      "is_deleted": false
+    },
+    {
+      "id": 3,
+      "purchase_order_number": "PUR-20261119-0002",
+      "line_number": 2,
+      "material_code": "RM-CU-FOIL",
+      "quantity": 50,
+      "received_quantity": 0,
+      "unit": "卷",
+      "unit_price": 86.0,
+      "expected_date": "2026-11-26T00:00:00",
+      "status": "OPEN",
+      "remarks": null,
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "updated_by": null,
+      "updated_at": null,
+      "is_deleted": false
+    }
+  ],
   "standardCosts": [
     {
       "id": 1,

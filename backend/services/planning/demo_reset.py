@@ -26,6 +26,8 @@ from backend.common.models.planning import (
     MaintenanceOrder,
     MaintenancePlan,
     NonConformanceReport,
+    PurchaseOrder,
+    PurchaseOrderLine,
     Resource,
     ResourceStatus,
     ScenarioImpact,
@@ -34,8 +36,23 @@ from backend.common.models.planning import (
     ScheduledOperation,
     ScheduleRun,
 )
+from backend.common.models.mm import Material
 from backend.common.models.pp import OperationReport
 from backend.services.planning.aps_engine import ApsEngine
+
+# 物料库存演示基线：每次 reset 回到同一初值，保证领料/到货演示可重复
+MATERIAL_STOCK_BASELINE: dict[str, float] = {
+    "HF1004ENIGAB01": 95.0,
+    "HF1004ENIGAB02": 100.0,
+    "HF1004ENIGAB03": 0.0,
+    "HF1004ENIGAB04": 0.0,
+    "RM-FR4-150": 20.0,
+    "RM-PP1080": 15.0,
+    "RM-CU-FOIL": 30.0,
+    "RM-DRY-FILM": 18.0,
+    "RM-SOLDER-MASK": 22.0,
+    "RM-ENIG-CHEM": 18.0,
+}
 
 
 def _clear(db: Session) -> dict[str, int]:
@@ -53,6 +70,8 @@ def _clear(db: Session) -> dict[str, int]:
         ("maintenance_plans", MaintenancePlan),
         ("non_conformance_reports", NonConformanceReport),
         ("inspection_orders", InspectionOrder),
+        ("purchase_order_lines", PurchaseOrderLine),
+        ("purchase_orders", PurchaseOrder),
     ]
     for key, model in models:
         cleared[key] = db.query(model).delete(synchronize_session=False)
@@ -67,6 +86,22 @@ def _clear(db: Session) -> dict[str, int]:
         cleared["operation_reports"] = 1
     db.flush()
     return cleared
+
+
+def _reset_material_stock(db: Session) -> int:
+    """物料库存复位到演示基线：领料扣减 / 到货回冲的多轮演示均可重复。"""
+    changed = 0
+    materials = db.query(Material).filter(Material.is_deleted == False).all()  # noqa: E712
+    for material in materials:
+        baseline = MATERIAL_STOCK_BASELINE.get(material.material_code)
+        if baseline is None:
+            continue
+        current = float(material.current_stock or 0)
+        if abs(current - baseline) > 1e-9:
+            material.current_stock = baseline
+            changed += 1
+    db.flush()
+    return changed
 
 
 def _reset_resources(db: Session) -> int:
@@ -86,12 +121,13 @@ def _reset_resources(db: Session) -> int:
 
 
 def _rebuild_master_seed(db: Session) -> None:
-    """确保 APS/EAM/QMS 依赖的主数据存在（幂等）。"""
+    """确保 APS/EAM/QMS/采购 依赖的主数据存在（幂等）。"""
     # 延迟导入，避免脚本模块在 API 启动时被提前加载
     from backend.upgrade_planning import (
         seed_aps_master_data,
         seed_eam_demo_data,
         seed_operation_report_routing,
+        seed_purchase_demo_data,
         seed_qms_demo_data,
     )
 
@@ -99,6 +135,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_eam_demo_data(db)
     seed_operation_report_routing(db)
     seed_qms_demo_data(db)
+    seed_purchase_demo_data(db)
 
 
 def _build_demo_run(
@@ -163,6 +200,7 @@ def reset_planning_demo(
     """
     cleared = _clear(db)
     resources_reset = _reset_resources(db)
+    stock_reset = _reset_material_stock(db)
     _rebuild_master_seed(db)
 
     seeded: dict = {
@@ -171,6 +209,7 @@ def reset_planning_demo(
         "equipment_failures": db.query(EquipmentFailure).count(),
         "inspections": db.query(InspectionOrder).count(),
         "ncrs": db.query(NonConformanceReport).count(),
+        "purchase_orders": db.query(PurchaseOrder).count(),
     }
     if rebuild_run:
         seeded.update(_build_demo_run(db, created_by=created_by, with_scenario=with_scenario))
@@ -179,6 +218,7 @@ def reset_planning_demo(
     return {
         "cleared": cleared,
         "resources_reset": resources_reset,
+        "stock_reset": stock_reset,
         "seeded": seeded,
         "reset_at": datetime.now().isoformat(timespec="seconds"),
         "reset_by": created_by,

@@ -42,6 +42,7 @@ const OperationReportForm = lazy(() => import('./pages/pp/OperationReportForm'))
 const LotCardList = lazy(() => import('./pages/pp/LotCardList'))
 const TraceabilityExplorer = lazy(() => import('./pages/traceability/TraceabilityExplorer'))
 const ManagementDashboard = lazy(() => import('./pages/dashboard/ManagementDashboard'))
+const PurchaseOrderList = lazy(() => import('./pages/planning/PurchaseOrderList'))
 const LotCardForm = lazy(() => import('./pages/pp/LotCardForm'))
 const PlanningWorkbench = lazy(() => import('./pages/planning/PlanningWorkbench'))
 const MpsList = lazy(() => import('./pages/planning/MpsList'))
@@ -157,6 +158,7 @@ function App() {
                       <Route path="/pp/lot-cards/:lotNumber/edit" element={<LotCardForm />} />
                       <Route path="/trace/explorer" element={<TraceabilityExplorer />} />
                       <Route path="/dashboard/management" element={<ManagementDashboard />} />
+                      <Route path="/pp/purchase-orders" element={<PurchaseOrderList />} />
                       <Route path="/pp/planning" element={<PlanningWorkbench />} />
                       <Route path="/pp/mps" element={<MpsList />} />
                       <Route path="/pp/mrp" element={<MrpRunList />} />

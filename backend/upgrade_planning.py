@@ -1045,6 +1045,124 @@ def seed_qms_demo_data(db: Session) -> int:
     return created
 
 
+def seed_purchase_demo_data(db: Session) -> int:
+    """N3 采购闭环演示数据：两张 RELEASED 采购单（幂等）。
+
+    - PUR-…：RM-FR4-150 ×100（单行）——演示「整单到货」；
+    - PUR-…：RM-PP1080 ×200 + RM-CU-FOIL ×50（两行）——演示「分批到货 / 部分收货」。
+    收货动作不在种子里做（留给演示现场），库存回冲由到货端点实时完成。
+    """
+    from backend.common.models.planning import (
+        PurchaseOrder,
+        PurchaseOrderLine,
+        PurchaseOrderStatus,
+    )
+
+    created = 0
+    today = datetime.now()
+
+    def _has_line(material_code: str) -> bool:
+        return (
+            db.query(PurchaseOrderLine)
+            .filter(
+                PurchaseOrderLine.material_code == material_code,
+                PurchaseOrderLine.is_deleted == False,  # noqa: E712
+            )
+            .first()
+            is not None
+        )
+
+    def _next_number() -> str:
+        return NumberGenerator.generate_document_number(
+            db, PurchaseOrder, "purchase_order_number", "PUR", 4
+        )
+
+    # ── 1) FR-4 覆铜板 100 张 ────────────────────────────────────────────
+    if not _has_line("RM-FR4-150"):
+        number = _next_number()
+        db.add(
+            PurchaseOrder(
+                purchase_order_number=number,
+                supplier_id="SUP-HQ",
+                supplier_name="华强覆铜板贸易",
+                status=PurchaseOrderStatus.RELEASED,
+                order_date=today,
+                expected_date=today + timedelta(days=5),
+                currency="CNY",
+                total_amount=Decimal("3850.00"),
+                remarks="N3 采购闭环演示：整单到货（RM-FR4-150 ×100）",
+                created_by="system",
+            )
+        )
+        db.flush()
+        db.add(
+            PurchaseOrderLine(
+                purchase_order_number=number,
+                line_number=1,
+                material_code="RM-FR4-150",
+                quantity=Decimal("100"),
+                received_quantity=Decimal("0"),
+                unit="张",
+                unit_price=Decimal("38.50"),
+                expected_date=today + timedelta(days=5),
+                status="OPEN",
+                created_by="system",
+            )
+        )
+        created += 1
+
+    # ── 2) 半固化片 + 铜箔 两行 ─────────────────────────────────────────
+    if not _has_line("RM-PP1080"):
+        number = _next_number()
+        db.add(
+            PurchaseOrder(
+                purchase_order_number=number,
+                supplier_id="SUP-HQ",
+                supplier_name="华强覆铜板贸易",
+                status=PurchaseOrderStatus.RELEASED,
+                order_date=today,
+                expected_date=today + timedelta(days=7),
+                currency="CNY",
+                total_amount=Decimal("6700.00"),
+                remarks="N3 采购闭环演示：分批到货（RM-PP1080 ×200 / RM-CU-FOIL ×50）",
+                created_by="system",
+            )
+        )
+        db.flush()
+        db.add(
+            PurchaseOrderLine(
+                purchase_order_number=number,
+                line_number=1,
+                material_code="RM-PP1080",
+                quantity=Decimal("200"),
+                received_quantity=Decimal("0"),
+                unit="张",
+                unit_price=Decimal("12.00"),
+                expected_date=today + timedelta(days=7),
+                status="OPEN",
+                created_by="system",
+            )
+        )
+        db.add(
+            PurchaseOrderLine(
+                purchase_order_number=number,
+                line_number=2,
+                material_code="RM-CU-FOIL",
+                quantity=Decimal("50"),
+                received_quantity=Decimal("0"),
+                unit="卷",
+                unit_price=Decimal("86.00"),
+                expected_date=today + timedelta(days=7),
+                status="OPEN",
+                created_by="system",
+            )
+        )
+        created += 1
+
+    db.flush()
+    return created
+
+
 def main() -> None:
     print("=" * 56)
     print("DIERP 计划与控制系统 - 增量升级")
@@ -1067,6 +1185,7 @@ def main() -> None:
         print(f"[OK] EAM 演示数据新增 {seed_eam_demo_data(db)} 条")
         print(f"[OK] 报工工艺关联与工时修正 {seed_operation_report_routing(db)} 条")
         print(f"[OK] QMS 演示数据新增 {seed_qms_demo_data(db)} 条")
+        print(f"[OK] 采购演示单据新增 {seed_purchase_demo_data(db)} 张")
         db.commit()
 
         print("-" * 56)

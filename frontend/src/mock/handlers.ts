@@ -4927,6 +4927,146 @@ route('GET', '/dashboard/management', () => {
   })
 })
 
+/* ------------------------------- 采购闭环（与 api/routers/purchase.py 同构） ------------------------------- */
+
+const PURCHASE_RECEIVABLE = ['RELEASED', 'PARTIALLY_RECEIVED']
+
+function purchaseLineDict(line: any) {
+  return {
+    line_number: line.line_number,
+    material_code: line.material_code,
+    quantity: toNumber(line.quantity),
+    received_quantity: toNumber(line.received_quantity),
+    outstanding_quantity: toNumber(line.quantity) - toNumber(line.received_quantity),
+    unit: line.unit,
+    unit_price: toNumber(line.unit_price),
+    expected_date: line.expected_date || null,
+    status: line.status,
+    remarks: line.remarks,
+  }
+}
+
+function purchaseOrderDict(db: any, po: any) {
+  const lines = listOf(db, 'purchaseOrderLines')
+    .filter((l) => !l.is_deleted && l.purchase_order_number === po.purchase_order_number)
+    .sort((a, b) => a.line_number - b.line_number)
+    .map((l) => purchaseLineDict(l))
+  return {
+    purchase_order_number: po.purchase_order_number,
+    supplier_id: po.supplier_id,
+    supplier_name: po.supplier_name,
+    status: po.status,
+    order_date: po.order_date || null,
+    expected_date: po.expected_date || null,
+    currency: po.currency,
+    total_amount: toNumber(po.total_amount),
+    source_planned_order: po.source_planned_order,
+    remarks: po.remarks,
+    created_at: po.created_at || null,
+    lines,
+  }
+}
+
+route('GET', '/purchase/purchase-orders', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'purchaseOrders').filter((x) => !x.is_deleted)
+  if (ctx.query.status) rows = rows.filter((x) => x.status === ctx.query.status)
+  if (ctx.query.supplier_id) rows = rows.filter((x) => x.supplier_id === ctx.query.supplier_id)
+  if (ctx.query.material_code) {
+    const hit = new Set(
+      listOf(db, 'purchaseOrderLines')
+        .filter((l) => !l.is_deleted && l.material_code === ctx.query.material_code)
+        .map((l) => l.purchase_order_number)
+    )
+    rows = rows.filter((x) => hit.has(x.purchase_order_number))
+  }
+  rows.sort((a, b) => Number(b.id) - Number(a.id))
+  return ok({ total: rows.length, items: clone(rows.map((po) => purchaseOrderDict(db, po))) })
+})
+
+route('GET', '/purchase/purchase-orders/:purchaseOrderNumber', (_ctx, params) => {
+  const db = getDb()
+  const po = listOf(db, 'purchaseOrders').find(
+    (x) => !x.is_deleted && x.purchase_order_number === safeDecode(params.purchaseOrderNumber)
+  )
+  if (!po) fail(404, `采购单不存在: ${params.purchaseOrderNumber}`)
+  return ok(purchaseOrderDict(db, po))
+})
+
+route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/receive', (ctx, params) => {
+  const db = getDb()
+  const number = safeDecode(params.purchaseOrderNumber)
+  const po = listOf(db, 'purchaseOrders').find(
+    (x) => !x.is_deleted && x.purchase_order_number === number
+  )
+  if (!po) fail(404, `采购单不存在: ${number}`)
+  if (!PURCHASE_RECEIVABLE.includes(String(po.status))) {
+    fail(400, `采购单状态为 ${po.status}，不允许收货`)
+  }
+  const body = ctx.body ?? {}
+  const lines = listOf(db, 'purchaseOrderLines')
+    .filter((l) => !l.is_deleted && l.purchase_order_number === number)
+    .sort((a, b) => a.line_number - b.line_number)
+  const lineMap = new Map(lines.map((l) => [l.line_number, l]))
+  const targets: Array<{ line_number: number; quantity: number | null }> = body.lines?.length
+    ? body.lines
+    : lines.map((l) => ({ line_number: l.line_number, quantity: null }))
+  if (!targets.length) fail(400, '收货行为空')
+
+  let receivedAny = false
+  for (const item of targets) {
+    const line = lineMap.get(item.line_number)
+    if (!line) fail(404, `采购行不存在: ${number}#${item.line_number}`)
+    const outstanding = toNumber(line.quantity) - toNumber(line.received_quantity)
+    let quantity: number
+    if (item.quantity != null) {
+      if (toNumber(item.quantity) > outstanding) {
+        fail(400, `行 ${item.line_number} 收货超量：余量 ${outstanding}，请求 ${toNumber(item.quantity)}`)
+      }
+      quantity = toNumber(item.quantity)
+    } else {
+      quantity = outstanding
+    }
+    if (quantity <= 0) continue
+
+    // 库存回冲（原料入库）
+    const material = listOf(db, 'materials').find(
+      (m) => !m.is_deleted && m.material_code === line.material_code
+    )
+    if (material) {
+      material.current_stock = toNumber(material.current_stock) + quantity
+    }
+    line.received_quantity = toNumber(line.received_quantity) + quantity
+    line.status = toNumber(line.received_quantity) >= toNumber(line.quantity) ? 'RECEIVED' : 'PARTIAL'
+    if (body.remarks) line.remarks = body.remarks
+    receivedAny = true
+  }
+
+  if (receivedAny) {
+    const allFull = lines.every((l) => toNumber(l.received_quantity) >= toNumber(l.quantity))
+    po.status = allFull ? 'RECEIVED' : 'PARTIALLY_RECEIVED'
+    if (body.remarks) po.remarks = body.remarks
+    po.updated_at = nowIso()
+  }
+  saveDb()
+  return ok(purchaseOrderDict(db, po))
+})
+
+route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/close', (_ctx, params) => {
+  const db = getDb()
+  const number = safeDecode(params.purchaseOrderNumber)
+  const po = listOf(db, 'purchaseOrders').find(
+    (x) => !x.is_deleted && x.purchase_order_number === number
+  )
+  if (!po) fail(404, `采购单不存在: ${number}`)
+  if (po.status === 'CLOSED') fail(400, `采购单已关闭: ${number}`)
+  if (po.status === 'CANCELLED') fail(400, `采购单已作废: ${number}`)
+  po.status = 'CLOSED'
+  po.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseOrderDict(db, po))
+})
+
 /* ------------------------------- 路由入口 ------------------------------- */
 
 export function handleMockRequest(ctx: MockContext): MockResult {

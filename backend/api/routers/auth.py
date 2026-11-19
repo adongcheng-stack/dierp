@@ -102,6 +102,7 @@ WRITE_ROLE_POLICY: dict[str, set[str]] = {
     "mm": {"WAREHOUSE", "PRODUCTION", "PLANNER", "GENERAL_MANAGER", "ADMIN"},
     "planning": {"PLANNER", "GENERAL_MANAGER", "ADMIN"},
     "qms": {"PRODUCTION", "PLANNER", "GENERAL_MANAGER", "ADMIN"},
+    "purchase": {"WAREHOUSE", "PRODUCTION", "PLANNER", "GENERAL_MANAGER", "ADMIN"},
     "users": {"ADMIN"},
 }
 
