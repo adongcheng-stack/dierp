@@ -6964,6 +6964,334 @@ route('GET', '/finance/trial-balance', (ctx) => {
   })
 })
 
+// ── 库存补强（P3）：仓库 / 盘点 / 调拨 / 批次效期（与后端 mm.py 同构） ──
+
+function warehouseDict(w: any) {
+  return {
+    warehouse_code: w.warehouse_code,
+    warehouse_name: w.warehouse_name,
+    location: w.location,
+    is_active: w.is_active,
+    remarks: w.remarks,
+  }
+}
+
+function stocktakeDict(s: any) {
+  return {
+    stocktake_number: s.stocktake_number,
+    material_code: s.material_code,
+    warehouse: s.warehouse,
+    book_qty: toNumber(s.book_qty),
+    counted_qty: toNumber(s.counted_qty),
+    diff: toNumber(s.diff),
+    status: s.status,
+    stocktake_date: s.stocktake_date,
+    remarks: s.remarks,
+  }
+}
+
+function transferDict(t: any) {
+  return {
+    transfer_number: t.transfer_number,
+    from_warehouse_code: t.from_warehouse_code,
+    to_warehouse_code: t.to_warehouse_code,
+    material_code: t.material_code,
+    quantity: toNumber(t.quantity),
+    status: t.status,
+    transfer_date: t.transfer_date,
+    remarks: t.remarks,
+  }
+}
+
+route('GET', '/mm/warehouses', () => {
+  const db = getDb()
+  const rows = listOf(db, 'warehouses').filter((w: any) => !w.is_deleted)
+  return ok({ total: rows.length, items: rows.map(warehouseDict) })
+})
+
+route('POST', '/mm/warehouses', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  if (!body.warehouse_code || !body.warehouse_name) fail(400, '仓库编码与名称必填')
+  if (findItem(listOf(db, 'warehouses'), 'warehouse_code', body.warehouse_code)) {
+    fail(400, `仓库编码已存在: ${body.warehouse_code}`)
+  }
+  const rows = listOf(db, 'warehouses')
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      warehouse_code: body.warehouse_code,
+      warehouse_name: body.warehouse_name,
+      location: body.location ?? null,
+      is_active: true,
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(warehouseDict(item), 201)
+})
+
+route('GET', '/mm/stocktakes', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'stocktakes').filter((s: any) => !s.is_deleted)
+  if (ctx.query.stocktake_status) rows = rows.filter((s: any) => s.status === ctx.query.stocktake_status)
+  return ok({ total: rows.length, items: rows.map(stocktakeDict) })
+})
+
+route('GET', '/mm/stocktakes/:number', (_ctx, params) => {
+  const db = getDb()
+  const s = requireItem(listOf(db, 'stocktakes'), 'stocktake_number', params.number, '盘点单')
+  return ok(stocktakeDict(s))
+})
+
+route('POST', '/mm/stocktakes', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  const material = findItem(listOf(db, 'materials'), 'material_code', body.material_code)
+  if (!material || material.is_deleted) fail(404, `物料不存在: ${body?.material_code}`)
+  const counted = toNumber(body.counted_qty)
+  if (counted < 0) fail(400, '实盘数量必须大于等于 0')
+  const bookQty = toNumber(material.current_stock)
+  const rows = listOf(db, 'stocktakes')
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      stocktake_number: nextNumber(rows, 'stocktake_number', 'STK'),
+      material_code: material.material_code,
+      warehouse: body.warehouse ?? null,
+      book_qty: bookQty,
+      counted_qty: counted,
+      diff: round(counted - bookQty, 2),
+      status: 'DRAFT',
+      stocktake_date: nowIso(),
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(stocktakeDict(item), 201)
+})
+
+route('POST', '/mm/stocktakes/:number/approve', (ctx, params) => {
+  const db = getDb()
+  const s = requireItem(listOf(db, 'stocktakes'), 'stocktake_number', params.number, '盘点单')
+  if (s.status !== 'DRAFT') fail(400, `盘点单状态为 ${s.status}，不允许审批`)
+  const material = findItem(listOf(db, 'materials'), 'material_code', s.material_code)
+  if (!material) fail(400, `物料不存在: ${s.material_code}`)
+  const diff = toNumber(s.diff)
+  if (toNumber(material.current_stock) + diff < 0) {
+    fail(400, `调整后库存为负：当前 ${toNumber(material.current_stock)}，差异 ${round(diff, 2)}`)
+  }
+  if (Math.abs(diff) > 1e-9) {
+    material.current_stock = round(toNumber(material.current_stock) + diff, 3)
+    appendTransaction(db, {
+      material_code: s.material_code,
+      transaction_type: 'ADJUSTMENT',
+      quantity: diff,
+      unit: material.unit ?? 'PCS',
+      reference_number: s.stocktake_number,
+      reference_type: 'STOCKTAKE',
+      warehouse: s.warehouse,
+      operator: ctx.user?.username ?? null,
+      remarks: `盘点调整 ${s.stocktake_number}`,
+    })
+  }
+  s.status = 'APPROVED'
+  s.updated_at = nowIso()
+  saveDb()
+  return ok(stocktakeDict(s))
+})
+
+route('POST', '/mm/stocktakes/:number/cancel', (_ctx, params) => {
+  const db = getDb()
+  const s = requireItem(listOf(db, 'stocktakes'), 'stocktake_number', params.number, '盘点单')
+  if (s.status !== 'DRAFT') fail(400, `盘点单状态为 ${s.status}，不允许作废`)
+  s.status = 'CANCELLED'
+  s.updated_at = nowIso()
+  saveDb()
+  return ok(stocktakeDict(s))
+})
+
+route('GET', '/mm/stock-transfers', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'stockTransfers').filter((t: any) => !t.is_deleted)
+  if (ctx.query.transfer_status) rows = rows.filter((t: any) => t.status === ctx.query.transfer_status)
+  return ok({ total: rows.length, items: rows.map(transferDict) })
+})
+
+route('GET', '/mm/stock-transfers/:number', (_ctx, params) => {
+  const db = getDb()
+  const t = requireItem(listOf(db, 'stockTransfers'), 'transfer_number', params.number, '调拨单')
+  return ok(transferDict(t))
+})
+
+route('POST', '/mm/stock-transfers', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  if (body.from_warehouse_code === body.to_warehouse_code) {
+    fail(400, '调出与调入仓库不能相同')
+  }
+  const material = findItem(listOf(db, 'materials'), 'material_code', body.material_code)
+  if (!material || material.is_deleted) fail(404, `物料不存在: ${body?.material_code}`)
+  if (toNumber(body.quantity) <= 0) fail(400, '调拨数量必须大于 0')
+  for (const code of [body.from_warehouse_code, body.to_warehouse_code]) {
+    if (!findItem(listOf(db, 'warehouses'), 'warehouse_code', code)) {
+      fail(404, `仓库不存在: ${code}`)
+    }
+  }
+  const rows = listOf(db, 'stockTransfers')
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      transfer_number: nextNumber(rows, 'transfer_number', 'TRF'),
+      from_warehouse_code: body.from_warehouse_code,
+      to_warehouse_code: body.to_warehouse_code,
+      material_code: material.material_code,
+      quantity: toNumber(body.quantity),
+      status: 'DRAFT',
+      transfer_date: nowIso(),
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(transferDict(item), 201)
+})
+
+route('POST', '/mm/stock-transfers/:number/confirm', (ctx, params) => {
+  const db = getDb()
+  const t = requireItem(listOf(db, 'stockTransfers'), 'transfer_number', params.number, '调拨单')
+  if (t.status !== 'DRAFT') fail(400, `调拨单状态为 ${t.status}，不允许确认`)
+  for (const [warehouseCode, qty, txnType, refType] of [
+    [t.from_warehouse_code, -toNumber(t.quantity), 'TRANSFER_OUT', 'STOCK_TRANSFER_OUT'],
+    [t.to_warehouse_code, toNumber(t.quantity), 'TRANSFER_IN', 'STOCK_TRANSFER_IN'],
+  ] as Array<[string, number, string, string]>) {
+    appendTransaction(db, {
+      material_code: t.material_code,
+      transaction_type: txnType,
+      quantity: qty,
+      unit: 'PCS',
+      reference_number: t.transfer_number,
+      reference_type: refType,
+      warehouse: warehouseCode,
+      operator: ctx.user?.username ?? null,
+      remarks: `调拨 ${t.transfer_number} ${qty < 0 ? '调出' : '调入'} ${warehouseCode}`,
+    })
+  }
+  t.status = 'CONFIRMED'
+  t.updated_at = nowIso()
+  saveDb()
+  return ok(transferDict(t))
+})
+
+route('POST', '/mm/stock-transfers/:number/cancel', (_ctx, params) => {
+  const db = getDb()
+  const t = requireItem(listOf(db, 'stockTransfers'), 'transfer_number', params.number, '调拨单')
+  if (t.status !== 'DRAFT') fail(400, `调拨单状态为 ${t.status}，不允许作废`)
+  t.status = 'CANCELLED'
+  t.updated_at = nowIso()
+  saveDb()
+  return ok(transferDict(t))
+})
+
+route('GET', '/mm/batch-tracking', () => {
+  const db = getDb()
+  const now = new Date()
+  const byMaterial: Record<string, any> = {}
+  for (const lot of listOf(db, 'lotCards')) {
+    if (lot.is_deleted || lot.status !== 'ACTIVE') continue
+    const material = findItem(listOf(db, 'materials'), 'material_code', lot.material_code)
+    if (!material) continue
+    const row = byMaterial[lot.material_code] ?? (byMaterial[lot.material_code] = {
+      material_code: lot.material_code,
+      material_name: material.material_name,
+      shelf_life_days: material.shelf_life_days ?? null,
+      lot_count: 0,
+      lot_qty: 0,
+      last_completed_at: null as string | null,
+      estimated_expiry: null as string | null,
+      days_to_expiry: null as number | null,
+      warning: false,
+      estimate_pending: false,
+    })
+    row.lot_count += 1
+    row.lot_qty += toNumber(lot.quantity)
+    if (lot.completed_at && (!row.last_completed_at || lot.completed_at > row.last_completed_at)) {
+      row.last_completed_at = lot.completed_at
+    }
+  }
+  const items = Object.values(byMaterial).map((x: any) => {
+    const row = x as any
+    row.lot_qty = round(row.lot_qty, 2)
+    const shelf = row.shelf_life_days ? Number(row.shelf_life_days) : null
+    if (shelf && row.last_completed_at) {
+      const expiry = new Date(new Date(row.last_completed_at).getTime() + shelf * 86_400_000)
+      row.estimated_expiry = expiry.toISOString().slice(0, 10)
+      row.days_to_expiry = Math.floor((expiry.getTime() - now.getTime()) / 86_400_000)
+      row.warning = row.days_to_expiry <= 30
+    }
+    row.estimate_pending = row.estimated_expiry === null
+    return row
+  })
+  items.sort((a: any, b: any) =>
+    a.warning === b.warning
+      ? (a.days_to_expiry ?? 9e9) - (b.days_to_expiry ?? 9e9)
+      : a.warning ? -1 : 1
+  )
+  return ok({ total: items.length, items, generated_at: now.toISOString() })
+})
+
+route('GET', '/dashboard/finance-kpi', () => {
+  const db = getDb()
+  const salesInvoices = listOf(db, 'salesInvoices').filter((i: any) => !i.is_deleted && i.status !== 'CANCELLED')
+  const receivableOutstanding = round(
+    salesInvoices.reduce((s, i) => s + toNumber(i.amount) - toNumber(i.received_amount), 0), 2)
+  const invoicedTotal = round(
+    salesInvoices.filter((i) => i.status !== 'DRAFT')
+      .reduce((s, i) => s + toNumber(i.amount), 0), 2)
+  const collectedTotal = round(
+    listOf(db, 'receiptAllocations').reduce((s, a) => s + toNumber(a.allocated_amount), 0), 2)
+  const collectionRate = invoicedTotal > 0 ? round(collectedTotal / invoicedTotal, 4) : 0
+  const confirmedTotal = round(
+    listOf(db, 'supplierInvoices')
+      .filter((i: any) => !i.is_deleted && i.status === 'CONFIRMED')
+      .reduce((s, i) => s + toNumber(i.amount), 0), 2)
+  const paidTotal = round(
+    listOf(db, 'paymentAllocations').reduce((s, a) => s + toNumber(a.allocated_amount), 0), 2)
+  let cash = 0
+  const postedRefs = new Set(
+    listOf(db, 'glJournalEntries').filter((e: any) => !e.is_deleted && e.status === 'POSTED')
+      .map((e: any) => e.entry_number)
+  )
+  for (const line of listOf(db, 'glJournalLines')) {
+    if (!postedRefs.has(line.entry_number) || line.account_code !== '1002') continue
+    cash += toNumber(line.debit) - toNumber(line.credit)
+  }
+  return ok({
+    receivable_outstanding: receivableOutstanding,
+    payable_open: round(confirmedTotal - paidTotal, 2),
+    collection_rate: collectionRate,
+    cash_balance: round(cash, 2),
+    invoiced_total: invoicedTotal,
+    collected_total: collectedTotal,
+    supplier_confirmed_total: confirmedTotal,
+    supplier_paid_total: paidTotal,
+  })
+})
+
 export function handleMockRequest(ctx: MockContext): MockResult {
   enforceWritePermission(ctx)
 

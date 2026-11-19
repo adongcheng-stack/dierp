@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "generatedAt": "2026-11-17T23:49:35",
   "salesDeliveries": [
     {
@@ -95,6 +95,12 @@
   ],
   "glJournalEntries": [],
   "glJournalLines": [],
+  "warehouses": [
+    { "id": 950001, "warehouse_code": "WH-PD01", "warehouse_name": "成品一仓", "location": "A栋1层", "is_active": true, "remarks": null, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
+    { "id": 950002, "warehouse_code": "WH-PD02", "warehouse_name": "成品二仓", "location": "B栋1层", "is_active": true, "remarks": null, "created_at": "2026-11-01T00:00:00", "is_deleted": false }
+  ],
+  "stocktakes": [],
+  "stockTransfers": [],
   "customers": [
     {
       "id": 12,

@@ -3,10 +3,10 @@
 （空）
 
 ## Pending Tasks
-- [ ] T506 P3 mock v17 同构+parity
 - [ ] T507 P3 smoke_inventory_loop+全门禁+提交
 
 ## Completed Tasks
+- [x] T506 P3 mock v17 同构（08:15 完成）— 证据：probe-mock-stock 8/8 EXIT=0 双跑稳定（仓库/盘点快照+diff/盘盈+流水/负库存 400/from=to 400/调拨双流水总量不变/重复确认 400/finance-kpi）；四探针回归 EXIT=0；mock-rbac EXIT=0；parity 集合 +3 EXIT=0；tsc EXIT=0；pytest 28 passed。注：snapshot v17 +warehouses(2 种子)/stocktakes/stockTransfers；finance-kpi mock 聚合同源；踩坑：mock materials 响应为裸数组（探针取数需兼容）
 - [x] T505 P3 前端 3 页+看板 KPI 卡（07:55 完成）— 证据：npx tsc --noEmit EXIT=0。注：StocktakeList/StockTransferList/BatchTracking（预警行+估算标注）；经营看板新增资金维度 4 卡（应收/应付/回款率/现金）；菜单 mm 组 +3；路由 ×3。踩坑：看板 Row 插入时孤立了交期风险卡（JSX 单父元素），Dashboard.tsx 修正归位
 - [x] T504 P3 批次效期视图+看板 KPI（07:35 完成）— 证据：/mm/batch-tracking 200（ACTIVE 批聚合+estimate_pending/warning 口径）；/dashboard/finance-kpi 200 且应收 5300 与 receivables 台账勾稽、现金 0 与 trial-balance 一致；pytest 28 passed。注：LotCard 无效期字段→completed_at+shelf_life_days 估算（偏差记录）；在制批不告警只标 estimate_pending
 - [x] T503 P3 盘点+调拨后端（07:22 完成）— 证据：probe_mm_stock 8/8 EXIT=0 双跑稳定（仓库在册/盘点快照+diff/盘盈+ADJUSTMENT 流水/负库存 400（并发场景）/调拨创建/from=to 400/两笔流水总量不变/重复确认 400）；pytest 28 passed。注：仓库主数据探针幂等（已存在可接受）+reset 标记清理；调拨不动 current_stock 总量

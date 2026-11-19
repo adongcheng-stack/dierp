@@ -208,7 +208,7 @@ def main() -> int:
                            "receivableEntries", "supplierInvoices", "supplierPayments",
                            "paymentAllocations", "receipts", "receiptAllocations",
                            "glAccounts", "glFiscalPeriods", "glJournalEntries",
-                           "glJournalLines"]:
+                           "glJournalLines", "warehouses", "stocktakes", "stockTransfers"]:
             check(f"快照含集合 {collection}", collection in mock, True)
 
         # ── 11) 销售域三线打通：发货单 / 发票 / 应收流水 ─────────────────
