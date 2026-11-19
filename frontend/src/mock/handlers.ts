@@ -5226,28 +5226,397 @@ route('GET', '/purchase/ap-view', () => {
       supplier_id: sid,
       supplier_name: po.supplier_name || sid,
       received_amount: 0,
+      returned_amount: 0,
       closed_amount: 0,
-      payable_amount: 0,
     }
     const receivedQty = toNumber(line.received_quantity)
     const amount = receivedQty * toNumber(line.unit_price)
     bucket.received_amount += amount
     if (po.status === 'CLOSED') bucket.closed_amount += amount
-    bucket.payable_amount += amount
     buckets[sid] = bucket
   }
-  const items = Object.values(buckets).map((b: any) => ({
-    supplier_id: b.supplier_id,
-    supplier_name: b.supplier_name,
-    received_amount: round(b.received_amount, 2),
-    closed_amount: round(b.closed_amount, 2),
-    payable_amount: round(b.payable_amount - b.closed_amount, 2),
-  }))
+  // 审批通过的退货（RETURN）冲减净到货与应付；来源采购单已关闭的，同冲减已结金额
+  for (const ret of listOf(db, 'purchaseReturns')) {
+    if (ret.is_deleted || ret.return_type !== 'RETURN') continue
+    if (!['APPROVED', 'CLOSED'].includes(ret.status)) continue
+    const sid = ret.supplier_id || '未指定'
+    const po = orders.find((o: any) => o.purchase_order_number === ret.purchase_order_number)
+    const bucket = buckets[sid] ?? {
+      supplier_id: sid,
+      supplier_name: (po?.supplier_name as string) || sid,
+      received_amount: 0,
+      returned_amount: 0,
+      closed_amount: 0,
+    }
+    const amount = toNumber(ret.total_amount)
+    bucket.returned_amount += amount
+    bucket.received_amount -= amount
+    bucket.closed_amount -= amount
+    buckets[sid] = bucket
+  }
+  const items = Object.values(buckets).map((b: any) => {
+    const received = round(b.received_amount, 2)
+    const closed = round(Math.max(b.closed_amount, 0), 2)
+    return {
+      supplier_id: b.supplier_id,
+      supplier_name: b.supplier_name,
+      received_amount: received,
+      returned_amount: round(b.returned_amount ?? 0, 2),
+      closed_amount: closed,
+      payable_amount: round(received - closed, 2),
+    }
+  })
   return ok({
     total_payable: round(items.reduce((s: number, x: any) => s + x.payable_amount, 0), 2),
     total_received: round(items.reduce((s: number, x: any) => s + x.received_amount, 0), 2),
     items,
   })
+})
+
+/* ------------------------------- 采购申请（PR） ------------------------------- */
+
+function purchaseRequestDict(db: any, pr: any) {
+  const lines = listOf(db, 'purchaseRequestLines')
+    .filter((l) => !l.is_deleted && l.purchase_request_number === pr.purchase_request_number)
+    .sort((a, b) => a.line_number - b.line_number)
+    .map((l) => ({ ...clone(l) }))
+  return { ...clone(pr), lines }
+}
+
+function loadMockPr(db: any, number: string) {
+  const pr = listOf(db, 'purchaseRequests').find(
+    (x) => !x.is_deleted && x.purchase_request_number === number
+  )
+  if (!pr) fail(404, `采购申请不存在: ${number}`)
+  return pr
+}
+
+route('GET', '/purchase/purchase-requests', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'purchaseRequests').filter((x) => !x.is_deleted)
+  if (ctx.query.status) rows = rows.filter((x) => x.status === ctx.query.status)
+  if (ctx.query.supplier_id) rows = rows.filter((x) => x.supplier_id === ctx.query.supplier_id)
+  return ok({ total: rows.length, items: rows.map((p) => purchaseRequestDict(db, p)) })
+})
+
+route('GET', '/purchase/purchase-requests/:number', (_ctx, params) => {
+  const db = getDb()
+  return ok(purchaseRequestDict(db, loadMockPr(db, safeDecode(params.number))))
+})
+
+route('POST', '/purchase/purchase-requests', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  const lines = Array.isArray(body.lines) ? body.lines : []
+  if (lines.length === 0) fail(400, '采购申请至少需要一行')
+  const materials = listOf(db, 'materials')
+  const resolved = lines.map((line: any, index: number) => {
+    const material = materials.find(
+      (m) => !m.is_deleted && m.material_code === line?.material_code
+    )
+    if (!material) fail(404, `物料不存在: ${line?.material_code}`)
+    const quantity = toNumber(line.quantity)
+    if (quantity <= 0) fail(400, `行 ${index + 1} 数量必须大于 0`)
+    return {
+      line_number: index + 1,
+      material_code: material.material_code,
+      quantity,
+      unit: line.unit || material.unit,
+      unit_price: toNumber(line.unit_price),
+      expected_date: body.expected_date ?? null,
+      status: 'OPEN',
+      remarks: line.remarks ?? null,
+    }
+  })
+  const prs = listOf(db, 'purchaseRequests')
+  const item = stampNew(
+    {
+      id: nextId(prs),
+      purchase_request_number: nextNumber(prs, 'purchase_request_number', 'PRQ'),
+      supplier_id: body.supplier_id ?? null,
+      supplier_name: body.supplier_name ?? null,
+      status: 'DRAFT',
+      request_date: nowIso(),
+      expected_date: body.expected_date ?? null,
+      currency: 'CNY',
+      total_amount: round(
+        resolved.reduce((sum: number, l: any) => sum + l.quantity * l.unit_price, 0),
+        2
+      ),
+      source_planned_order: body.source_planned_order ?? null,
+      requested_by: body.requested_by ?? null,
+      converted_po_number: null,
+      remarks: body.remarks ?? null,
+    },
+    ctx.user
+  )
+  prs.unshift(item)
+  for (const line of resolved) {
+    listOf(db, 'purchaseRequestLines').unshift({
+      id: nextId(listOf(db, 'purchaseRequestLines')),
+      purchase_request_number: item.purchase_request_number,
+      ...line,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    })
+  }
+  saveDb()
+  return ok(purchaseRequestDict(db, item), 201)
+})
+
+route('POST', '/purchase/purchase-requests/:number/release', (_ctx, params) => {
+  const db = getDb()
+  const pr = loadMockPr(db, safeDecode(params.number))
+  if (pr.status !== 'DRAFT') fail(400, `采购申请状态为 ${pr.status}，不允许下达`)
+  pr.status = 'RELEASED'
+  pr.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseRequestDict(db, pr))
+})
+
+route('POST', '/purchase/purchase-requests/:number/cancel', (_ctx, params) => {
+  const db = getDb()
+  const pr = loadMockPr(db, safeDecode(params.number))
+  if (!['DRAFT', 'RELEASED'].includes(pr.status)) {
+    fail(400, `采购申请状态为 ${pr.status}，不允许作废`)
+  }
+  pr.status = 'CANCELLED'
+  pr.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseRequestDict(db, pr))
+})
+
+route('POST', '/purchase/purchase-requests/:number/convert', (ctx, params) => {
+  const db = getDb()
+  const pr = loadMockPr(db, safeDecode(params.number))
+  if (pr.status !== 'RELEASED') {
+    fail(400, `采购申请状态为 ${pr.status}，仅已下达(RELEASED)申请可转采购单`)
+  }
+  const lines = listOf(db, 'purchaseRequestLines').filter(
+    (l) => !l.is_deleted && l.purchase_request_number === pr.purchase_request_number && l.status === 'OPEN'
+  )
+  if (lines.length === 0) fail(400, `采购申请无可转换行: ${pr.purchase_request_number}`)
+
+  const orders = listOf(db, 'purchaseOrders')
+  const poNumber = nextNumber(orders, 'purchase_order_number', 'PUR')
+  orders.unshift({
+    id: nextId(orders),
+    purchase_order_number: poNumber,
+    supplier_id: pr.supplier_id,
+    supplier_name: pr.supplier_name,
+    status: 'RELEASED',
+    order_date: nowIso(),
+    expected_date: pr.expected_date,
+    currency: pr.currency || 'CNY',
+    total_amount: round(lines.reduce((s: number, l: any) => s + toNumber(l.quantity) * toNumber(l.unit_price), 0), 2),
+    source_planned_order: pr.source_planned_order,
+    remarks: `来源采购申请: ${pr.purchase_request_number}`,
+    created_by: ctx.user?.username ?? null,
+    created_at: nowIso(),
+    is_deleted: false,
+  })
+  for (const line of lines) {
+    listOf(db, 'purchaseOrderLines').unshift({
+      id: nextId(listOf(db, 'purchaseOrderLines')),
+      purchase_order_number: poNumber,
+      line_number: line.line_number,
+      material_code: line.material_code,
+      quantity: line.quantity,
+      received_quantity: 0,
+      unit: line.unit,
+      unit_price: line.unit_price,
+      expected_date: line.expected_date || pr.expected_date,
+      status: 'OPEN',
+      remarks: null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    })
+    line.status = 'CONVERTED'
+  }
+  pr.status = 'CONVERTED'
+  pr.converted_po_number = poNumber
+  pr.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseRequestDict(db, pr))
+})
+
+/* ------------------------------- 退货 / 索赔 ------------------------------- */
+
+function purchaseReturnDict(db: any, ret: any) {
+  const lines = listOf(db, 'purchaseReturnLines')
+    .filter((l) => !l.is_deleted && l.return_number === ret.return_number)
+    .sort((a, b) => a.line_number - b.line_number)
+    .map((l) => ({ ...clone(l) }))
+  return { ...clone(ret), lines }
+}
+
+function loadMockReturn(db: any, number: string) {
+  const ret = listOf(db, 'purchaseReturns').find(
+    (x) => !x.is_deleted && x.return_number === number
+  )
+  if (!ret) fail(404, `退货索赔单不存在: ${number}`)
+  return ret
+}
+
+function mockReturnedQtyByLine(db: any, poNumber: string): Record<number, number> {
+  const totals: Record<number, number> = {}
+  for (const ret of listOf(db, 'purchaseReturns')) {
+    if (ret.is_deleted || ret.purchase_order_number !== poNumber) continue
+    if (ret.return_type !== 'RETURN' || ret.status === 'REJECTED') continue
+    for (const line of listOf(db, 'purchaseReturnLines')) {
+      if (line.is_deleted || line.return_number !== ret.return_number) continue
+      const key = toNumber(line.purchase_order_line_number)
+      totals[key] = (totals[key] ?? 0) + toNumber(line.quantity)
+    }
+  }
+  return totals
+}
+
+route('GET', '/purchase/purchase-returns', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'purchaseReturns').filter((x) => !x.is_deleted)
+  if (ctx.query.status) rows = rows.filter((x) => x.status === ctx.query.status)
+  if (ctx.query.return_type) rows = rows.filter((x) => x.return_type === ctx.query.return_type)
+  if (ctx.query.purchase_order_number) {
+    rows = rows.filter((x) => x.purchase_order_number === ctx.query.purchase_order_number)
+  }
+  return ok({ total: rows.length, items: rows.map((r) => purchaseReturnDict(db, r)) })
+})
+
+route('GET', '/purchase/purchase-returns/:number', (_ctx, params) => {
+  const db = getDb()
+  return ok(purchaseReturnDict(db, loadMockReturn(db, safeDecode(params.number))))
+})
+
+route('POST', '/purchase/purchase-returns', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  const returnType = body.return_type ?? 'RETURN'
+  if (!['RETURN', 'CLAIM'].includes(returnType)) fail(400, `return_type 必须为 RETURN/CLAIM，收到: ${returnType}`)
+  const po = listOf(db, 'purchaseOrders').find(
+    (x) => !x.is_deleted && x.purchase_order_number === body?.purchase_order_number
+  )
+  if (!po) fail(404, `采购单不存在: ${body?.purchase_order_number}`)
+  if (!['PARTIALLY_RECEIVED', 'RECEIVED', 'CLOSED'].includes(po.status)) {
+    fail(400, `采购单状态为 ${po.status}，无已到货数量可退/可索赔`)
+  }
+  const poLines = listOf(db, 'purchaseOrderLines').filter(
+    (l) => !l.is_deleted && l.purchase_order_number === po.purchase_order_number
+  )
+  const returnedTotals = returnType === 'RETURN' ? mockReturnedQtyByLine(db, po.purchase_order_number) : {}
+
+  const rawLines = Array.isArray(body.lines) ? body.lines : []
+  if (rawLines.length === 0) fail(400, '退货索赔单至少需要一行')
+  const resolved = rawLines.map((line: any, index: number) => {
+    const poLine = poLines.find((l) => l.line_number === toNumber(line?.purchase_order_line_number))
+    if (!poLine) fail(404, `采购行不存在: ${po.purchase_order_number}#${line?.purchase_order_line_number}`)
+    const quantity = toNumber(line.quantity)
+    if (quantity <= 0) fail(400, `行 ${index + 1} 数量必须大于 0`)
+    if (returnType === 'RETURN') {
+      const received = toNumber(poLine.received_quantity)
+      const available = received - (returnedTotals[poLine.line_number] ?? 0)
+      if (quantity > available) {
+        fail(400, `行 ${poLine.line_number} 退货超量：已收 ${received}，已占用退货 ${returnedTotals[poLine.line_number] ?? 0}，可退 ${round(available, 2)}，请求 ${quantity}`)
+      }
+    }
+    return {
+      line_number: index + 1,
+      purchase_order_line_number: poLine.line_number,
+      material_code: poLine.material_code,
+      quantity,
+      unit: poLine.unit,
+      unit_price: toNumber(poLine.unit_price),
+      remarks: line.remarks ?? null,
+    }
+  })
+
+  const rets = listOf(db, 'purchaseReturns')
+  const item = stampNew(
+    {
+      id: nextId(rets),
+      return_number: nextNumber(rets, 'return_number', 'RTN'),
+      purchase_order_number: po.purchase_order_number,
+      supplier_id: po.supplier_id,
+      supplier_name: po.supplier_name,
+      return_type: returnType,
+      status: 'DRAFT',
+      return_date: nowIso(),
+      total_amount: round(resolved.reduce((s: number, l: any) => s + l.quantity * l.unit_price, 0), 2),
+      reason: body.reason ?? null,
+      remarks: body.remarks ?? null,
+    },
+    ctx.user
+  )
+  rets.unshift(item)
+  for (const line of resolved) {
+    listOf(db, 'purchaseReturnLines').unshift({
+      id: nextId(listOf(db, 'purchaseReturnLines')),
+      return_number: item.return_number,
+      ...line,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    })
+  }
+  saveDb()
+  return ok(purchaseReturnDict(db, item), 201)
+})
+
+route('POST', '/purchase/purchase-returns/:number/approve', (_ctx, params) => {
+  const db = getDb()
+  const ret = loadMockReturn(db, safeDecode(params.number))
+  if (ret.status !== 'DRAFT') fail(400, `退货索赔单状态为 ${ret.status}，仅草稿(DRAFT)可审批`)
+  if (ret.return_type === 'RETURN') {
+    const lines = listOf(db, 'purchaseReturnLines').filter(
+      (l) => !l.is_deleted && l.return_number === ret.return_number
+    )
+    // 两阶段：先校验库存充足，再扣减
+    for (const line of lines) {
+      const material = listOf(db, 'materials').find(
+        (m) => !m.is_deleted && m.material_code === line.material_code
+      )
+      const need = lines
+        .filter((l) => l.material_code === line.material_code)
+        .reduce((s: number, l: any) => s + toNumber(l.quantity), 0)
+      const have = material ? toNumber(material.current_stock) : 0
+      if (have < need) fail(400, `库存不足，无法退货: ${line.material_code} 当前 ${have}，需退 ${need}`)
+    }
+    for (const line of lines) {
+      const material = listOf(db, 'materials').find(
+        (m) => !m.is_deleted && m.material_code === line.material_code
+      )
+      if (material) {
+        material.current_stock = round(toNumber(material.current_stock) - toNumber(line.quantity), 3)
+        material.updated_at = nowIso()
+      }
+    }
+  }
+  ret.status = 'APPROVED'
+  ret.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseReturnDict(db, ret))
+})
+
+route('POST', '/purchase/purchase-returns/:number/reject', (_ctx, params) => {
+  const db = getDb()
+  const ret = loadMockReturn(db, safeDecode(params.number))
+  if (ret.status !== 'DRAFT') fail(400, `退货索赔单状态为 ${ret.status}，仅草稿(DRAFT)可驳回`)
+  ret.status = 'REJECTED'
+  ret.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseReturnDict(db, ret))
+})
+
+route('POST', '/purchase/purchase-returns/:number/close', (_ctx, params) => {
+  const db = getDb()
+  const ret = loadMockReturn(db, safeDecode(params.number))
+  if (ret.status !== 'APPROVED') fail(400, `退货索赔单状态为 ${ret.status}，仅已审批(APPROVED)可关闭`)
+  ret.status = 'CLOSED'
+  ret.updated_at = nowIso()
+  saveDb()
+  return ok(purchaseReturnDict(db, ret))
 })
 
 /* ------------------------------- 路由入口 ------------------------------- */

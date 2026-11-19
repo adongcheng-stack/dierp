@@ -14,8 +14,20 @@
     :status "ACTIVE" .
 
 :SUP-SZ001 a :Supplier, :Agent ;
-    :supplierId "SUP-SZ001" ;
-    :status "ACTIVE" .
+    :supplierId "SUP-SZ001" ; :supplierName "苏州瑞联电子" ;
+    :supplierType "MATERIAL" ; :status "ACTIVE" ; :leadTimeDays 7 .
+
+:SUP-HQ a :Supplier, :Agent ;
+    :supplierId "SUP-HQ" ; :supplierName "华强覆铜板贸易" ;
+    :supplierType "MATERIAL" ; :status "ACTIVE" ; :leadTimeDays 5 .
+
+:SUP-RY a :Supplier, :Agent ;
+    :supplierId "SUP-RY" ; :supplierName "苏州瑞银电子材料" ;
+    :supplierType "MATERIAL" ; :status "ACTIVE" ; :leadTimeDays 7 .
+
+:SUP-JT a :Supplier, :Agent ;
+    :supplierId "SUP-JT" ; :supplierName "铜陵金泰铜业" ;
+    :supplierType "MATERIAL" ; :status "ACTIVE" ; :leadTimeDays 3 .
 
 :PLANNER-001 a :Planner, :Agent ;
     :status "ACTIVE" .

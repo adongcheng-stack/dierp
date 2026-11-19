@@ -28,6 +28,10 @@ from backend.common.models.planning import (
     NonConformanceReport,
     PurchaseOrder,
     PurchaseOrderLine,
+    PurchaseRequest,
+    PurchaseRequestLine,
+    PurchaseReturn,
+    PurchaseReturnLine,
     Resource,
     ResourceStatus,
     ScenarioImpact,
@@ -84,6 +88,10 @@ def _clear(db: Session) -> dict[str, int]:
         ("maintenance_plans", MaintenancePlan),
         ("non_conformance_reports", NonConformanceReport),
         ("inspection_orders", InspectionOrder),
+        ("purchase_return_lines", PurchaseReturnLine),
+        ("purchase_returns", PurchaseReturn),
+        ("purchase_request_lines", PurchaseRequestLine),
+        ("purchase_requests", PurchaseRequest),
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
         ("suppliers", Supplier),
@@ -164,6 +172,7 @@ def _rebuild_master_seed(db: Session) -> None:
         seed_eam_demo_data,
         seed_operation_report_routing,
         seed_purchase_demo_data,
+        seed_purchase_requests,
         seed_qms_demo_data,
         seed_suppliers,
     )
@@ -173,6 +182,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_operation_report_routing(db)
     seed_qms_demo_data(db)
     seed_purchase_demo_data(db)
+    seed_purchase_requests(db)
     seed_suppliers(db)
 
 

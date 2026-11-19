@@ -4,7 +4,7 @@
 # 生成命令：python backend/ontology/generate_models.py
 # 语义约束（必填/枚举/范围）以 ontology/src/shapes.ttl 为准。
 # ═══════════════════════════════════════════════════════════════
-version: "1.1.0"
+version: "1.2.0"
 namespace: "https://dierp.local/ontology/erp/v1#"
 
 entities:
@@ -233,6 +233,96 @@ entities:
       unit_price: {type: decimal, precision: 15, scale: 4, default: 0}
       expected_date: {type: datetime}
       status: {type: string, length: 20, default: OPEN}
+      remarks: {type: text}
+
+  Supplier:
+    table: suppliers
+    label: 供应商主数据
+    ontology_class: Supplier
+    top_category: Agent
+    fields:
+      supplier_code: {type: string, length: 50, required: true, unique: true, index: true, comment: 供应商编码}
+      supplier_name: {type: string, length: 200, required: true, comment: 供应商名称}
+      short_name: {type: string, length: 50, comment: 简称}
+      supplier_type: {type: string, length: 20, default: MATERIAL, comment: 供应商类型(MATERIAL/OUTSOURCE/SERVICE)}
+      status: {type: string, length: 20, default: ACTIVE, index: true, comment: 状态(ACTIVE/INACTIVE)}
+      contact_person: {type: string, length: 50, comment: 联系人}
+      contact_phone: {type: string, length: 30, comment: 联系电话}
+      email: {type: string, length: 100, comment: 邮箱}
+      address: {type: string, length: 200, comment: 地址}
+      tax_number: {type: string, length: 50, comment: 税号}
+      bank_account: {type: string, length: 50, comment: 银行账号}
+      payment_terms: {type: string, length: 50, comment: 付款条款}
+      lead_time_days: {type: integer, default: 0, comment: 默认交货天数}
+      default_currency: {type: string, length: 10, default: CNY, comment: 默认币种}
+      rating: {type: integer, default: 3, comment: 评级(1-5)}
+      remarks: {type: text}
+
+  PurchaseRequest:
+    table: purchase_requests
+    label: 采购申请
+    ontology_class: PurchaseRequest
+    top_category: Document
+    fields:
+      purchase_request_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 采购申请号}
+      supplier_id: {type: string, length: 50, index: true, comment: 供应商编码}
+      supplier_name: {type: string, length: 200, comment: 供应商名称}
+      status: {type: enum, enum: PurchaseRequestStatus, default: DRAFT, index: true, comment: 申请状态}
+      request_date: {type: datetime, comment: 申请日期}
+      expected_date: {type: datetime, comment: 期望到货日期}
+      currency: {type: string, length: 10, default: CNY, comment: 币种}
+      total_amount: {type: decimal, precision: 15, scale: 2, default: 0, comment: 预估总金额}
+      source_planned_order: {type: string, length: 50, comment: 来源计划订单}
+      requested_by: {type: string, length: 50, comment: 申请人}
+      converted_po_number: {type: string, length: 50, comment: 转换生成的采购单号}
+      remarks: {type: text}
+
+  PurchaseRequestLine:
+    table: purchase_request_lines
+    label: 采购申请行
+    ontology_class: PurchaseRequestLine
+    top_category: DocumentLine
+    fields:
+      purchase_request_number: {type: string, length: 50, required: true, index: true, fk: "purchase_requests.purchase_request_number", comment: 所属采购申请}
+      line_number: {type: integer, required: true, comment: 行号}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 物料编码}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true, comment: 申请数量}
+      unit: {type: string, length: 20, required: true, comment: 单位}
+      unit_price: {type: decimal, precision: 15, scale: 4, default: 0, comment: 预估单价}
+      expected_date: {type: datetime, comment: 期望到货日期}
+      status: {type: string, length: 20, default: OPEN, comment: 行状态(OPEN/CONVERTED)}
+      remarks: {type: text}
+
+  PurchaseReturn:
+    table: purchase_returns
+    label: 采购退货索赔单
+    ontology_class: PurchaseReturn
+    top_category: Document
+    fields:
+      return_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 退货索赔单号}
+      purchase_order_number: {type: string, length: 50, required: true, index: true, fk: "purchase_orders.purchase_order_number", comment: 来源采购单}
+      supplier_id: {type: string, length: 50, index: true, comment: 供应商编码}
+      supplier_name: {type: string, length: 200, comment: 供应商名称}
+      return_type: {type: enum, enum: ReturnType, default: RETURN, index: true, comment: 类型(退货/索赔)}
+      status: {type: enum, enum: ReturnStatus, default: DRAFT, index: true, comment: 单据状态}
+      return_date: {type: datetime, comment: 退货/索赔日期}
+      total_amount: {type: decimal, precision: 15, scale: 2, default: 0, comment: 总金额(索赔额/退货额)}
+      reason: {type: text, comment: 退货/索赔原因}
+      remarks: {type: text}
+
+  PurchaseReturnLine:
+    table: purchase_return_lines
+    label: 采购退货行
+    ontology_class: PurchaseReturnLine
+    top_category: DocumentLine
+    fields:
+      return_number: {type: string, length: 50, required: true, index: true, fk: "purchase_returns.return_number", comment: 所属退货单}
+      line_number: {type: integer, required: true, comment: 行号}
+      purchase_order_line_number: {type: integer, comment: 来源采购行号}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 物料编码}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true, comment: 数量}
+      unit: {type: string, length: 20, required: true, comment: 单位}
+      unit_price: {type: decimal, precision: 15, scale: 4, default: 0, comment: 单价}
       remarks: {type: text}
 
   CostRate:

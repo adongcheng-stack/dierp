@@ -153,9 +153,54 @@ def main() -> int:
         )
         check("采购演示单据(供应商/状态/行)", db_purchase, mock_purchase)
 
+        # ── 9.6) 供应商主数据（采购域闭环） ────────────────────────────────
+        from backend.common.models.planning import Supplier as ParitySupplier  # noqa: E402
+
+        db_suppliers = sorted(
+            (s.supplier_code, s.supplier_name, s.status)
+            for s in live(ParitySupplier)
+        )
+        mock_suppliers = sorted(
+            (s["supplier_code"], s["supplier_name"], s.get("status") or "ACTIVE")
+            for s in mock.get("suppliers", [])
+        )
+        check("供应商主数据(编码/名称/状态)", db_suppliers, mock_suppliers)
+
+        # ── 9.7) 采购申请（PR；忽略动态单号） ─────────────────────────────
+        from backend.common.models.planning import (  # noqa: E402
+            PurchaseRequest as ParityPR,
+            PurchaseRequestLine as ParityPRLine,
+        )
+
+        db_prs = live(ParityPR)
+        db_pr_lines = {
+            pr.purchase_request_number: sorted(
+                (l.material_code, float(l.quantity))
+                for l in live(ParityPRLine)
+                if l.purchase_request_number == pr.purchase_request_number
+            )
+            for pr in db_prs
+        }
+        db_pr_facts = sorted(
+            (pr.supplier_name or "", pr.status.value, tuple(db_pr_lines[pr.purchase_request_number]))
+            for pr in db_prs
+        )
+        mock_pr_lines_map: dict = {}
+        for line in mock.get("purchaseRequestLines", []):
+            mock_pr_lines_map.setdefault(line["purchase_request_number"], []).append(
+                (line["material_code"], float(line["quantity"]))
+            )
+        mock_pr_facts = sorted(
+            (pr.get("supplier_name") or "", pr["status"],
+             tuple(sorted(mock_pr_lines_map.get(pr["purchase_request_number"], []))))
+            for pr in mock.get("purchaseRequests", [])
+        )
+        check("采购申请(供应商/状态/行)", db_pr_facts, mock_pr_facts)
+
         # ── 10) 快照版本与结构 ───────────────────────────────────────────
         for collection in ["inspectionOrders", "nonConformanceReports", "operationReports",
-                           "lotCards", "productionOrders", "salesOrders", "customers", "materials"]:
+                           "lotCards", "productionOrders", "salesOrders", "customers", "materials",
+                           "suppliers", "purchaseRequests", "purchaseRequestLines"]:
             check(f"快照含集合 {collection}", collection in mock, True)
 
         print(f"共 {checks} 项事实对比")

@@ -148,7 +148,9 @@ export const NAV_ITEMS: NavItem[] = [
     label: '采购与库存',
     icon: Package,
     children: [
+      { key: '/mm/purchase-requests', label: '采购申请', icon: ClipboardList, path: '/mm/purchase-requests' },
       { key: '/mm/purchase-orders', label: '采购订单', icon: Boxes, path: '/mm/purchase-orders' },
+      { key: '/mm/purchase-returns', label: '退货 / 索赔', icon: PackageMinus, path: '/mm/purchase-returns' },
       { key: '/mm/suppliers', label: '供应商管理', icon: Building2, path: '/mm/suppliers' },
       { key: '/mm/inventory', label: '库存台账', icon: PackageSearch, path: '/mm/inventory' },
       { key: '/mm/ap-view', label: '应付账款', icon: FileText, path: '/mm/ap-view' },

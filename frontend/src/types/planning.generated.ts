@@ -1,6 +1,6 @@
 /**
  * GENERATED FILE - DO NOT EDIT BY HAND.
- * Source: ontology/model/planning.yaml (version 1.1.0)
+ * Source: ontology/model/planning.yaml (version 1.2.0)
  * Regenerate: python backend/ontology/generate_models.py
  */
 
@@ -29,6 +29,10 @@ import type {
   VarianceType,
   CostStatus,
   PurchaseOrderStatus,
+  PurchaseRequestStatus,
+  ReturnType,
+  ReturnStatus,
+  SupplierStatus,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -71,6 +75,10 @@ export type {
   VarianceType,
   CostStatus,
   PurchaseOrderStatus,
+  PurchaseRequestStatus,
+  ReturnType,
+  ReturnStatus,
+  SupplierStatus,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -311,6 +319,96 @@ export interface PurchaseOrderLine {
   unit_price?: number
   expected_date?: string
   status?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 供应商主数据 */
+export interface Supplier {
+  supplier_code: string
+  supplier_name: string
+  short_name?: string
+  supplier_type?: string
+  status?: string
+  contact_person?: string
+  contact_phone?: string
+  email?: string
+  address?: string
+  tax_number?: string
+  bank_account?: string
+  payment_terms?: string
+  lead_time_days?: number
+  default_currency?: string
+  rating?: number
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 采购申请 */
+export interface PurchaseRequest {
+  purchase_request_number: string
+  supplier_id?: string
+  supplier_name?: string
+  status?: PurchaseRequestStatus
+  request_date?: string
+  expected_date?: string
+  currency?: string
+  total_amount?: number
+  source_planned_order?: string
+  requested_by?: string
+  converted_po_number?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 采购申请行 */
+export interface PurchaseRequestLine {
+  purchase_request_number: string
+  line_number: number
+  material_code: string
+  quantity: number
+  unit: string
+  unit_price?: number
+  expected_date?: string
+  status?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 采购退货索赔单 */
+export interface PurchaseReturn {
+  return_number: string
+  purchase_order_number: string
+  supplier_id?: string
+  supplier_name?: string
+  return_type?: ReturnType
+  status?: ReturnStatus
+  return_date?: string
+  total_amount?: number
+  reason?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 采购退货行 */
+export interface PurchaseReturnLine {
+  return_number: string
+  line_number: number
+  purchase_order_line_number?: number
+  material_code: string
+  quantity: number
+  unit: string
+  unit_price?: number
   remarks?: string
   id?: number
   created_at?: string

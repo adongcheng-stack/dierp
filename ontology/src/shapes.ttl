@@ -280,6 +280,62 @@
         sh:message "S11 采购订单必须有供应商"
     ] .
 
+# S11a 供应商主数据
+:SupplierShape a sh:NodeShape ;
+    sh:targetClass :Supplier ;
+    sh:property [
+        sh:path :supplierId ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^SUP-[A-Z0-9]{2,8}$" ;
+        sh:message "S11a 供应商编码必须符合 SUP-XXX"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "ACTIVE" "INACTIVE" ) ;
+        sh:message "S11a 供应商状态必须来自 SupplierStatus 枚举"
+    ] ;
+    sh:property [
+        sh:path :supplierType ; sh:minCount 1 ;
+        sh:in ( "MATERIAL" "OUTSOURCE" "SERVICE" ) ;
+        sh:message "S11a 供应商类型必须为 MATERIAL/OUTSOURCE/SERVICE"
+    ] .
+
+# S11b 采购申请
+:PurchaseRequestShape a sh:NodeShape ;
+    sh:targetClass :PurchaseRequest ;
+    sh:property [
+        sh:path :requestNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^PRQ-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S11b 采购申请号必须符合 PRQ-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "RELEASED" "CONVERTED" "CANCELLED" ) ;
+        sh:message "S11b 采购申请状态必须来自 PurchaseRequestStatus 枚举"
+    ] .
+
+# S11c 采购退货索赔单
+:PurchaseReturnShape a sh:NodeShape ;
+    sh:targetClass :PurchaseReturn ;
+    sh:property [
+        sh:path :returnNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^RTN-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S11c 退货索赔单号必须符合 RTN-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :returnType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "RETURN" "CLAIM" ) ;
+        sh:message "S11c 退货索赔类型必须来自 ReturnType 枚举"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "APPROVED" "REJECTED" "CLOSED" ) ;
+        sh:message "S11c 退货索赔状态必须来自 ReturnStatus 枚举"
+    ] ;
+    sh:property [
+        sh:path :purchaseOrderNumber ; sh:minCount 1 ;
+        sh:message "S11c 退货索赔必须关联采购单"
+    ] .
+
 # S12 BOM
 :BOMShape a sh:NodeShape ;
     sh:targetClass :BOM ;

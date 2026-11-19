@@ -35,6 +35,7 @@ const ApView: React.FC = () => {
     { title: '供应商编码', dataIndex: 'supplier_id', key: 'supplier_id', width: 130 },
     { title: '供应商', dataIndex: 'supplier_name', key: 'supplier_name' },
     { title: '已到货金额', dataIndex: 'received_amount', key: 'received_amount', width: 140, align: 'right' as const, render: fmt },
+    { title: '已退金额', dataIndex: 'returned_amount', key: 'returned_amount', width: 130, align: 'right' as const, render: fmt },
     { title: '已结金额', dataIndex: 'closed_amount', key: 'closed_amount', width: 140, align: 'right' as const, render: fmt },
     {
       title: '应付金额',

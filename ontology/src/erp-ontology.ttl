@@ -57,6 +57,10 @@
     rdfs:comment "MRP 推导出的计划生产/采购订单，确认后可下达为执行单据。" .
 :ProductionOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "生产订单/工单" .
 :PurchaseOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "采购订单" .
+:PurchaseRequest a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "采购申请" ;
+    rdfs:comment "需求方提出的采购申请，下达后可整单转换为采购订单。" .
+:PurchaseReturn a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "采购退货索赔单" ;
+    rdfs:comment "针对已到货物资的退货（RETURN，扣减库存）或索赔（CLAIM，只记金额）单据。" .
 :BOM a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "物料清单" .
 :Routing a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "工艺路线" .
 :ScheduleRun a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "排程运算批次" ;
@@ -72,6 +76,8 @@
 :BomLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "BOM 行" .
 :RoutingOperation a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "工艺工序行" .
 :PurchaseOrderLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "采购订单行" .
+:PurchaseRequestLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "采购申请行" .
+:PurchaseReturnLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "采购退货行" .
 :ScheduledOperation a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "排程工序" ;
     rdfs:comment "工单 × 工序 × 工作中心的排程结果行，带计划开始/结束时间。" .
 
@@ -140,6 +146,10 @@
 :createdAt a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
 :customerId a owl:DatatypeProperty ; rdfs:range xsd:string .
 :supplierId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:supplierType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:requestNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:returnNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:returnType a owl:DatatypeProperty ; rdfs:range xsd:string .
 :salesOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :productionOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :plannedOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .

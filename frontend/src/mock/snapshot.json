@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "generatedAt": "2026-11-17T23:49:35",
   "customers": [
     {
@@ -8171,6 +8171,91 @@
       "lead_time_days": 3,
       "default_currency": "CNY",
       "rating": 4,
+      "is_deleted": false
+    }
+  ],
+  "purchaseRequests": [
+    {
+      "id": 1,
+      "purchase_request_number": "PRQ-20261119-0001",
+      "supplier_id": "SUP-RY",
+      "supplier_name": "苏州瑞银电子材料",
+      "status": "DRAFT",
+      "request_date": "2026-11-19T09:00:00",
+      "expected_date": "2026-11-29T00:00:00",
+      "currency": "CNY",
+      "total_amount": 5800.0,
+      "source_planned_order": null,
+      "requested_by": "jihuayuan",
+      "converted_po_number": null,
+      "remarks": "N3+ 采购申请演示：草稿待下达（RM-FR4-150 ×100 / RM-PP1080 ×200）",
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "is_deleted": false
+    },
+    {
+      "id": 2,
+      "purchase_request_number": "PRQ-20261119-0002",
+      "supplier_id": "SUP-JT",
+      "supplier_name": "铜陵金泰铜业",
+      "status": "RELEASED",
+      "request_date": "2026-11-19T09:00:00",
+      "expected_date": "2026-11-26T00:00:00",
+      "currency": "CNY",
+      "total_amount": 4300.0,
+      "source_planned_order": null,
+      "requested_by": "jihuayuan",
+      "converted_po_number": null,
+      "remarks": "N3+ 采购申请演示：已下达待转换（RM-CU-FOIL ×50）",
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "is_deleted": false
+    }
+  ],
+  "purchaseRequestLines": [
+    {
+      "id": 1,
+      "purchase_request_number": "PRQ-20261119-0001",
+      "line_number": 1,
+      "material_code": "RM-FR4-150",
+      "quantity": 100,
+      "unit": "张",
+      "unit_price": 38.5,
+      "expected_date": "2026-11-29T00:00:00",
+      "status": "OPEN",
+      "remarks": null,
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "is_deleted": false
+    },
+    {
+      "id": 2,
+      "purchase_request_number": "PRQ-20261119-0001",
+      "line_number": 2,
+      "material_code": "RM-PP1080",
+      "quantity": 200,
+      "unit": "张",
+      "unit_price": 12.0,
+      "expected_date": "2026-11-29T00:00:00",
+      "status": "OPEN",
+      "remarks": null,
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
+      "is_deleted": false
+    },
+    {
+      "id": 3,
+      "purchase_request_number": "PRQ-20261119-0002",
+      "line_number": 1,
+      "material_code": "RM-CU-FOIL",
+      "quantity": 50,
+      "unit": "卷",
+      "unit_price": 86.0,
+      "expected_date": "2026-11-26T00:00:00",
+      "status": "OPEN",
+      "remarks": null,
+      "created_by": "system",
+      "created_at": "2026-11-19T09:00:00",
       "is_deleted": false
     }
   ]

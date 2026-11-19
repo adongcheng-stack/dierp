@@ -27,6 +27,8 @@ const MaterialIssueForm = lazy(() => import('./pages/mm/MaterialIssueForm'))
 const InventoryLedger = lazy(() => import('./pages/mm/InventoryLedger'))
 const SupplierList = lazy(() => import('./pages/mm/SupplierList'))
 const ApView = lazy(() => import('./pages/mm/ApView'))
+const PurchaseRequestList = lazy(() => import('./pages/mm/PurchaseRequestList'))
+const PurchaseReturnList = lazy(() => import('./pages/mm/PurchaseReturnList'))
 const BOMList = lazy(() => import('./pages/eng/BOMList'))
 const BOMForm = lazy(() => import('./pages/eng/BOMForm'))
 const RoutingList = lazy(() => import('./pages/eng/RoutingList'))
@@ -136,6 +138,8 @@ function App() {
                       <Route path="/mm/inventory" element={<InventoryLedger />} />
                       <Route path="/mm/suppliers" element={<SupplierList />} />
                       <Route path="/mm/ap-view" element={<ApView />} />
+                      <Route path="/mm/purchase-requests" element={<PurchaseRequestList />} />
+                      <Route path="/mm/purchase-returns" element={<PurchaseReturnList />} />
                       <Route path="/eng/boms" element={<BOMList />} />
                       <Route path="/eng/factory-product-mappings" element={<FactoryProductMappingList />} />
                       <Route path="/eng/factory-product-mappings/new" element={<FactoryProductMappingForm />} />

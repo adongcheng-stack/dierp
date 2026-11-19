@@ -13,13 +13,21 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.common.database.base import get_db
-from backend.common.models.mm import Material
+from backend.common.models.mm import Material, MaterialTransaction
 from backend.common.models.planning import (
     PurchaseOrder,
     PurchaseOrderLine,
     PurchaseOrderStatus,
+    PurchaseRequest,
+    PurchaseRequestLine,
+    PurchaseRequestStatus,
+    PurchaseReturn,
+    PurchaseReturnLine,
+    ReturnType,
+    ReturnStatus,
     Supplier,
 )
+from backend.common.utils.number_generator import NumberGenerator
 
 router = APIRouter()
 
@@ -433,11 +441,12 @@ def ap_view(
     supplier_id: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    """应付账款：按供应商汇总「已到货金额 - 已收货款 = 应付」。
+    """应付账款：按供应商汇总「净到货金额 - 已结金额 = 应付」。
 
     - 到货金额 = 各采购行 received_quantity × unit_price 之和；
-    - 已收货款按整单 CLOSED 视为结清（演示口径），否则记 0；
-    - 应收 = 到货金额 - 已收货款。
+    - 已整单关闭（CLOSED）视为结清（演示口径）；
+    - 审批通过的退货（RETURN）冲减净到货与应付；
+    - 应付 = 净到货金额 - 已结金额。
     """
     lines = (
         db.query(PurchaseOrderLine)
@@ -466,6 +475,7 @@ def ap_view(
                 "supplier_id": sid,
                 "supplier_name": sname,
                 "received_amount": 0.0,
+                "returned_amount": 0.0,
                 "closed_amount": 0.0,
                 "payable_amount": 0.0,
             },
@@ -475,12 +485,47 @@ def ap_view(
         bucket["received_amount"] += received_amount
         if order.status == PurchaseOrderStatus.CLOSED:
             bucket["closed_amount"] += received_amount
-        bucket["payable_amount"] += received_amount
+
+    # 审批通过的退货（RETURN）冲减净到货与应付；来源采购单已关闭的，同冲减已结金额
+    approved_returns = (
+        db.query(PurchaseReturn)
+        .filter(
+            PurchaseReturn.is_deleted == False,  # noqa: E712
+            PurchaseReturn.return_type == ReturnType.RETURN,
+            PurchaseReturn.status.in_([ReturnStatus.APPROVED, ReturnStatus.CLOSED]),
+        )
+        .all()
+    )
+    for ret in approved_returns:
+        sid = ret.supplier_id or "未指定"
+        if supplier_id and sid != supplier_id:
+            continue
+        bucket = by_supplier.get(sid)
+        if bucket is None:
+            order = orders.get(ret.purchase_order_number)
+            bucket = by_supplier.setdefault(
+                sid,
+                {
+                    "supplier_id": sid,
+                    "supplier_name": (order.supplier_name if order else None) or sid,
+                    "received_amount": 0.0,
+                    "returned_amount": 0.0,
+                    "closed_amount": 0.0,
+                    "payable_amount": 0.0,
+                },
+            )
+        amount = _f(ret.total_amount)
+        bucket["returned_amount"] += amount
+        bucket["received_amount"] -= amount
+        bucket["closed_amount"] -= amount
 
     for bucket in by_supplier.values():
-        bucket["payable_amount"] = round(bucket["payable_amount"] - bucket["closed_amount"], 2)
         bucket["received_amount"] = round(bucket["received_amount"], 2)
-        bucket["closed_amount"] = round(bucket["closed_amount"], 2)
+        bucket["returned_amount"] = round(bucket.get("returned_amount", 0.0), 2)
+        bucket["closed_amount"] = round(max(bucket["closed_amount"], 0.0), 2)
+        bucket["payable_amount"] = round(
+            bucket["received_amount"] - bucket["closed_amount"], 2
+        )
 
     items = sorted(by_supplier.values(), key=lambda x: -x["payable_amount"])
     total_payable = round(sum(x["payable_amount"] for x in items), 2)
@@ -489,3 +534,610 @@ def ap_view(
         "total_received": round(sum(x["received_amount"] for x in items), 2),
         "items": items,
     }
+
+
+# ── 采购申请（PR）───────────────────────────────────────────────────────
+def _pr_line_dict(line: PurchaseRequestLine) -> dict:
+    return {
+        "line_number": line.line_number,
+        "material_code": line.material_code,
+        "quantity": _f(line.quantity),
+        "unit": line.unit,
+        "unit_price": _f(line.unit_price),
+        "expected_date": line.expected_date.isoformat() if line.expected_date else None,
+        "status": _s(line.status),
+        "remarks": line.remarks,
+    }
+
+
+def _pr_dict(pr: PurchaseRequest, lines: list[PurchaseRequestLine]) -> dict:
+    return {
+        "purchase_request_number": pr.purchase_request_number,
+        "supplier_id": pr.supplier_id,
+        "supplier_name": pr.supplier_name,
+        "status": _s(pr.status),
+        "request_date": pr.request_date.isoformat() if pr.request_date else None,
+        "expected_date": pr.expected_date.isoformat() if pr.expected_date else None,
+        "currency": pr.currency,
+        "total_amount": _f(pr.total_amount),
+        "source_planned_order": pr.source_planned_order,
+        "requested_by": pr.requested_by,
+        "converted_po_number": pr.converted_po_number,
+        "remarks": pr.remarks,
+        "created_at": pr.created_at.isoformat() if pr.created_at else None,
+        "lines": [_pr_line_dict(line) for line in lines],
+    }
+
+
+def _load_pr(db: Session, number: str) -> tuple[PurchaseRequest, list[PurchaseRequestLine]]:
+    pr = (
+        db.query(PurchaseRequest)
+        .filter(
+            PurchaseRequest.purchase_request_number == number,
+            PurchaseRequest.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if pr is None:
+        raise HTTPException(status_code=404, detail=f"采购申请不存在: {number}")
+    lines = (
+        db.query(PurchaseRequestLine)
+        .filter(
+            PurchaseRequestLine.purchase_request_number == number,
+            PurchaseRequestLine.is_deleted == False,  # noqa: E712
+        )
+        .order_by(PurchaseRequestLine.line_number)
+        .all()
+    )
+    return pr, lines
+
+
+class PRLineItem(BaseModel):
+    material_code: str
+    quantity: float = Field(gt=0)
+    unit: Optional[str] = None
+    unit_price: float = 0
+    expected_date: Optional[datetime] = None
+    remarks: Optional[str] = None
+
+
+class PRCreatePayload(BaseModel):
+    supplier_id: Optional[str] = None
+    supplier_name: Optional[str] = None
+    expected_date: Optional[datetime] = None
+    source_planned_order: Optional[str] = None
+    requested_by: Optional[str] = None
+    remarks: Optional[str] = None
+    lines: list[PRLineItem] = Field(min_length=1)
+
+
+@router.get("/purchase-requests")
+def list_purchase_requests(
+    skip: int = 0,
+    limit: int = 200,
+    status_filter: Optional[str] = Query(None, alias="status"),
+    supplier_id: Optional[str] = None,
+    material_code: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """采购申请列表（含行）。"""
+    query = db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False)  # noqa: E712
+    if status_filter:
+        query = query.filter(PurchaseRequest.status == status_filter)
+    if supplier_id:
+        query = query.filter(PurchaseRequest.supplier_id == supplier_id)
+    prs = query.order_by(PurchaseRequest.id.desc()).all()
+    if material_code:
+        hit_numbers = {
+            line.purchase_request_number
+            for line in db.query(PurchaseRequestLine)
+            .filter(
+                PurchaseRequestLine.material_code == material_code,
+                PurchaseRequestLine.is_deleted == False,  # noqa: E712
+            )
+            .all()
+        }
+        prs = [p for p in prs if p.purchase_request_number in hit_numbers]
+
+    total = len(prs)
+    page = prs[skip : skip + limit]
+    all_lines = (
+        db.query(PurchaseRequestLine)
+        .filter(PurchaseRequestLine.is_deleted == False)  # noqa: E712
+        .all()
+    )
+    lines_by_pr: dict[str, list[PurchaseRequestLine]] = {}
+    for line in all_lines:
+        lines_by_pr.setdefault(line.purchase_request_number, []).append(line)
+    return {
+        "total": total,
+        "items": [_pr_dict(p, lines_by_pr.get(p.purchase_request_number, [])) for p in page],
+    }
+
+
+@router.get("/purchase-requests/{purchase_request_number}")
+def get_purchase_request(purchase_request_number: str, db: Session = Depends(get_db)):
+    pr, lines = _load_pr(db, purchase_request_number)
+    return _pr_dict(pr, lines)
+
+
+@router.post("/purchase-requests", status_code=status.HTTP_201_CREATED)
+def create_purchase_request(payload: PRCreatePayload, db: Session = Depends(get_db)):
+    """创建采购申请（DRAFT）：两阶段——先全量校验物料与单位，再统一落库。"""
+    # ── 第一阶段：全量校验并解析行（任一失败整单不落库） ──
+    planned: list[dict] = []
+    material_codes = [item.material_code for item in payload.lines]
+    materials = {
+        m.material_code: m
+        for m in db.query(Material)
+        .filter(
+            Material.material_code.in_(material_codes),
+            Material.is_deleted == False,  # noqa: E712
+        )
+        .all()
+    }
+    for index, item in enumerate(payload.lines, start=1):
+        material = materials.get(item.material_code)
+        if material is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"物料不存在: {item.material_code}",
+            )
+        planned.append(
+            {
+                "line_number": index,
+                "material_code": item.material_code,
+                "quantity": _f(item.quantity),
+                "unit": item.unit or material.unit,
+                "unit_price": _f(item.unit_price),
+                "expected_date": item.expected_date or payload.expected_date,
+                "remarks": item.remarks,
+            }
+        )
+
+    # ── 第二阶段：落库 ──
+    number = NumberGenerator.generate_document_number(
+        db, PurchaseRequest, "purchase_request_number", "PRQ", 4
+    )
+    pr = PurchaseRequest(
+        purchase_request_number=number,
+        supplier_id=payload.supplier_id,
+        supplier_name=payload.supplier_name,
+        status=PurchaseRequestStatus.DRAFT,
+        request_date=datetime.now(),
+        expected_date=payload.expected_date,
+        currency="CNY",
+        total_amount=round(sum(row["quantity"] * row["unit_price"] for row in planned), 2),
+        source_planned_order=payload.source_planned_order,
+        requested_by=payload.requested_by,
+        remarks=payload.remarks,
+        created_by="web",
+    )
+    db.add(pr)
+    db.flush()
+    for row in planned:
+        db.add(PurchaseRequestLine(purchase_request_number=number, **row, created_by="web"))
+    db.commit()
+    pr, lines = _load_pr(db, number)
+    return _pr_dict(pr, lines)
+
+
+def _pr_transition(db: Session, number: str, allowed, target, action: str) -> dict:
+    pr, lines = _load_pr(db, number)
+    if pr.status not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"采购申请状态为 {_s(pr.status)}，不允许{action}",
+        )
+    pr.status = target
+    pr.updated_at = datetime.now()
+    db.commit()
+    pr, lines = _load_pr(db, number)
+    return _pr_dict(pr, lines)
+
+
+@router.post("/purchase-requests/{purchase_request_number}/release")
+def release_purchase_request(purchase_request_number: str, db: Session = Depends(get_db)):
+    """下达采购申请（DRAFT → RELEASED），下达后才允许转采购单。"""
+    return _pr_transition(
+        db,
+        purchase_request_number,
+        {PurchaseRequestStatus.DRAFT},
+        PurchaseRequestStatus.RELEASED,
+        "下达",
+    )
+
+
+@router.post("/purchase-requests/{purchase_request_number}/cancel")
+def cancel_purchase_request(purchase_request_number: str, db: Session = Depends(get_db)):
+    """作废采购申请（DRAFT/RELEASED → CANCELLED）。"""
+    return _pr_transition(
+        db,
+        purchase_request_number,
+        {PurchaseRequestStatus.DRAFT, PurchaseRequestStatus.RELEASED},
+        PurchaseRequestStatus.CANCELLED,
+        "作废",
+    )
+
+
+@router.post("/purchase-requests/{purchase_request_number}/convert")
+def convert_purchase_request(purchase_request_number: str, db: Session = Depends(get_db)):
+    """整单转采购单（RELEASED → CONVERTED）：
+
+    - 生成 RELEASED 状态的采购单（行原样拷贝）；
+    - 供应商/期望日期/币种继承申请单；
+    - 回写 converted_po_number，行状态置 CONVERTED；
+    - PO.source_planned_order 继承申请单的来源计划订单（保持计划追溯链）。
+    """
+    pr, lines = _load_pr(db, purchase_request_number)
+    if pr.status != PurchaseRequestStatus.RELEASED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"采购申请状态为 {_s(pr.status)}，仅已下达(RELEASED)申请可转采购单",
+        )
+    open_lines = [line for line in lines if _s(line.status) == "OPEN"]
+    if not open_lines:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"采购申请无可转换行: {purchase_request_number}",
+        )
+
+    po_number = NumberGenerator.generate_document_number(
+        db, PurchaseOrder, "purchase_order_number", "PUR", 4
+    )
+    order = PurchaseOrder(
+        purchase_order_number=po_number,
+        supplier_id=pr.supplier_id,
+        supplier_name=pr.supplier_name,
+        status=PurchaseOrderStatus.RELEASED,
+        order_date=datetime.now(),
+        expected_date=pr.expected_date,
+        currency=pr.currency or "CNY",
+        total_amount=round(sum(_f(l.quantity) * _f(l.unit_price) for l in open_lines), 2),
+        source_planned_order=pr.source_planned_order,
+        remarks=f"来源采购申请: {pr.purchase_request_number}",
+        created_by="web",
+    )
+    db.add(order)
+    db.flush()
+    for line in open_lines:
+        db.add(
+            PurchaseOrderLine(
+                purchase_order_number=po_number,
+                line_number=line.line_number,
+                material_code=line.material_code,
+                quantity=line.quantity,
+                received_quantity=0,
+                unit=line.unit,
+                unit_price=line.unit_price,
+                expected_date=line.expected_date or pr.expected_date,
+                status="OPEN",
+                created_by="web",
+            )
+        )
+        line.status = "CONVERTED"
+    pr.status = PurchaseRequestStatus.CONVERTED
+    pr.converted_po_number = po_number
+    pr.updated_at = datetime.now()
+    db.commit()
+    pr, lines = _load_pr(db, purchase_request_number)
+    return _pr_dict(pr, lines)
+
+
+# ── 采购退货 / 索赔 ─────────────────────────────────────────────────────
+def _return_line_dict(line: PurchaseReturnLine) -> dict:
+    return {
+        "line_number": line.line_number,
+        "purchase_order_line_number": line.purchase_order_line_number,
+        "material_code": line.material_code,
+        "quantity": _f(line.quantity),
+        "unit": line.unit,
+        "unit_price": _f(line.unit_price),
+        "remarks": line.remarks,
+    }
+
+
+def _return_dict(ret: PurchaseReturn, lines: list[PurchaseReturnLine]) -> dict:
+    return {
+        "return_number": ret.return_number,
+        "purchase_order_number": ret.purchase_order_number,
+        "supplier_id": ret.supplier_id,
+        "supplier_name": ret.supplier_name,
+        "return_type": _s(ret.return_type),
+        "status": _s(ret.status),
+        "return_date": ret.return_date.isoformat() if ret.return_date else None,
+        "total_amount": _f(ret.total_amount),
+        "reason": ret.reason,
+        "remarks": ret.remarks,
+        "created_at": ret.created_at.isoformat() if ret.created_at else None,
+        "lines": [_return_line_dict(line) for line in lines],
+    }
+
+
+def _load_return(db: Session, number: str) -> tuple[PurchaseReturn, list[PurchaseReturnLine]]:
+    ret = (
+        db.query(PurchaseReturn)
+        .filter(
+            PurchaseReturn.return_number == number,
+            PurchaseReturn.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if ret is None:
+        raise HTTPException(status_code=404, detail=f"退货索赔单不存在: {number}")
+    lines = (
+        db.query(PurchaseReturnLine)
+        .filter(
+            PurchaseReturnLine.return_number == number,
+            PurchaseReturnLine.is_deleted == False,  # noqa: E712
+        )
+        .order_by(PurchaseReturnLine.line_number)
+        .all()
+    )
+    return ret, lines
+
+
+def _returned_quantity_by_line(db: Session, po_number: str) -> dict[int, float]:
+    """按采购行号汇总「已占用退货量」：RETURN 类型且单据非 REJECTED（DRAFT 占用、APPROVED/CLOSED 已退）。"""
+    rows = (
+        db.query(PurchaseReturnLine, PurchaseReturn)
+        .join(
+            PurchaseReturn,
+            PurchaseReturn.return_number == PurchaseReturnLine.return_number,
+        )
+        .filter(
+            PurchaseReturn.purchase_order_number == po_number,
+            PurchaseReturn.return_type == ReturnType.RETURN,
+            PurchaseReturn.status != ReturnStatus.REJECTED,
+            PurchaseReturnLine.is_deleted == False,  # noqa: E712
+            PurchaseReturn.is_deleted == False,  # noqa: E712
+        )
+        .all()
+    )
+    totals: dict[int, float] = {}
+    for line, _header in rows:
+        key = int(line.purchase_order_line_number or 0)
+        totals[key] = totals.get(key, 0.0) + _f(line.quantity)
+    return totals
+
+
+class ReturnLineItem(BaseModel):
+    purchase_order_line_number: int = Field(ge=1)
+    quantity: float = Field(gt=0)
+    unit_price: Optional[float] = None  # 不传则取采购行单价
+    remarks: Optional[str] = None
+
+
+class ReturnCreatePayload(BaseModel):
+    purchase_order_number: str
+    return_type: str = "RETURN"  # RETURN=退货（扣库存） / CLAIM=索赔（只记金额）
+    reason: Optional[str] = None
+    remarks: Optional[str] = None
+    lines: list[ReturnLineItem] = Field(min_length=1)
+
+
+@router.get("/purchase-returns")
+def list_purchase_returns(
+    skip: int = 0,
+    limit: int = 200,
+    status_filter: Optional[str] = Query(None, alias="status"),
+    return_type: Optional[str] = None,
+    purchase_order_number: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """退货/索赔单列表（含行）。"""
+    query = db.query(PurchaseReturn).filter(PurchaseReturn.is_deleted == False)  # noqa: E712
+    if status_filter:
+        query = query.filter(PurchaseReturn.status == status_filter)
+    if return_type:
+        query = query.filter(PurchaseReturn.return_type == return_type)
+    if purchase_order_number:
+        query = query.filter(PurchaseReturn.purchase_order_number == purchase_order_number)
+    rets = query.order_by(PurchaseReturn.id.desc()).all()
+    total = len(rets)
+    page = rets[skip : skip + limit]
+    all_lines = (
+        db.query(PurchaseReturnLine)
+        .filter(PurchaseReturnLine.is_deleted == False)  # noqa: E712
+        .all()
+    )
+    lines_by_return: dict[str, list[PurchaseReturnLine]] = {}
+    for line in all_lines:
+        lines_by_return.setdefault(line.return_number, []).append(line)
+    return {
+        "total": total,
+        "items": [_return_dict(r, lines_by_return.get(r.return_number, [])) for r in page],
+    }
+
+
+@router.get("/purchase-returns/{return_number}")
+def get_purchase_return(return_number: str, db: Session = Depends(get_db)):
+    ret, lines = _load_return(db, return_number)
+    return _return_dict(ret, lines)
+
+
+@router.post("/purchase-returns", status_code=status.HTTP_201_CREATED)
+def create_purchase_return(payload: ReturnCreatePayload, db: Session = Depends(get_db)):
+    """创建退货/索赔单（DRAFT）：先全量校验可退余量，再统一落库。
+
+    - RETURN（退货）：可退量 = 行已收量 − 已占用退货量（非 REJECTED 的 RETURN 单）；
+    - CLAIM（索赔）：只登记金额，不占用/不扣减任何数量；
+    - 审批通过（APPROVED）时 RETURN 才真正扣减库存并记库存事务。
+    """
+    if payload.return_type not in (ReturnType.RETURN.value, ReturnType.CLAIM.value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"return_type 必须为 RETURN/CLAIM，收到: {payload.return_type}",
+        )
+    order, po_lines = _load_order(db, payload.purchase_order_number)
+    if order.status not in (
+        PurchaseOrderStatus.PARTIALLY_RECEIVED,
+        PurchaseOrderStatus.RECEIVED,
+        PurchaseOrderStatus.CLOSED,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"采购单状态为 {_s(order.status)}，无已到货数量可退/可索赔",
+        )
+    line_map = {line.line_number: line for line in po_lines}
+    returned_totals = (
+        _returned_quantity_by_line(db, payload.purchase_order_number)
+        if payload.return_type == ReturnType.RETURN.value
+        else {}
+    )
+
+    # ── 第一阶段：全量校验并解析行 ──
+    planned: list[dict] = []
+    for index, item in enumerate(payload.lines, start=1):
+        po_line = line_map.get(item.purchase_order_line_number)
+        if po_line is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"采购行不存在: {payload.purchase_order_number}#{item.purchase_order_line_number}",
+            )
+        received = _f(po_line.received_quantity)
+        if payload.return_type == ReturnType.RETURN.value:
+            available = received - returned_totals.get(item.purchase_order_line_number, 0.0)
+            if _f(item.quantity) > available:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"行 {item.purchase_order_line_number} 退货超量："
+                        f"已收 {received}，已占用退货 {returned_totals.get(item.purchase_order_line_number, 0.0)}，"
+                        f"可退 {round(available, 2)}，请求 {_f(item.quantity)}"
+                    ),
+                )
+        planned.append(
+            {
+                "line_number": index,
+                "purchase_order_line_number": item.purchase_order_line_number,
+                "material_code": po_line.material_code,
+                "quantity": _f(item.quantity),
+                "unit": po_line.unit,
+                "unit_price": _f(item.unit_price) if item.unit_price is not None else _f(po_line.unit_price),
+                "remarks": item.remarks,
+            }
+        )
+
+    # ── 第二阶段：落库 ──
+    number = NumberGenerator.generate_document_number(
+        db, PurchaseReturn, "return_number", "RTN", 4
+    )
+    ret = PurchaseReturn(
+        return_number=number,
+        purchase_order_number=payload.purchase_order_number,
+        supplier_id=order.supplier_id,
+        supplier_name=order.supplier_name,
+        return_type=ReturnType(payload.return_type),
+        status=ReturnStatus.DRAFT,
+        return_date=datetime.now(),
+        total_amount=round(sum(row["quantity"] * row["unit_price"] for row in planned), 2),
+        reason=payload.reason,
+        remarks=payload.remarks,
+        created_by="web",
+    )
+    db.add(ret)
+    db.flush()
+    for row in planned:
+        db.add(PurchaseReturnLine(return_number=number, **row, created_by="web"))
+    db.commit()
+    ret, lines = _load_return(db, number)
+    return _return_dict(ret, lines)
+
+
+@router.post("/purchase-returns/{return_number}/approve")
+def approve_purchase_return(return_number: str, db: Session = Depends(get_db)):
+    """审批通过（DRAFT → APPROVED）。
+
+    RETURN 类型：扣减物料库存（两阶段：先校验库存充足，再扣减 + 记 RETURN 库存事务）；
+    CLAIM 类型：只确认索赔金额，不动库存。
+    """
+    ret, lines = _load_return(db, return_number)
+    if ret.status != ReturnStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"退货索赔单状态为 {_s(ret.status)}，仅草稿(DRAFT)可审批",
+        )
+
+    if ret.return_type == ReturnType.RETURN:
+        # ── 第一阶段：库存充足性校验 ──
+        stock_map: dict[str, Material] = {}
+        for line in lines:
+            material = (
+                db.query(Material)
+                .filter(
+                    Material.material_code == line.material_code,
+                    Material.is_deleted == False,  # noqa: E712
+                )
+                .first()
+            )
+            stock_map[line.material_code] = material
+            need = sum(_f(l.quantity) for l in lines if l.material_code == line.material_code)
+            have = _f(material.current_stock) if material is not None else 0.0
+            if have < need:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"库存不足，无法退货: {line.material_code} 当前 {have}，需退 {need}",
+                )
+        # ── 第二阶段：扣库存 + 记库存事务 ──
+        for line in lines:
+            material = stock_map[line.material_code]
+            if material is not None:
+                material.current_stock = _f(material.current_stock) - _f(line.quantity)
+                material.updated_at = datetime.now()
+            transaction_number = NumberGenerator.generate_document_number(
+                db, MaterialTransaction, "transaction_number", "TR", 4
+            )
+            db.add(
+                MaterialTransaction(
+                    transaction_number=transaction_number,
+                    material_code=line.material_code,
+                    transaction_type="RETURN",
+                    quantity=-_f(line.quantity),
+                    unit=line.unit,
+                    reference_number=return_number,
+                    reference_type="PURCHASE_RETURN",
+                    transaction_date=datetime.now(),
+                    operator="web",
+                    remarks=f"采购退货: {ret.purchase_order_number}",
+                    created_by="web",
+                )
+            )
+
+    ret.status = ReturnStatus.APPROVED
+    ret.updated_at = datetime.now()
+    db.commit()
+    ret, lines = _load_return(db, return_number)
+    return _return_dict(ret, lines)
+
+
+@router.post("/purchase-returns/{return_number}/reject")
+def reject_purchase_return(return_number: str, db: Session = Depends(get_db)):
+    """驳回（DRAFT → REJECTED）：RETURN 占用的可退量随即释放。"""
+    ret, _ = _load_return(db, return_number)
+    if ret.status != ReturnStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"退货索赔单状态为 {_s(ret.status)}，仅草稿(DRAFT)可驳回",
+        )
+    ret.status = ReturnStatus.REJECTED
+    ret.updated_at = datetime.now()
+    db.commit()
+    ret, lines = _load_return(db, return_number)
+    return _return_dict(ret, lines)
+
+
+@router.post("/purchase-returns/{return_number}/close")
+def close_purchase_return(return_number: str, db: Session = Depends(get_db)):
+    """关闭（APPROVED → CLOSED）：单据归档，保持已生效的数量/金额口径。"""
+    ret, _ = _load_return(db, return_number)
+    if ret.status != ReturnStatus.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"退货索赔单状态为 {_s(ret.status)}，仅已审批(APPROVED)可关闭",
+        )
+    ret.status = ReturnStatus.CLOSED
+    ret.updated_at = datetime.now()
+    db.commit()
+    ret, lines = _load_return(db, return_number)
+    return _return_dict(ret, lines)

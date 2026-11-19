@@ -1,6 +1,6 @@
 """
 GENERATED FILE - DO NOT EDIT BY HAND.
-Source: ontology/model/planning.yaml (version 1.1.0)
+Source: ontology/model/planning.yaml (version 1.2.0)
 Ontology: https://dierp.local/ontology/erp/v1#
 Regenerate: python backend/ontology/generate_models.py
 """
@@ -140,6 +140,25 @@ class PurchaseOrderStatus(str, Enum):
     RECEIVED = "RECEIVED"
     CLOSED = "CLOSED"
     CANCELLED = "CANCELLED"
+
+class PurchaseRequestStatus(str, Enum):
+    """PurchaseRequestStatus"""
+    DRAFT = "DRAFT"
+    RELEASED = "RELEASED"
+    CONVERTED = "CONVERTED"
+    CANCELLED = "CANCELLED"
+
+class ReturnType(str, Enum):
+    """ReturnType"""
+    RETURN = "RETURN"
+    CLAIM = "CLAIM"
+
+class ReturnStatus(str, Enum):
+    """ReturnStatus"""
+    DRAFT = "DRAFT"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CLOSED = "CLOSED"
 
 class ResourceStatus(str, Enum):
     """ResourceStatus"""
@@ -635,7 +654,7 @@ class Supplier(BaseModel):
 
     supplier_type = Column(String(20), default="MATERIAL", comment="供应商类型(MATERIAL/OUTSOURCE/SERVICE)")
 
-    status = Column(String(20), default="ACTIVE", index=True, comment="状态(ACTIVE/INACTIVE)")
+    status = Column(String(20), index=True, default="ACTIVE", comment="状态(ACTIVE/INACTIVE)")
 
     contact_person = Column(String(50), comment="联系人")
 
@@ -656,6 +675,108 @@ class Supplier(BaseModel):
     default_currency = Column(String(10), default="CNY", comment="默认币种")
 
     rating = Column(Integer, default=3, comment="评级(1-5)")
+
+    remarks = Column(Text)
+
+
+
+class PurchaseRequest(BaseModel):
+    """采购申请"""
+    __tablename__ = "purchase_requests"
+
+    purchase_request_number = Column(String(50), nullable=False, unique=True, index=True, comment="采购申请号")
+
+    supplier_id = Column(String(50), index=True, comment="供应商编码")
+
+    supplier_name = Column(String(200), comment="供应商名称")
+
+    status = Column(SQLEnum(PurchaseRequestStatus), index=True, default=PurchaseRequestStatus.DRAFT, comment="申请状态")
+
+    request_date = Column(DateTime, comment="申请日期")
+
+    expected_date = Column(DateTime, comment="期望到货日期")
+
+    currency = Column(String(10), default="CNY", comment="币种")
+
+    total_amount = Column(Numeric(15, 2), default=0, comment="预估总金额")
+
+    source_planned_order = Column(String(50), comment="来源计划订单")
+
+    requested_by = Column(String(50), comment="申请人")
+
+    converted_po_number = Column(String(50), comment="转换生成的采购单号")
+
+    remarks = Column(Text)
+
+
+
+class PurchaseRequestLine(BaseModel):
+    """采购申请行"""
+    __tablename__ = "purchase_request_lines"
+
+    purchase_request_number = Column(String(50), ForeignKey("purchase_requests.purchase_request_number"), nullable=False, index=True, comment="所属采购申请")
+
+    line_number = Column(Integer, nullable=False, comment="行号")
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, index=True, comment="物料编码")
+
+    quantity = Column(Numeric(15, 2), nullable=False, comment="申请数量")
+
+    unit = Column(String(20), nullable=False, comment="单位")
+
+    unit_price = Column(Numeric(15, 4), default=0, comment="预估单价")
+
+    expected_date = Column(DateTime, comment="期望到货日期")
+
+    status = Column(String(20), default="OPEN", comment="行状态(OPEN/CONVERTED)")
+
+    remarks = Column(Text)
+
+
+
+class PurchaseReturn(BaseModel):
+    """采购退货索赔单"""
+    __tablename__ = "purchase_returns"
+
+    return_number = Column(String(50), nullable=False, unique=True, index=True, comment="退货索赔单号")
+
+    purchase_order_number = Column(String(50), ForeignKey("purchase_orders.purchase_order_number"), nullable=False, index=True, comment="来源采购单")
+
+    supplier_id = Column(String(50), index=True, comment="供应商编码")
+
+    supplier_name = Column(String(200), comment="供应商名称")
+
+    return_type = Column(SQLEnum(ReturnType), index=True, default=ReturnType.RETURN, comment="类型(退货/索赔)")
+
+    status = Column(SQLEnum(ReturnStatus), index=True, default=ReturnStatus.DRAFT, comment="单据状态")
+
+    return_date = Column(DateTime, comment="退货/索赔日期")
+
+    total_amount = Column(Numeric(15, 2), default=0, comment="总金额(索赔额/退货额)")
+
+    reason = Column(Text, comment="退货/索赔原因")
+
+    remarks = Column(Text)
+
+
+
+class PurchaseReturnLine(BaseModel):
+    """采购退货行"""
+    __tablename__ = "purchase_return_lines"
+
+    return_number = Column(String(50), ForeignKey("purchase_returns.return_number"), nullable=False, index=True, comment="所属退货单")
+
+    line_number = Column(Integer, nullable=False, comment="行号")
+
+    purchase_order_line_number = Column(Integer, comment="来源采购行号")
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, index=True, comment="物料编码")
+
+    quantity = Column(Numeric(15, 2), nullable=False, comment="数量")
+
+    unit = Column(String(20), nullable=False, comment="单位")
+
+    unit_price = Column(Numeric(15, 4), default=0, comment="单价")
 
     remarks = Column(Text)
 

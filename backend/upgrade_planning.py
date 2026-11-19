@@ -1240,6 +1240,121 @@ def seed_suppliers(db: Session) -> int:
     return created
 
 
+def seed_purchase_requests(db: Session) -> int:
+    """采购申请演示种子（幂等，按备注标记判重）。
+
+    - PRQ-…（DRAFT，两行）：演示「下达 → 整单转采购单」；
+    - PRQ-…（RELEASED，单行）：可直接演示「转采购单」。
+    转换动作不在种子里做（留给演示现场），PO 由 convert 端点实时生成。
+    """
+    from backend.common.models.planning import (
+        PurchaseRequest,
+        PurchaseRequestLine,
+        PurchaseRequestStatus,
+    )
+
+    created = 0
+    today = datetime.now()
+
+    def _has_demo_request(marker: str) -> bool:
+        return (
+            db.query(PurchaseRequest)
+            .filter(
+                PurchaseRequest.remarks.like(f"%{marker}%"),
+                PurchaseRequest.is_deleted == False,  # noqa: E712
+            )
+            .first()
+            is not None
+        )
+
+    def _next_number() -> str:
+        return NumberGenerator.generate_document_number(
+            db, PurchaseRequest, "purchase_request_number", "PRQ", 4
+        )
+
+    # ── 1) DRAFT：FR-4 + 半固化片（演示下达→转换全流程） ────────────────
+    if not _has_demo_request("采购申请演示：草稿待下达"):
+        number = _next_number()
+        pr = PurchaseRequest(
+            purchase_request_number=number,
+            supplier_id="SUP-RY",
+            supplier_name="苏州瑞银电子材料",
+            status=PurchaseRequestStatus.DRAFT,
+            request_date=today,
+            expected_date=today + timedelta(days=10),
+            currency="CNY",
+            total_amount=Decimal("5800.00"),
+            requested_by="jihuayuan",
+            remarks="N3+ 采购申请演示：草稿待下达（RM-FR4-150 ×100 / RM-PP1080 ×200）",
+            created_by="system",
+        )
+        db.add(pr)
+        db.flush()
+        db.add(
+            PurchaseRequestLine(
+                purchase_request_number=number,
+                line_number=1,
+                material_code="RM-FR4-150",
+                quantity=Decimal("100"),
+                unit="张",
+                unit_price=Decimal("38.50"),
+                expected_date=today + timedelta(days=10),
+                status="OPEN",
+                created_by="system",
+            )
+        )
+        db.add(
+            PurchaseRequestLine(
+                purchase_request_number=number,
+                line_number=2,
+                material_code="RM-PP1080",
+                quantity=Decimal("200"),
+                unit="张",
+                unit_price=Decimal("12.00"),
+                expected_date=today + timedelta(days=10),
+                status="OPEN",
+                created_by="system",
+            )
+        )
+        created += 1
+
+    # ── 2) RELEASED：铜箔（演示一键转采购单） ────────────────────────────
+    if not _has_demo_request("采购申请演示：已下达待转换"):
+        number = _next_number()
+        pr = PurchaseRequest(
+            purchase_request_number=number,
+            supplier_id="SUP-JT",
+            supplier_name="铜陵金泰铜业",
+            status=PurchaseRequestStatus.RELEASED,
+            request_date=today,
+            expected_date=today + timedelta(days=7),
+            currency="CNY",
+            total_amount=Decimal("4300.00"),
+            requested_by="jihuayuan",
+            remarks="N3+ 采购申请演示：已下达待转换（RM-CU-FOIL ×50）",
+            created_by="system",
+        )
+        db.add(pr)
+        db.flush()
+        db.add(
+            PurchaseRequestLine(
+                purchase_request_number=number,
+                line_number=1,
+                material_code="RM-CU-FOIL",
+                quantity=Decimal("50"),
+                unit="卷",
+                unit_price=Decimal("86.00"),
+                expected_date=today + timedelta(days=7),
+                status="OPEN",
+                created_by="system",
+            )
+        )
+        created += 1
+
+    db.flush()
+    return created
+
+
 def main() -> None:
     print("=" * 56)
     print("DIERP 计划与控制系统 - 增量升级")
@@ -1263,6 +1378,7 @@ def main() -> None:
         print(f"[OK] 报工工艺关联与工时修正 {seed_operation_report_routing(db)} 条")
         print(f"[OK] QMS 演示数据新增 {seed_qms_demo_data(db)} 条")
         print(f"[OK] 采购演示单据新增 {seed_purchase_demo_data(db)} 张")
+        print(f"[OK] 采购申请演示新增 {seed_purchase_requests(db)} 张")
         print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
         db.commit()
 

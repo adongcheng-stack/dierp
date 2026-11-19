@@ -48,6 +48,14 @@ export type CostStatus = 'OPEN' | 'COLLECTED' | 'SETTLED';
 
 export type PurchaseOrderStatus = 'DRAFT' | 'RELEASED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CLOSED' | 'CANCELLED';
 
+export type PurchaseRequestStatus = 'DRAFT' | 'RELEASED' | 'CONVERTED' | 'CANCELLED';
+
+export type ReturnType = 'RETURN' | 'CLAIM';
+
+export type ReturnStatus = 'DRAFT' | 'APPROVED' | 'REJECTED' | 'CLOSED';
+
+export type SupplierStatus = 'ACTIVE' | 'INACTIVE';
+
 export type ResourceStatus = 'ACTIVE' | 'MAINTENANCE' | 'DOWN';
 
 export type ScheduleRunStatus = 'DRAFT' | 'RUNNING' | 'COMPLETED' | 'PUBLISHED' | 'FAILED';
