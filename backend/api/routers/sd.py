@@ -29,6 +29,8 @@ from backend.common.models.planning import (
 from backend.common.models.eng import ProductionVersion
 from sqlalchemy import or_
 from backend.common.utils.number_generator import NumberGenerator
+from backend.services.finance.gl_engine import GlEngineError
+from backend.services.finance.gl_engine import post as gl_post
 from backend.common.utils.workflow import WorkflowEngine, WorkflowStatus
 from backend.services.sales_order_service import SalesOrderService
 from backend.common.exceptions import BusinessException
@@ -3430,6 +3432,22 @@ def ship_delivery(
     db.flush()
     _sync_order_ship_status(db, d.sales_order_number)
     db.commit()
+    # 自动分录：SALES_DELIVERY_SHIPPED 借主营业务成本 / 贷库存商品（数量×物料标准成本）
+    from backend.common.models.planning import StandardCost
+    std = (
+        db.query(StandardCost)
+        .filter(StandardCost.material_code == d.material_code)
+        .order_by(StandardCost.id.desc())
+        .first()
+    )
+    if std is not None and float(std.material_cost or 0) > 0:
+        try:
+            gl_post(db, "SALES_DELIVERY_SHIPPED", d.delivery_number,
+                    amount=float(d.quantity or 0) * float(std.material_cost),
+                    summary=f"发货出库 {d.delivery_number}", operator=current_user.username)
+            db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 发货分录入账失败 {d.delivery_number}: {exc}")
     return _delivery_dict(d)
 
 
@@ -3757,6 +3775,14 @@ def issue_invoice(
         created_by=current_user.username,
     ))
     db.commit()
+    # 自动分录：SALES_INVOICE_ISSUED 借应收账款 / 贷主营业务收入
+    try:
+        gl_post(db, "SALES_INVOICE_ISSUED", i.invoice_number,
+                amount=float(i.amount or 0),
+                summary=f"开票 {i.invoice_number}", operator=current_user.username)
+        db.commit()
+    except GlEngineError as exc:
+        print(f"[GL] 开票分录入账失败 {i.invoice_number}: {exc}")
     return _invoice_dict(i)
 
 
@@ -3948,6 +3974,15 @@ def pay_receipt(
     r.updated_by = current_user.username
     r.updated_at = datetime.now()
     db.commit()
+    # 自动分录：RECEIPT_PAID 借银行存款 / 贷应收账款（实核销合计）
+    allocated_total = sum(float(a.allocated_amount or 0) for a in _receipt_allocations(db, receipt_number))
+    if allocated_total > 0:
+        try:
+            gl_post(db, "RECEIPT_PAID", r.receipt_number, amount=allocated_total,
+                    summary=f"收款核销 {r.receipt_number}", operator=current_user.username)
+            db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 收款分录入账失败 {r.receipt_number}: {exc}")
     return _receipt_dict(r, _receipt_allocations(db, receipt_number))
 
 

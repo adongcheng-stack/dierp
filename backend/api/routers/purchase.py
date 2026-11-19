@@ -34,6 +34,8 @@ from backend.common.models.planning import (
     SupplierPayment,
 )
 from backend.common.utils.number_generator import NumberGenerator
+from backend.services.finance.gl_engine import GlEngineError
+from backend.services.finance.gl_engine import post as gl_post
 
 router = APIRouter()
 
@@ -1542,6 +1544,14 @@ def confirm_supplier_invoice(
     i.updated_by = current_user.username
     i.updated_at = datetime.now()
     db.commit()
+    # 自动分录：SUPPLIER_INVOICE_CONFIRMED 借库存商品 / 贷应付账款
+    try:
+        gl_post(db, "SUPPLIER_INVOICE_CONFIRMED", i.invoice_number,
+                amount=_f(i.amount),
+                summary=f"采购发票确认 {i.invoice_number}", operator=current_user.username)
+        db.commit()
+    except GlEngineError as exc:
+        print(f"[GL] 采购发票分录入账失败 {i.invoice_number}: {exc}")
     return _supplier_invoice_dict(i)
 
 
@@ -1788,6 +1798,15 @@ def pay_payment(
     p.updated_by = current_user.username
     p.updated_at = datetime.now()
     db.commit()
+    # 自动分录：SUPPLIER_PAYMENT_PAID 借应付账款 / 贷银行存款（实核销合计）
+    allocated_total = sum(_f(a.allocated_amount) for a in _payment_allocations(db, payment_number))
+    if allocated_total > 0:
+        try:
+            gl_post(db, "SUPPLIER_PAYMENT_PAID", p.payment_number, amount=allocated_total,
+                    summary=f"付款 {p.payment_number}", operator=current_user.username)
+            db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 付款分录入账失败 {p.payment_number}: {exc}")
     return _payment_dict(p, _payment_allocations(db, payment_number))
 
 

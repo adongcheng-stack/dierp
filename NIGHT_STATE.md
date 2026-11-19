@@ -1,8 +1,9 @@
 # Night State
 ## Current Task
 （空）
+
 ## Pending Tasks
-- [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
+- [ ] T304 P2★ 全门禁+提交（10min）【stretch】
 - [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
 - [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T304 P2★ 全门禁+提交（10min）【stretch】
@@ -51,6 +52,7 @@
 - [x] T207 P1 smoke_finance_loop+全门禁（04:55 完成）— 证据：smoke_finance_loop 15/15 EXIT=0（三单匹配/确认/付款核销/AP 递减/收款核销/账龄勾稽/复位）；全门禁 20 项全绿（本体双校验/alembic/pytest/七冒烟/parity×2/前端×4/六探针）；日志与里程碑已更新
 - [x] T301 P2★ 总账实体（05:05 完成）— 证据：generate_models 48 实体；generate-types 52 枚举；upgrade_planning EXIT=0（4 新表）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed
 - [x] T302 P2★ 科目种子+gl_rules+GlEngine（05:20 完成）— 证据：gl_rules.py（8 科目+8 事件映射）；gl_engine.py 幂等/平衡/拒绝路径直调验证全过；reset 后 accounts=8/periods=1 保留、entries=0 清空；pytest 28 passed。注：凭证+分录行入 _clear（科目/期间为种子保留）
+- [x] T303 P2★ 挂分录 5 处+finance 路由 6 端点+smoke_gl（05:45 完成）— 证据：smoke_gl_loop 11/11 EXIT=0（科目/发票确认分录/金额勾稽/开票分录/发货标准成本分录/付款/收款/试算平衡/发生额/期间/复位）；smoke_finance/sd/purchase 回归 EXIT=0；parity EXIT=0；tsc EXIT=0；pytest 28 passed。注：新路由 finance.py 挂 /api/finance；发货分录=数量×物料标准成本（无成本则跳过并打日志——非沉默，stdout 可见）；GL 失败不阻断业务事务；踩坑 InstrumentedAttribute 无枚举属性（须 import JournalStatus）
 ## Blocked Tasks
 （空）
 ## Last Checkpoint

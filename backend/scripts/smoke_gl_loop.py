@@ -1,0 +1,219 @@
+"""总账全链路冒烟（P2）：业务动作 → 自动分录 → 余额表试算平衡。
+
+Run: python backend/scripts/smoke_gl_loop.py
+（TestClient 驱动；起点+终点双 reset，失败也复位）
+"""
+from __future__ import annotations
+
+import io
+import subprocess
+import sys
+from pathlib import Path
+
+if sys.platform == "win32":
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from backend.api.main import app  # noqa: E402
+from backend.common.database.base import SessionLocal  # noqa: E402
+from backend.common.models import eng, mm, pp, sd, planning  # noqa: E402,F401
+from backend.common.models.planning import (  # noqa: E402
+    PurchaseOrder,
+    PurchaseOrderLine,
+    StandardCost,
+)
+
+client = TestClient(app)
+CHECKS: list[tuple[str, bool, object]] = []
+
+MATERIAL = "HF1004ENIGAB01"
+
+
+def check(name: str, cond: bool, detail: object = "") -> None:
+    CHECKS.append((name, bool(cond), detail))
+    mark = "PASS" if cond else "FAIL"
+    print(f"[{mark}] {name} {detail if not cond else ''}")
+
+
+def _reset() -> int:
+    return subprocess.run(
+        [sys.executable, str(project_root / "backend" / "scripts" / "reset_demo.py")],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).returncode
+
+
+def main() -> int:
+    if _reset() != 0:
+        print("起点 reset 失败，中止")
+        return 1
+    try:
+        return _run()
+    finally:
+        rc = _reset()
+        print(f"reset_demo EXIT={rc}")
+        db = SessionLocal()
+        try:
+            entries_after = db.query(planning.JournalEntry).count()
+        finally:
+            db.close()
+        check("12.reset 复位（凭证清空+科目保留）",
+              rc == 0 and entries_after == 0, f"reset={rc} entries={entries_after}")
+        passed = sum(1 for _, ok, _ in CHECKS if ok)
+        print(f"\n===== 总账全链路冒烟：{passed}/{len(CHECKS)} 通过 =====")
+        sys.exit(0 if passed == len(CHECKS) and len(CHECKS) >= 10 else 1)
+
+
+def _run() -> int:
+    token = client.post(
+        "/api/auth/login", data={"username": "admin", "password": "admin123"}
+    ).json()["access_token"]
+    H = {"Authorization": f"Bearer {token}"}
+
+    db = SessionLocal()
+    try:
+        po = (
+            db.query(PurchaseOrder)
+            .filter(PurchaseOrder.is_deleted.is_(False),
+                    PurchaseOrder.status == planning.PurchaseOrderStatus.RELEASED)
+            .order_by(PurchaseOrder.id)
+            .first()
+        )
+        cust = db.query(sd.Customer).order_by(sd.Customer.id).first()
+        assert po is not None and cust is not None, "前置数据缺失"
+        po_number, supplier_id, customer_id = po.purchase_order_number, po.supplier_id, cust.customer_id
+        std = (
+            db.query(StandardCost)
+            .filter(StandardCost.material_code == MATERIAL)
+            .order_by(StandardCost.id.desc())
+            .first()
+        )
+        std_cost = float(std.material_cost or 0) if std else 0.0
+    finally:
+        db.close()
+
+    # 前置：采购收货 + 销售发货
+    r = client.get(f"/api/purchase/purchase-orders/{po_number}")
+    lines = [{"line_number": ln["line_number"], "quantity": ln["outstanding_quantity"]}
+             for ln in r.json()["lines"] if ln["outstanding_quantity"] > 0]
+    client.post(f"/api/purchase/purchase-orders/{po_number}/receive", json={"lines": lines}, headers=H)
+    db = SessionLocal()
+    try:
+        po_lines = db.query(PurchaseOrderLine).filter(
+            PurchaseOrderLine.purchase_order_number == po_number).all()
+        cap = sum(float(l.received_quantity or 0) * float(l.unit_price or 0) for l in po_lines)
+    finally:
+        db.close()
+    r = client.post("/api/sd/sales-orders", headers=H,
+                    json={"customer_id": customer_id, "product_number": "PN-GL-01",
+                          "quantity": 10, "unit_price": 25.5,
+                          "delivery_date": "2026-02-10T00:00:00",
+                          "material_code": MATERIAL, "sales_unit": "PCS",
+                          "remarks": "总账冒烟订单（reset 清理）"})
+    so = r.json()["order_number"]
+    r = client.post("/api/sd/deliveries", headers=H,
+                    json={"sales_order_number": so, "quantity": 10})
+    dk = r.json()["delivery_number"]
+    client.post(f"/api/sd/deliveries/{dk}/ship", headers=H)
+
+    # 1. 科目种子 8 个
+    r = client.get("/api/finance/accounts")
+    check("1.科目表 8 个一级科目", r.status_code == 200 and r.json()["total"] == 8,
+          f"{r.status_code} total={r.json().get('total')}")
+
+    # 2. 采购发票确认 → 自动分录 SUPPLIER_INVOICE_CONFIRMED
+    r = client.post("/api/purchase/supplier-invoices", headers=H,
+                    json={"purchase_order_number": po_number, "amount": round(cap * 0.8, 2)})
+    pi1 = r.json()["invoice_number"]
+    r = client.post(f"/api/purchase/supplier-invoices/{pi1}/confirm", headers=H)
+    r = client.get("/api/finance/journal-entries", params={"source_type": "SUPPLIER_INVOICE_CONFIRMED"})
+    entry = next((e for e in r.json().get("items", []) if e["source_ref"] == pi1), None)
+    check("2.采购发票确认→分录 POSTED",
+          r.status_code == 200 and entry is not None and entry["status"] == "POSTED",
+          f"{r.status_code} entry={entry is not None}")
+
+    # 3. 分录行 1405 借 / 2202 贷，金额=发票额
+    if entry:
+        detail = client.get(f"/api/finance/journal-entries/{entry['entry_number']}").json()
+        l_debit = next((l for l in detail["lines"] if l["account_code"] == "1405"), None)
+        l_credit = next((l for l in detail["lines"] if l["account_code"] == "2202"), None)
+        check("3.分录科目与金额勾稽(1405/2202)",
+              l_debit is not None and l_credit is not None
+              and abs(l_debit["debit"] - round(cap * 0.8, 2)) < 0.01
+              and abs(l_credit["credit"] - round(cap * 0.8, 2)) < 0.01,
+              detail)
+    else:
+        check("3.分录科目与金额勾稽(1405/2202)", False, "no entry")
+
+    # 4. 销售开票 issue → 分录 SALES_INVOICE_ISSUED（1122/6001）
+    r = client.post("/api/sd/invoices", headers=H,
+                    json={"sales_order_number": so, "delivery_number": dk, "amount": 255})
+    inv1 = r.json()["invoice_number"]
+    r = client.post(f"/api/sd/invoices/{inv1}/issue", headers=H)
+    r = client.get("/api/finance/journal-entries", params={"source_type": "SALES_INVOICE_ISSUED"})
+    entry = next((e for e in r.json().get("items", []) if e["source_ref"] == inv1), None)
+    check("4.开票→分录 SALES_INVOICE_ISSUED",
+          r.status_code == 200 and entry is not None,
+          f"{r.status_code} entry={entry is not None}")
+
+    # 5. 发货 → 分录 SALES_DELIVERY_SHIPPED（6401/1405，数量×标准成本）
+    r = client.get("/api/finance/journal-entries", params={"source_type": "SALES_DELIVERY_SHIPPED"})
+    entry = next((e for e in r.json().get("items", []) if e["source_ref"] == dk), None)
+    check("5.发货→分录 SALES_DELIVERY_SHIPPED(标准成本)",
+          std_cost > 0 and entry is not None,
+          f"std={std_cost} entry={entry is not None}")
+
+    # 6. 付款核销 → 分录 SUPPLIER_PAYMENT_PAID
+    r = client.post("/api/purchase/payments", headers=H,
+                    json={"supplier_id": supplier_id, "amount": 300})
+    pay1 = r.json()["payment_number"]
+    client.post(f"/api/purchase/payments/{pay1}/pay", headers=H,
+                json={"allocations": [{"invoice_number": pi1, "allocated_amount": 300}]})
+    r = client.get("/api/finance/journal-entries", params={"source_type": "SUPPLIER_PAYMENT_PAID"})
+    entry = next((e for e in r.json().get("items", []) if e["source_ref"] == pay1), None)
+    check("6.付款→分录 SUPPLIER_PAYMENT_PAID", entry is not None)
+
+    # 7. 收款核销 → 分录 RECEIPT_PAID
+    r = client.post("/api/sd/receipts", headers=H, json={"customer_id": customer_id, "amount": 255})
+    rc1 = r.json()["receipt_number"]
+    client.post(f"/api/sd/receipts/{rc1}/pay", headers=H,
+                json={"allocations": [{"invoice_number": inv1, "allocated_amount": 255}]})
+    r = client.get("/api/finance/journal-entries", params={"source_type": "RECEIPT_PAID"})
+    entry = next((e for e in r.json().get("items", []) if e["source_ref"] == rc1), None)
+    check("7.收款→分录 RECEIPT_PAID", entry is not None)
+
+    # 8. 余额表：Σ借 = Σ贷 铁律
+    r = client.get("/api/finance/trial-balance")
+    tb = r.json()
+    check("8.试算平衡 Σ借=Σ贷", r.status_code == 200 and tb["balanced"] is True
+          and tb["total_debit"] == tb["total_credit"] and tb["total_debit"] > 0,
+          f"debit={tb.get('total_debit')} credit={tb.get('total_credit')}")
+
+    # 9. 余额表科目发生额：6001 贷 255、6401 借 10×标准成本
+    row_6001 = next((x for x in tb["items"] if x["account_code"] == "6001"), None)
+    row_6401 = next((x for x in tb["items"] if x["account_code"] == "6401"), None)
+    check("9.科目发生额勾稽(6001/6401)",
+          row_6001 is not None and abs(row_6001["credit_total"] - 255) < 0.01
+          and row_6401 is not None and abs(row_6401["debit_total"] - round(10 * std_cost, 2)) < 0.01,
+          f"6001={row_6001} 6401={row_6401}")
+
+    # 10. 会计期间当月 OPEN
+    r = client.get("/api/finance/periods")
+    import datetime as _dt
+    current = _dt.datetime.now().strftime("%Y-%m")
+    row = next((x for x in r.json().get("items", []) if x["period_code"] == current), None)
+    check("10.当月期间 OPEN", r.status_code == 200 and row is not None and row["status"] == "OPEN",
+          f"period={row}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
