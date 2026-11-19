@@ -76,7 +76,6 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/pp/mps', label: '主生产计划', icon: CalendarClock, path: '/pp/mps' },
       { key: '/pp/mrp', label: 'MRP 运算', icon: Activity, path: '/pp/mrp' },
       { key: '/pp/planned-orders', label: '计划订单', icon: ClipboardList, path: '/pp/planned-orders' },
-      { key: '/pp/purchase-orders', label: '采购订单', icon: Boxes, path: '/pp/purchase-orders' },
       {
         key: '/pp/planning-exceptions',
         label: '计划异常',
@@ -146,9 +145,11 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'mm',
-    label: '物料管理',
+    label: '采购与库存',
     icon: Package,
     children: [
+      { key: '/mm/purchase-orders', label: '采购订单', icon: Boxes, path: '/mm/purchase-orders' },
+      { key: '/mm/inventory', label: '库存台账', icon: PackageSearch, path: '/mm/inventory' },
       { key: '/mm/materials', label: '物料主数据', icon: Boxes, path: '/mm/materials' },
       { key: '/mm/material-issues', label: '生产领料', icon: PackageMinus, path: '/mm/material-issues' },
     ],

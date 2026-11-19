@@ -24,6 +24,7 @@ const MaterialList = lazy(() => import('./pages/mm/MaterialList'))
 const MaterialForm = lazy(() => import('./pages/mm/MaterialForm'))
 const MaterialIssueList = lazy(() => import('./pages/mm/MaterialIssueList'))
 const MaterialIssueForm = lazy(() => import('./pages/mm/MaterialIssueForm'))
+const InventoryLedger = lazy(() => import('./pages/mm/InventoryLedger'))
 const BOMList = lazy(() => import('./pages/eng/BOMList'))
 const BOMForm = lazy(() => import('./pages/eng/BOMForm'))
 const RoutingList = lazy(() => import('./pages/eng/RoutingList'))
@@ -130,6 +131,7 @@ function App() {
                       <Route path="/mm/materials/:code/edit" element={<MaterialForm />} />
                       <Route path="/mm/material-issues" element={<MaterialIssueList />} />
                       <Route path="/mm/material-issues/new" element={<MaterialIssueForm />} />
+                      <Route path="/mm/inventory" element={<InventoryLedger />} />
                       <Route path="/eng/boms" element={<BOMList />} />
                       <Route path="/eng/factory-product-mappings" element={<FactoryProductMappingList />} />
                       <Route path="/eng/factory-product-mappings/new" element={<FactoryProductMappingForm />} />
@@ -158,7 +160,7 @@ function App() {
                       <Route path="/pp/lot-cards/:lotNumber/edit" element={<LotCardForm />} />
                       <Route path="/trace/explorer" element={<TraceabilityExplorer />} />
                       <Route path="/dashboard/management" element={<ManagementDashboard />} />
-                      <Route path="/pp/purchase-orders" element={<PurchaseOrderList />} />
+                      <Route path="/mm/purchase-orders" element={<PurchaseOrderList />} />
                       <Route path="/pp/planning" element={<PlanningWorkbench />} />
                       <Route path="/pp/mps" element={<MpsList />} />
                       <Route path="/pp/mrp" element={<MrpRunList />} />

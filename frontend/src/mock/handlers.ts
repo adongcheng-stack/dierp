@@ -944,6 +944,28 @@ route('GET', '/mm/materials', (ctx) => {
   return ok(clone(paginate(materials, ctx.query)))
 })
 
+route('GET', '/mm/inventory', (ctx) => {
+  const db = getDb()
+  let materials = listOf(db, 'materials').filter((m: any) => !m.is_deleted)
+  const code = String(ctx.query?.material_code ?? '').trim()
+  if (code) materials = materials.filter((m: any) => String(m.material_code).includes(code))
+  return ok(
+    materials.map((m: any) => {
+      const current = toNumber(m.current_stock)
+      const safety = toNumber(m.safety_stock)
+      return {
+        material_code: m.material_code,
+        material_name: m.material_name,
+        category: m.category,
+        unit: m.unit,
+        current_stock: current,
+        safety_stock: safety,
+        stock_status: current >= safety ? '充足' : '不足',
+      }
+    })
+  )
+})
+
 route('GET', '/mm/materials/:code', (_ctx, params) => {
   const material = findItem(listOf(getDb(), 'materials'), 'material_code', params.code)
   if (!material) fail(404, `物料不存在: ${params.code}`)
