@@ -71,6 +71,10 @@
     rdfs:comment "对供应商付款，PAID 时按核销明细冲减采购发票已付额。" .
 :Receipt a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "收款单" ;
     rdfs:comment "对客户收款，PAID 时冲减销售发票 received_amount 并记应收流水 RECEIPT。" .
+:Stocktake a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "盘点单" ;
+    rdfs:comment "实盘与账面差异单据，APPROVED 时写 ADJUSTMENT 流水并校正现存量（调整后 ≥0）。" .
+:StockTransfer a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "调拨单" ;
+    rdfs:comment "仓库间移库：CONFIRMED 记调出/调入两笔流水，总量不变（demo 不迁移 mm 域仓库字段）。" .
 :BOM a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "物料清单" .
 :Routing a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "工艺路线" .
 :ScheduleRun a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "排程运算批次" ;
@@ -119,6 +123,8 @@
     rdfs:comment "一单多票：付款单对采购发票的核销行。" .
 :ReceiptAllocation a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "收款核销明细" ;
     rdfs:comment "一单多票：收款单对销售发票的核销行（与付款核销分表，口径独立）。" .
+:Warehouse a owl:Class ; rdfs:subClassOf :PhysicalObject ; rdfs:label "仓库" ;
+    rdfs:comment "仓库主数据（P3 demo：仅主数据+调拨引用，不迁移 mm 域 warehouse 字段）。" .
 :ProductionCost a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "工单实际成本归集" .
 :ScheduleException a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "排程异常" ;
     rdfs:comment "排程运行产生的产能/交期/缺料/技能/换产/停机异常记录。" .
@@ -186,6 +192,19 @@
 :allocatedAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
 :receiptNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :receiptDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:warehouseCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:warehouseName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:location a owl:DatatypeProperty ; rdfs:range xsd:string .
+:isActive a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+:stocktakeNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:bookQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:countedQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:diff a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:stocktakeDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:transferNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:fromWarehouseCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:toWarehouseCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:transferDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
 :productionOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :plannedOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :mrpRunNumber a owl:DatatypeProperty ; rdfs:range xsd:string .

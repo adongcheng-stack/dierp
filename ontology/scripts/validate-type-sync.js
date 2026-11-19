@@ -87,6 +87,9 @@ const CONFIG = {
     { name: 'SupplierInvoiceStatus', prop: 'status', shape: 'SupplierInvoiceShape' },
     { name: 'PaymentMethod', prop: 'method', shape: 'SupplierPaymentShape' },
     { name: 'PaymentMethod', prop: 'method', shape: 'ReceiptShape' },
+    // 库存域补强（P3）
+    { name: 'StocktakeStatus', prop: 'status', shape: 'StocktakeShape' },
+    { name: 'StockTransferStatus', prop: 'status', shape: 'StockTransferShape' },
   ],
   // 必须存在的 NodeShape 名 (Check4)
   REQUIRED_SHAPES: [
@@ -106,6 +109,7 @@ const CONFIG = {
     'SalesDeliveryShape', 'SalesInvoiceShape', 'ReceivableEntryShape',
     'SupplierInvoiceShape', 'SupplierPaymentShape', 'PaymentAllocationShape',
     'ReceiptShape', 'ReceiptAllocationShape',
+    'WarehouseShape', 'StocktakeShape', 'StockTransferShape',
   ],
   // 业务数量基线: 类名 -> 期望实例数 (Check8; 0 表示不检查该项可删除)
   BASELINE: {

@@ -1088,3 +1088,63 @@
         sh:path :allocatedAmount ; sh:minCount 1 ; sh:minInclusive 0 ;
         sh:message "S44 核销金额必须大于等于 0"
     ] .
+
+# S45 仓库
+:WarehouseShape a sh:NodeShape ;
+    sh:targetClass :Warehouse ;
+    sh:property [
+        sh:path :warehouseCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S45 仓库编码必填"
+    ] ;
+    sh:property [
+        sh:path :warehouseName ; sh:minCount 1 ;
+        sh:message "S45 仓库名称必填"
+    ] .
+
+# S46 盘点单
+:StocktakeShape a sh:NodeShape ;
+    sh:targetClass :Stocktake ;
+    sh:property [
+        sh:path :stocktakeNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^STK-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S46 盘点单号必须符合 STK-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :materialCode ; sh:minCount 1 ;
+        sh:message "S46 盘点必须关联物料"
+    ] ;
+    sh:property [
+        sh:path :countedQty ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S46 实盘数量必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "APPROVED" "CANCELLED" ) ;
+        sh:message "S46 盘点状态必须来自 StocktakeStatus 枚举"
+    ] .
+
+# S47 调拨单
+:StockTransferShape a sh:NodeShape ;
+    sh:targetClass :StockTransfer ;
+    sh:property [
+        sh:path :transferNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^TRF-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S47 调拨单号必须符合 TRF-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :fromWarehouseCode ; sh:minCount 1 ;
+        sh:message "S47 调出仓库必填"
+    ] ;
+    sh:property [
+        sh:path :toWarehouseCode ; sh:minCount 1 ;
+        sh:message "S47 调入仓库必填"
+    ] ;
+    sh:property [
+        sh:path :quantity ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S47 调拨数量必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "CONFIRMED" "CANCELLED" ) ;
+        sh:message "S47 调拨状态必须来自 StockTransferStatus 枚举"
+    ] .

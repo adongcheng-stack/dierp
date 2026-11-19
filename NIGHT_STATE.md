@@ -3,7 +3,6 @@
 （空）
 
 ## Pending Tasks
-- [ ] T502 P3 TTL/SHACL 同步（STK/TRF pattern）双绿
 - [ ] T503 P3 盘点+调拨后端端点 — 探针 8 断言
 - [ ] T504 P3 批次效期视图+看板资金 KPI 4 卡（纯读）
 - [ ] T505 P3 前端 3 页+看板 KPI 卡
@@ -11,6 +10,7 @@
 - [ ] T507 P3 smoke_inventory_loop+全门禁+提交
 
 ## Completed Tasks
+- [x] T502 P3 TTL/SHACL 双绿（07:08 完成）— 证据：validate-type-sync EXIT=0（KEY_ENUMS +2、S45-S47 三形状 STK/TRF pattern）+ validate-consistency EXIT=0
 - [x] T501 P3 本体 3 实体+2 枚举（07:02 完成）— 证据：generate_models 51 实体；generate-types 54 枚举；upgrade_planning EXIT=0（3 新表）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed
 - [x] T101 P0 本体枚举+3（22:08 完成）— 证据：generate-types EXIT=0（46 枚举含 3 新）；validate-type-sync EXIT=0；validate-consistency EXIT=0；mappings v1.2.0
 - [x] T102 P0 实体+3（22:18 完成）— 证据：generate_models EXIT=0（39 实体）；upgrade_planning EXIT=0（3 新表入库）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0。注：FK 目标列为 sales_orders.order_number（sd.py 实际列名）
