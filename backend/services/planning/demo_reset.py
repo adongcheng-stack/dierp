@@ -37,6 +37,7 @@ from backend.common.models.planning import (
     SalesInvoice,
     SupplierInvoice,
     SupplierPayment,
+    Warehouse,
     PurchaseOrder,
     PurchaseOrderLine,
     PurchaseRequest,
@@ -140,6 +141,19 @@ def _clear(db: Session) -> dict[str, int]:
         db.delete(order_row)
     if stale_orders:
         cleared["stale_sales_orders"] = len(stale_orders)
+    # 探针/冒烟自建的仓库（备注标记）同样定向清理
+    stale_warehouses = (
+        db.query(Warehouse)
+        .filter(
+            Warehouse.is_deleted.is_(False),
+            or_(Warehouse.remarks.like("%探针%"), Warehouse.remarks.like("%冒烟%")),
+        )
+        .all()
+    )
+    for warehouse_row in stale_warehouses:
+        db.delete(warehouse_row)
+    if stale_warehouses:
+        cleared["stale_warehouses"] = len(stale_warehouses)
     # 清掉 QMS 演示专用的带报废报工单（不影响基础演示报工）
     qms_report = (
         db.query(OperationReport)

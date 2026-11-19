@@ -4,13 +4,21 @@ MM模块路由 - 物料管理
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from decimal import Decimal
 from backend.common.database.base import get_db
 from backend.common.models.user import User
 from backend.api.routers.auth import get_current_user
 from backend.common.models.mm import Material, MaterialIssue, MaterialTransaction
+from backend.common.models.planning import (
+    Stocktake,
+    StocktakeStatus,
+    StockTransfer,
+    StockTransferStatus,
+    Warehouse,
+)
+from backend.common.utils.number_generator import NumberGenerator
 
 router = APIRouter()
 
@@ -680,4 +688,347 @@ async def list_material_transactions(
             for t in rows
         ],
     }
+
+
+# ── 库存补强（P3）：仓库主数据 / 盘点 / 调拨 ──────────────────────────
+class WarehouseCreate(BaseModel):
+    warehouse_code: str
+    warehouse_name: str
+    location: Optional[str] = None
+    remarks: Optional[str] = None
+
+
+class StocktakeCreate(BaseModel):
+    material_code: str
+    counted_qty: float = Field(..., ge=0)
+    warehouse: Optional[str] = None
+    remarks: Optional[str] = None
+
+
+class StockTransferCreate(BaseModel):
+    from_warehouse_code: str
+    to_warehouse_code: str
+    material_code: str
+    quantity: float = Field(..., gt=0)
+    remarks: Optional[str] = None
+
+
+def _warehouse_dict(w: Warehouse) -> dict:
+    return {
+        "warehouse_code": w.warehouse_code,
+        "warehouse_name": w.warehouse_name,
+        "location": w.location,
+        "is_active": bool(w.is_active),
+        "remarks": w.remarks,
+    }
+
+
+def _stocktake_dict(s: Stocktake) -> dict:
+    return {
+        "stocktake_number": s.stocktake_number,
+        "material_code": s.material_code,
+        "warehouse": s.warehouse,
+        "book_qty": float(s.book_qty or 0),
+        "counted_qty": float(s.counted_qty or 0),
+        "diff": float(s.diff or 0),
+        "status": s.status.value if hasattr(s.status, "value") else str(s.status),
+        "stocktake_date": s.stocktake_date.isoformat() if s.stocktake_date else None,
+        "remarks": s.remarks,
+    }
+
+
+def _transfer_dict(t: StockTransfer) -> dict:
+    return {
+        "transfer_number": t.transfer_number,
+        "from_warehouse_code": t.from_warehouse_code,
+        "to_warehouse_code": t.to_warehouse_code,
+        "material_code": t.material_code,
+        "quantity": float(t.quantity or 0),
+        "status": t.status.value if hasattr(t.status, "value") else str(t.status),
+        "transfer_date": t.transfer_date.isoformat() if t.transfer_date else None,
+        "remarks": t.remarks,
+    }
+
+
+@router.get("/warehouses")
+def list_warehouses(db: Session = Depends(get_db)):
+    rows = db.query(Warehouse).filter(Warehouse.is_deleted.is_(False)).all()
+    return {"total": len(rows), "items": [_warehouse_dict(w) for w in rows]}
+
+
+@router.post("/warehouses", status_code=status.HTTP_201_CREATED)
+def create_warehouse(
+    payload: WarehouseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if db.query(Warehouse).filter(Warehouse.warehouse_code == payload.warehouse_code).first():
+        raise HTTPException(status_code=400, detail=f"仓库编码已存在: {payload.warehouse_code}")
+    w = Warehouse(
+        warehouse_code=payload.warehouse_code,
+        warehouse_name=payload.warehouse_name,
+        location=payload.location,
+        is_active=True,
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(w)
+    db.commit()
+    return _warehouse_dict(w)
+
+
+@router.get("/stocktakes")
+def list_stocktakes(
+    stocktake_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Stocktake).filter(Stocktake.is_deleted.is_(False))
+    if stocktake_status:
+        query = query.filter(Stocktake.status == StocktakeStatus(stocktake_status))
+    total = query.count()
+    rows = query.order_by(Stocktake.id.desc()).offset(offset).limit(limit).all()
+    return {"total": total, "items": [_stocktake_dict(s) for s in rows]}
+
+
+@router.get("/stocktakes/{stocktake_number}")
+def get_stocktake(stocktake_number: str, db: Session = Depends(get_db)):
+    s = (
+        db.query(Stocktake)
+        .filter(Stocktake.stocktake_number == stocktake_number, Stocktake.is_deleted.is_(False))
+        .first()
+    )
+    if not s:
+        raise HTTPException(status_code=404, detail=f"盘点单不存在: {stocktake_number}")
+    return _stocktake_dict(s)
+
+
+@router.post("/stocktakes", status_code=status.HTTP_201_CREATED)
+def create_stocktake(
+    payload: StocktakeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建盘点单（DRAFT）：book_qty 取创建时现存量快照，diff = 实盘 − 账面。"""
+    material = db.query(Material).filter(Material.material_code == payload.material_code).first()
+    if not material:
+        raise HTTPException(status_code=404, detail=f"物料不存在: {payload.material_code}")
+    book_qty = float(material.current_stock or 0)
+    diff = round(payload.counted_qty - book_qty, 2)
+    number = NumberGenerator.generate_document_number(db, Stocktake, "stocktake_number", "STK", 4)
+    s = Stocktake(
+        stocktake_number=number,
+        material_code=material.material_code,
+        warehouse=payload.warehouse,
+        book_qty=book_qty,
+        counted_qty=payload.counted_qty,
+        diff=diff,
+        status=StocktakeStatus.DRAFT,
+        stocktake_date=datetime.now(),
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(s)
+    db.flush()  # 坑2
+    db.commit()
+    return _stocktake_dict(s)
+
+
+@router.post("/stocktakes/{stocktake_number}/approve")
+def approve_stocktake(
+    stocktake_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """审批盘点：写 ADJUSTMENT 流水并校正现存量；调整后库存 ≥0。"""
+    s = (
+        db.query(Stocktake)
+        .filter(Stocktake.stocktake_number == stocktake_number, Stocktake.is_deleted.is_(False))
+        .first()
+    )
+    if not s:
+        raise HTTPException(status_code=404, detail=f"盘点单不存在: {stocktake_number}")
+    if s.status != StocktakeStatus.DRAFT:
+        raise HTTPException(status_code=400, detail=f"盘点单状态为 {s.status.value}，不允许审批")
+    material = db.query(Material).filter(Material.material_code == s.material_code).first()
+    if not material:
+        raise HTTPException(status_code=400, detail=f"物料不存在: {s.material_code}")
+    diff = float(s.diff or 0)
+    if float(material.current_stock or 0) + diff < 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"调整后库存为负：当前 {float(material.current_stock or 0)}，差异 {diff}",
+        )
+    if abs(diff) > 1e-9:
+        material.current_stock = float(material.current_stock or 0) + diff
+        db.add(MaterialTransaction(
+            transaction_number=NumberGenerator.generate_document_number(
+                db, MaterialTransaction, "transaction_number", "TXN", 6),
+            material_code=s.material_code,
+            transaction_type="ADJUSTMENT",
+            quantity=diff,
+            unit=material.unit or "PCS",
+            reference_number=s.stocktake_number,
+            reference_type="STOCKTAKE",
+            warehouse=s.warehouse,
+            transaction_date=datetime.now(),
+            operator=current_user.username,
+            remarks=f"盘点调整 {s.stocktake_number}",
+            created_by=current_user.username,
+        ))
+    s.status = StocktakeStatus.APPROVED
+    s.updated_by = current_user.username
+    s.updated_at = datetime.now()
+    db.commit()
+    return _stocktake_dict(s)
+
+
+@router.post("/stocktakes/{stocktake_number}/cancel")
+def cancel_stocktake(
+    stocktake_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    s = (
+        db.query(Stocktake)
+        .filter(Stocktake.stocktake_number == stocktake_number, Stocktake.is_deleted.is_(False))
+        .first()
+    )
+    if not s:
+        raise HTTPException(status_code=404, detail=f"盘点单不存在: {stocktake_number}")
+    if s.status != StocktakeStatus.DRAFT:
+        raise HTTPException(status_code=400, detail=f"盘点单状态为 {s.status.value}，不允许作废")
+    s.status = StocktakeStatus.CANCELLED
+    s.updated_by = current_user.username
+    s.updated_at = datetime.now()
+    db.commit()
+    return _stocktake_dict(s)
+
+
+@router.get("/stock-transfers")
+def list_stock_transfers(
+    transfer_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(StockTransfer).filter(StockTransfer.is_deleted.is_(False))
+    if transfer_status:
+        query = query.filter(StockTransfer.status == StockTransferStatus(transfer_status))
+    total = query.count()
+    rows = query.order_by(StockTransfer.id.desc()).offset(offset).limit(limit).all()
+    return {"total": total, "items": [_transfer_dict(t) for t in rows]}
+
+
+@router.get("/stock-transfers/{transfer_number}")
+def get_stock_transfer(transfer_number: str, db: Session = Depends(get_db)):
+    t = (
+        db.query(StockTransfer)
+        .filter(StockTransfer.transfer_number == transfer_number, StockTransfer.is_deleted.is_(False))
+        .first()
+    )
+    if not t:
+        raise HTTPException(status_code=404, detail=f"调拨单不存在: {transfer_number}")
+    return _transfer_dict(t)
+
+
+@router.post("/stock-transfers", status_code=status.HTTP_201_CREATED)
+def create_stock_transfer(
+    payload: StockTransferCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建调拨单（DRAFT）：from≠to、仓库须存在、数量>0。"""
+    if payload.from_warehouse_code == payload.to_warehouse_code:
+        raise HTTPException(status_code=400, detail="调出与调入仓库不能相同")
+    material = db.query(Material).filter(Material.material_code == payload.material_code).first()
+    if not material:
+        raise HTTPException(status_code=404, detail=f"物料不存在: {payload.material_code}")
+    for code in (payload.from_warehouse_code, payload.to_warehouse_code):
+        if not db.query(Warehouse).filter(Warehouse.warehouse_code == code).first():
+            raise HTTPException(status_code=404, detail=f"仓库不存在: {code}")
+    number = NumberGenerator.generate_document_number(db, StockTransfer, "transfer_number", "TRF", 4)
+    t = StockTransfer(
+        transfer_number=number,
+        from_warehouse_code=payload.from_warehouse_code,
+        to_warehouse_code=payload.to_warehouse_code,
+        material_code=material.material_code,
+        quantity=payload.quantity,
+        status=StockTransferStatus.DRAFT,
+        transfer_date=datetime.now(),
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(t)
+    db.flush()
+    db.commit()
+    return _transfer_dict(t)
+
+
+@router.post("/stock-transfers/{transfer_number}/confirm")
+def confirm_stock_transfer(
+    transfer_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """确认调拨：记调出/调入两笔流水（总量不变，不动 current_stock）。"""
+    t = (
+        db.query(StockTransfer)
+        .filter(StockTransfer.transfer_number == transfer_number, StockTransfer.is_deleted.is_(False))
+        .first()
+    )
+    if not t:
+        raise HTTPException(status_code=404, detail=f"调拨单不存在: {transfer_number}")
+    if t.status != StockTransferStatus.DRAFT:
+        raise HTTPException(status_code=400, detail=f"调拨单状态为 {t.status.value}，不允许确认")
+    for warehouse_code, qty, txn_type, ref_type in (
+        (t.from_warehouse_code, -float(t.quantity or 0), "TRANSFER_OUT", "STOCK_TRANSFER_OUT"),
+        (t.to_warehouse_code, float(t.quantity or 0), "TRANSFER_IN", "STOCK_TRANSFER_IN"),
+    ):
+        db.add(MaterialTransaction(
+            transaction_number=NumberGenerator.generate_document_number(
+                db, MaterialTransaction, "transaction_number", "TXN", 6),
+            material_code=t.material_code,
+            transaction_type=txn_type,
+            quantity=qty,
+            unit="PCS",
+            reference_number=t.transfer_number,
+            reference_type=ref_type,
+            warehouse=warehouse_code,
+            transaction_date=datetime.now(),
+            operator=current_user.username,
+            remarks=f"调拨 {t.transfer_number} {'调出' if qty < 0 else '调入'} {warehouse_code}",
+            created_by=current_user.username,
+        ))
+        db.flush()  # 坑2：同事务连续生成单号
+    t.status = StockTransferStatus.CONFIRMED
+    t.updated_by = current_user.username
+    t.updated_at = datetime.now()
+    db.commit()
+    return _transfer_dict(t)
+
+
+@router.post("/stock-transfers/{transfer_number}/cancel")
+def cancel_stock_transfer(
+    transfer_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    t = (
+        db.query(StockTransfer)
+        .filter(StockTransfer.transfer_number == transfer_number, StockTransfer.is_deleted.is_(False))
+        .first()
+    )
+    if not t:
+        raise HTTPException(status_code=404, detail=f"调拨单不存在: {transfer_number}")
+    if t.status != StockTransferStatus.DRAFT:
+        raise HTTPException(status_code=400, detail=f"调拨单状态为 {t.status.value}，不允许作废")
+    t.status = StockTransferStatus.CANCELLED
+    t.updated_by = current_user.username
+    t.updated_at = datetime.now()
+    db.commit()
+    return _transfer_dict(t)
+
+
 

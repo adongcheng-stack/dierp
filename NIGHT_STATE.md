@@ -1,15 +1,19 @@
 # Night State
 ## Current Task
-（空）
+T504 P3 批次效期视图+看板 KPI — 计划（自审通过 07:25）
+- 偏差记录：LotCard 无效期字段（纯读不加表）→ 临期预警口径=「completed_at + material.shelf_life_days」估算到期日，days≤30 或已过期标预警
+- 改动：① mm.py GET /batch-tracking（按物料聚合 ACTIVE lot：批次数/在制量/最近完成/估算到期/days_to_expiry/warning）② dashboard.py GET /finance-kpi（应收余额=Σ未收、应付余额=Σ已确认−已核销、回款率=Σ收款核销÷Σ已开票、现金流水=GL 1002 余额）
+- 验证：curl 端点 200 + KPI 与 receivables/ap-view/trial-balance 对账勾稽；pytest
+- 自审：覆盖验收✓ 无超范围（前端归 T505）✓ 可证伪（KPI 与既有台账对账）✓ 边界（估算到期标注 estimated；除零回款率=0；纯读无副作用）✓
 
 ## Pending Tasks
-- [ ] T503 P3 盘点+调拨后端端点 — 探针 8 断言
 - [ ] T504 P3 批次效期视图+看板资金 KPI 4 卡（纯读）
 - [ ] T505 P3 前端 3 页+看板 KPI 卡
 - [ ] T506 P3 mock v17 同构+parity
 - [ ] T507 P3 smoke_inventory_loop+全门禁+提交
 
 ## Completed Tasks
+- [x] T503 P3 盘点+调拨后端（07:22 完成）— 证据：probe_mm_stock 8/8 EXIT=0 双跑稳定（仓库在册/盘点快照+diff/盘盈+ADJUSTMENT 流水/负库存 400（并发场景）/调拨创建/from=to 400/两笔流水总量不变/重复确认 400）；pytest 28 passed。注：仓库主数据探针幂等（已存在可接受）+reset 标记清理；调拨不动 current_stock 总量
 - [x] T502 P3 TTL/SHACL 双绿（07:08 完成）— 证据：validate-type-sync EXIT=0（KEY_ENUMS +2、S45-S47 三形状 STK/TRF pattern）+ validate-consistency EXIT=0
 - [x] T501 P3 本体 3 实体+2 枚举（07:02 完成）— 证据：generate_models 51 实体；generate-types 54 枚举；upgrade_planning EXIT=0（3 新表）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0；pytest 28 passed
 - [x] T101 P0 本体枚举+3（22:08 完成）— 证据：generate-types EXIT=0（46 枚举含 3 新）；validate-type-sync EXIT=0；validate-consistency EXIT=0；mappings v1.2.0
