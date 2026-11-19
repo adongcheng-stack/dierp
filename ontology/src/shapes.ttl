@@ -998,3 +998,93 @@
         sh:in ( "INVOICE" "RECEIPT" "ADJUST" ) ;
         sh:message "S39 流水类型必须来自 ReceivableEntryType 枚举"
     ] .
+
+# S40 采购发票
+:SupplierInvoiceShape a sh:NodeShape ;
+    sh:targetClass :SupplierInvoice ;
+    sh:property [
+        sh:path :invoiceNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^PI-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S40 采购发票号必须符合 PI-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :purchaseOrderNumber ; sh:minCount 1 ;
+        sh:message "S40 采购发票必须关联采购单"
+    ] ;
+    sh:property [
+        sh:path :amount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S40 发票金额必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "CONFIRMED" "CANCELLED" ) ;
+        sh:message "S40 发票状态必须来自 SupplierInvoiceStatus 枚举"
+    ] .
+
+# S41 付款单
+:SupplierPaymentShape a sh:NodeShape ;
+    sh:targetClass :SupplierPayment ;
+    sh:property [
+        sh:path :paymentNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^PAY-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S41 付款单号必须符合 PAY-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :amount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S41 付款金额必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :method ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "TRANSFER" "CASH" "BILL" ) ;
+        sh:message "S41 付款方式必须来自 PaymentMethod 枚举"
+    ] .
+
+# S42 付款核销明细
+:PaymentAllocationShape a sh:NodeShape ;
+    sh:targetClass :PaymentAllocation ;
+    sh:property [
+        sh:path :paymentNumber ; sh:minCount 1 ;
+        sh:message "S42 核销明细必须关联付款单"
+    ] ;
+    sh:property [
+        sh:path :invoiceNumber ; sh:minCount 1 ;
+        sh:message "S42 核销明细必须关联采购发票"
+    ] ;
+    sh:property [
+        sh:path :allocatedAmount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S42 核销金额必须大于等于 0"
+    ] .
+
+# S43 收款单
+:ReceiptShape a sh:NodeShape ;
+    sh:targetClass :Receipt ;
+    sh:property [
+        sh:path :receiptNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^RC-[0-9]{8}-[0-9]{4}$" ;
+        sh:message "S43 收款单号必须符合 RC-YYYYMMDD-XXXX"
+    ] ;
+    sh:property [
+        sh:path :amount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S43 收款金额必须大于等于 0"
+    ] ;
+    sh:property [
+        sh:path :method ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "TRANSFER" "CASH" "BILL" ) ;
+        sh:message "S43 收款方式必须来自 PaymentMethod 枚举"
+    ] .
+
+# S44 收款核销明细
+:ReceiptAllocationShape a sh:NodeShape ;
+    sh:targetClass :ReceiptAllocation ;
+    sh:property [
+        sh:path :receiptNumber ; sh:minCount 1 ;
+        sh:message "S44 核销明细必须关联收款单"
+    ] ;
+    sh:property [
+        sh:path :invoiceNumber ; sh:minCount 1 ;
+        sh:message "S44 核销明细必须关联销售发票"
+    ] ;
+    sh:property [
+        sh:path :allocatedAmount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S44 核销金额必须大于等于 0"
+    ] .

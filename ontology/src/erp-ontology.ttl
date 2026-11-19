@@ -65,6 +65,12 @@
     rdfs:comment "按销售订单出库发货的单据：SHIPPED 扣成品库存，DELIVERED 客户签收。" .
 :SalesInvoice a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "销售发票" ;
     rdfs:comment "对已发货数量开票的单据，开票生成应收流水，P1 收款核销回写 received_amount。" .
+:SupplierInvoice a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "采购发票" ;
+    rdfs:comment "供应商发票，CONFIRM 前需三单匹配（发票额 ≤ 采购单已收货价值），确认后进入应付口径。" .
+:SupplierPayment a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "付款单" ;
+    rdfs:comment "对供应商付款，PAID 时按核销明细冲减采购发票已付额。" .
+:Receipt a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "收款单" ;
+    rdfs:comment "对客户收款，PAID 时冲减销售发票 received_amount 并记应收流水 RECEIPT。" .
 :BOM a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "物料清单" .
 :Routing a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "工艺路线" .
 :ScheduleRun a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "排程运算批次" ;
@@ -109,6 +115,10 @@
 :CostSettlement a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "工单成本结算" .
 :ReceivableEntry a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "应收流水" ;
     rdfs:comment "应收台账的账本行：INVOICE 开票、RECEIPT 收款、ADJUST 调整，金额正开票/负收款。" .
+:PaymentAllocation a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "付款核销明细" ;
+    rdfs:comment "一单多票：付款单对采购发票的核销行。" .
+:ReceiptAllocation a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "收款核销明细" ;
+    rdfs:comment "一单多票：收款单对销售发票的核销行（与付款核销分表，口径独立）。" .
 :ProductionCost a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "工单实际成本归集" .
 :ScheduleException a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "排程异常" ;
     rdfs:comment "排程运行产生的产能/交期/缺料/技能/换产/停机异常记录。" .
@@ -169,6 +179,13 @@
 :entryType a owl:DatatypeProperty ; rdfs:range xsd:string .
 :entryDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
 :referenceNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:taxAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:paymentNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:paymentDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:method a owl:DatatypeProperty ; rdfs:range xsd:string .
+:allocatedAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:receiptNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:receiptDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
 :productionOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :plannedOrderNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
 :mrpRunNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
