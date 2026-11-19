@@ -33,8 +33,16 @@ const STATUS_LABELS: Record<string, string> = {
 
 const pct = (value: number | undefined) => `${((value ?? 0) * 100).toFixed(1)}%`
 
+interface FinanceKpi {
+  receivable_outstanding: number
+  payable_open: number
+  collection_rate: number
+  cash_balance: number
+}
+
 const ManagementDashboard: React.FC = () => {
   const [kpi, setKpi] = useState<Kpi | null>(null)
+  const [finance, setFinance] = useState<FinanceKpi | null>(null)
   const [loading, setLoading] = useState(false)
 
   const fetchData = async () => {
@@ -42,6 +50,8 @@ const ManagementDashboard: React.FC = () => {
     try {
       const response = await api.get('/dashboard/management')
       setKpi(response.data)
+      const financeResponse = await api.get('/dashboard/finance-kpi')
+      setFinance(financeResponse.data)
     } catch (error) {
       message.error(getErrorMessage(error) || '获取经营看板失败')
     } finally {
@@ -114,6 +124,51 @@ const ManagementDashboard: React.FC = () => {
               value={(kpi?.delivery.delayed_sales_orders ?? 0) + (kpi?.delivery.delayed_production_orders ?? 0)}
               suffix="单逾期"
               valueStyle={{ color: (kpi?.delivery.delayed_sales_orders ?? 0) > 0 ? '#cf1322' : undefined }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 资金维度（P3）：应收 / 应付 / 回款率 / 现金 */}
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="应收余额"
+              value={finance?.receivable_outstanding ?? 0}
+              precision={2}
+              prefix="¥"
+              valueStyle={{ color: '#cf1322' }}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="应付余额（已确认-已核销）"
+              value={finance?.payable_open ?? 0}
+              precision={2}
+              prefix="¥"
+              valueStyle={{ color: '#d46b08' }}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="回款率（收款÷开票）"
+              value={pct(finance?.collection_rate)}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="现金流水（银行存款 1002）"
+              value={finance?.cash_balance ?? 0}
+              precision={2}
+              prefix="¥"
+              valueStyle={{ color: (finance?.cash_balance ?? 0) >= 0 ? '#3f8600' : '#cf1322' }}
             />
           </Card>
         </Col>

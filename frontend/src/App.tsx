@@ -29,6 +29,9 @@ const PaymentList = lazy(() => import('./pages/mm/PaymentList'))
 const AccountList = lazy(() => import('./pages/finance/AccountList'))
 const JournalEntryList = lazy(() => import('./pages/finance/JournalEntryList'))
 const TrialBalance = lazy(() => import('./pages/finance/TrialBalance'))
+const StocktakeList = lazy(() => import('./pages/mm/StocktakeList'))
+const StockTransferList = lazy(() => import('./pages/mm/StockTransferList'))
+const BatchTracking = lazy(() => import('./pages/mm/BatchTracking'))
 const MaterialList = lazy(() => import('./pages/mm/MaterialList'))
 const MaterialForm = lazy(() => import('./pages/mm/MaterialForm'))
 const MaterialIssueList = lazy(() => import('./pages/mm/MaterialIssueList'))
@@ -149,6 +152,9 @@ function App() {
                       <Route path="/finance/accounts" element={<AccountList />} />
                       <Route path="/finance/journal-entries" element={<JournalEntryList />} />
                       <Route path="/finance/trial-balance" element={<TrialBalance />} />
+                      <Route path="/mm/stocktakes" element={<StocktakeList />} />
+                      <Route path="/mm/stock-transfers" element={<StockTransferList />} />
+                      <Route path="/mm/batch-tracking" element={<BatchTracking />} />
                       <Route path="/mm/materials" element={<MaterialList />} />
                       <Route path="/mm/materials/new" element={<MaterialForm />} />
                       <Route path="/mm/materials/:code/edit" element={<MaterialForm />} />
