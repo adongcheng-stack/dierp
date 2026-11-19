@@ -23,6 +23,8 @@ from backend.common.models.planning import (
     InvoiceStatus,
     ReceivableEntry,
     ReceivableEntryType,
+    Receipt,
+    ReceiptAllocation,
 )
 from backend.common.models.eng import ProductionVersion
 from sqlalchemy import or_
@@ -3756,4 +3758,212 @@ def issue_invoice(
     ))
     db.commit()
     return _invoice_dict(i)
+
+
+# ── 收款单 + 核销（PAID 冲减发票 received_amount；台账流水记 RECEIPT） ──
+class ReceiptAllocationItem(BaseModel):
+    invoice_number: str
+    allocated_amount: float = Field(..., gt=0)
+
+
+class ReceiptCreate(BaseModel):
+    customer_id: str = Field(..., description="客户编码")
+    amount: float = Field(..., gt=0, description="收款金额")
+    method: str = Field("TRANSFER", description="收款方式 TRANSFER/CASH/BILL")
+    remarks: Optional[str] = None
+
+
+class ReceiptPayPayload(BaseModel):
+    allocations: list[ReceiptAllocationItem] = Field(default_factory=list)
+
+
+def _receipt_dict(r: Receipt, allocations: Optional[list[ReceiptAllocation]] = None) -> dict:
+    data = {
+        "receipt_number": r.receipt_number,
+        "customer_id": r.customer_id,
+        "customer_name": r.customer_name,
+        "amount": float(r.amount or 0),
+        "receipt_date": r.receipt_date.isoformat() if r.receipt_date else None,
+        "method": r.method.value if hasattr(r.method, "value") else str(r.method),
+        "status": r.status,
+        "remarks": r.remarks,
+        "created_at": r.created_at.isoformat() if r.created_at else None,
+        "allocated_amount": 0.0,
+        "allocations": [],
+    }
+    if allocations is not None:
+        data["allocated_amount"] = round(sum(float(a.allocated_amount or 0) for a in allocations), 2)
+        data["allocations"] = [
+            {"invoice_number": a.invoice_number, "allocated_amount": float(a.allocated_amount or 0)}
+            for a in allocations
+        ]
+    return data
+
+
+def _load_receipt(db: Session, number: str) -> Receipt:
+    r = (
+        db.query(Receipt)
+        .filter(Receipt.receipt_number == number, Receipt.is_deleted.is_(False))
+        .first()
+    )
+    if not r:
+        raise HTTPException(status_code=404, detail=f"收款单不存在: {number}")
+    return r
+
+
+def _receipt_allocations(db: Session, number: str) -> list[ReceiptAllocation]:
+    return db.query(ReceiptAllocation).filter(ReceiptAllocation.receipt_number == number).all()
+
+
+@router.get("/receipts")
+def list_receipts(
+    customer_id: Optional[str] = None,
+    receipt_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Receipt).filter(Receipt.is_deleted.is_(False))
+    if customer_id:
+        query = query.filter(Receipt.customer_id == customer_id)
+    if receipt_status:
+        query = query.filter(Receipt.status == receipt_status)
+    total = query.count()
+    rows = query.order_by(Receipt.id.desc()).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "items": [_receipt_dict(r, _receipt_allocations(db, r.receipt_number)) for r in rows],
+    }
+
+
+@router.get("/receipts/{receipt_number}")
+def get_receipt(receipt_number: str, db: Session = Depends(get_db)):
+    r = _load_receipt(db, receipt_number)
+    return _receipt_dict(r, _receipt_allocations(db, receipt_number))
+
+
+@router.post("/receipts", status_code=http_status.HTTP_201_CREATED)
+def create_receipt(
+    payload: ReceiptCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建收款单（DRAFT）。核销在 pay 时进行。"""
+    if payload.method not in ("TRANSFER", "CASH", "BILL"):
+        raise HTTPException(status_code=400, detail=f"收款方式非法: {payload.method}")
+    customer = db.query(Customer).filter(Customer.customer_id == payload.customer_id).first()
+    number = NumberGenerator.generate_document_number(db, Receipt, "receipt_number", "RC", 4)
+    r = Receipt(
+        receipt_number=number,
+        customer_id=payload.customer_id,
+        customer_name=(customer.trade_name or customer.legal_name) if customer else None,
+        amount=payload.amount,
+        receipt_date=datetime.now(),
+        method=payload.method,
+        status="DRAFT",
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(r)
+    db.flush()
+    db.commit()
+    return _receipt_dict(r)
+
+
+@router.post("/receipts/{receipt_number}/pay")
+def pay_receipt(
+    receipt_number: str,
+    payload: ReceiptPayPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """收款核销（DRAFT → PAID）：冲减发票 received_amount + 联动状态 + AR 流水 RECEIPT（负金额）。"""
+    r = _load_receipt(db, receipt_number)
+    if r.status != "DRAFT":
+        raise HTTPException(status_code=400, detail=f"收款单状态为 {r.status}，不允许核销")
+    if not payload.allocations:
+        raise HTTPException(status_code=400, detail="核销至少需要一张发票明细")
+    used = 0.0
+    for item in payload.allocations:
+        invoice = (
+            db.query(SalesInvoice)
+            .filter(
+                SalesInvoice.invoice_number == item.invoice_number,
+                SalesInvoice.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if not invoice:
+            raise HTTPException(status_code=404, detail=f"发票不存在: {item.invoice_number}")
+        if invoice.status not in (InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID):
+            raise HTTPException(
+                status_code=400,
+                detail=f"发票 {item.invoice_number} 状态为 {invoice.status.value}，不可核销",
+            )
+        outstanding = float(invoice.amount or 0) - float(invoice.received_amount or 0)
+        if item.allocated_amount > outstanding + 1e-6:
+            raise HTTPException(
+                status_code=400,
+                detail=f"超收核销：发票 {item.invoice_number} 未收余额 {outstanding:.2f}，本次 {item.allocated_amount:.2f}",
+            )
+        used += item.allocated_amount
+    if used > float(r.amount or 0) + 1e-6:
+        raise HTTPException(
+            status_code=400,
+            detail=f"核销超收款额：收款 {float(r.amount):.2f}，本次合计 {used:.2f}",
+        )
+    for item in payload.allocations:
+        invoice = (
+            db.query(SalesInvoice)
+            .filter(SalesInvoice.invoice_number == item.invoice_number)
+            .first()
+        )
+        invoice.received_amount = float(invoice.received_amount or 0) + item.allocated_amount
+        if invoice.received_amount >= float(invoice.amount or 0) - 1e-6:
+            invoice.status = InvoiceStatus.PAID
+        else:
+            invoice.status = InvoiceStatus.PARTIALLY_PAID
+        invoice.updated_by = current_user.username
+        invoice.updated_at = datetime.now()
+        db.add(ReceiptAllocation(
+            receipt_number=r.receipt_number,
+            invoice_number=item.invoice_number,
+            allocated_amount=item.allocated_amount,
+            created_by=current_user.username,
+        ))
+        db.flush()  # 坑2：流水号生成前先落库
+        db.add(ReceivableEntry(
+            entry_number=NumberGenerator.generate_document_number(
+                db, ReceivableEntry, "entry_number", "AR", 4),
+            invoice_number=item.invoice_number,
+            customer_id=r.customer_id,
+            entry_type=ReceivableEntryType.RECEIPT,
+            amount=-item.allocated_amount,
+            entry_date=datetime.now(),
+            reference_number=r.receipt_number,
+            remarks=f"收款核销 {r.receipt_number}",
+            created_by=current_user.username,
+        ))
+    r.status = "PAID"
+    r.updated_by = current_user.username
+    r.updated_at = datetime.now()
+    db.commit()
+    return _receipt_dict(r, _receipt_allocations(db, receipt_number))
+
+
+@router.post("/receipts/{receipt_number}/cancel")
+def cancel_receipt(
+    receipt_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """作废收款单：仅 DRAFT；PAID 单已冲减发票，需红字流程（未在 P1 范围）。"""
+    r = _load_receipt(db, receipt_number)
+    if r.status != "DRAFT":
+        raise HTTPException(status_code=400, detail=f"收款单状态为 {r.status}，不允许作废")
+    r.status = "CANCELLED"
+    r.updated_by = current_user.username
+    r.updated_at = datetime.now()
+    db.commit()
+    return _receipt_dict(r)
 

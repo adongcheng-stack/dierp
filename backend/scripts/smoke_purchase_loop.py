@@ -181,8 +181,14 @@ def main() -> int:
     if sup_hq:
         check("AP returned_amount > 0（退货冲减）", sup_hq.get("returned_amount", 0) > 0,
               sup_hq.get("returned_amount"))
-        check("应付 = 净到货 - 已结",
-              abs(sup_hq["payable_amount"] - (sup_hq["received_amount"] - sup_hq["closed_amount"])) < 0.01,
+        check("应付 = 已确认发票未核销 + 未开票暂估（P1 口径）",
+              abs(sup_hq["payable_amount"]
+                  - (sup_hq["open_invoice_amount"] + sup_hq["uninvoiced_receipt_amount"])) < 0.01,
+              sup_hq)
+        check("应付 = 净到货 - 已结（无发票时退化）",
+              abs(sup_hq["payable_amount"]
+                  - (sup_hq["received_amount"] - sup_hq["closed_amount"])) < 0.01
+              or sup_hq["open_invoice_amount"] > 0,
               sup_hq)
 
     # ── [12] reset 恢复基线 ──

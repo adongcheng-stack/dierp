@@ -17,6 +17,7 @@ from backend.api.routers.auth import get_current_user
 from backend.common.models.user import User
 from backend.common.models.mm import Material, MaterialTransaction
 from backend.common.models.planning import (
+    PaymentAllocation,
     PurchaseOrder,
     PurchaseOrderLine,
     PurchaseOrderStatus,
@@ -30,6 +31,7 @@ from backend.common.models.planning import (
     Supplier,
     SupplierInvoice,
     SupplierInvoiceStatus,
+    SupplierPayment,
 )
 from backend.common.utils.number_generator import NumberGenerator
 
@@ -700,12 +702,69 @@ def ap_view(
         bucket["received_amount"] -= amount
         bucket["closed_amount"] -= amount
 
+    # ── 应付口径升级（P1）：已确认发票 − 付款核销；收货暂估保留为未开票应付列 ──
+    confirmed_invoices = (
+        db.query(SupplierInvoice)
+        .filter(
+            SupplierInvoice.is_deleted == False,  # noqa: E712
+            SupplierInvoice.status == SupplierInvoiceStatus.CONFIRMED,
+        )
+        .all()
+    )
+    confirmed_by_supplier: dict[str, float] = {}
+    confirmed_by_po: dict[str, float] = {}
+    for inv in confirmed_invoices:
+        confirmed_by_supplier[inv.supplier_id] = (
+            confirmed_by_supplier.get(inv.supplier_id, 0.0) + _f(inv.amount)
+        )
+        confirmed_by_po[inv.purchase_order_number] = (
+            confirmed_by_po.get(inv.purchase_order_number, 0.0) + _f(inv.amount)
+        )
+
+    paid_rows = (
+        db.query(PaymentAllocation, SupplierInvoice)
+        .join(SupplierInvoice, PaymentAllocation.invoice_number == SupplierInvoice.invoice_number)
+        .filter(
+            SupplierInvoice.is_deleted == False,  # noqa: E712
+            SupplierInvoice.status == SupplierInvoiceStatus.CONFIRMED,
+        )
+        .all()
+    )
+    paid_by_supplier: dict[str, float] = {}
+    for alloc, inv in paid_rows:
+        paid_by_supplier[inv.supplier_id] = (
+            paid_by_supplier.get(inv.supplier_id, 0.0) + _f(alloc.allocated_amount)
+        )
+
+    # 已批退货按采购单归集（未开票暂估需净额口径）
+    returns_by_po: dict[str, float] = {}
+    for ret in approved_returns:
+        returns_by_po[ret.purchase_order_number] = (
+            returns_by_po.get(ret.purchase_order_number, 0.0) + _f(ret.total_amount)
+        )
+
     for bucket in by_supplier.values():
+        sid = bucket["supplier_id"]
+        confirmed = round(confirmed_by_supplier.get(sid, 0.0), 2)
+        paid = round(paid_by_supplier.get(sid, 0.0), 2)
+        # 未开票暂估：未关闭采购单上「净已收货价值 − 已确认发票」，逐 PO 不为负
+        uninvoiced = 0.0
+        for po_number, order in orders.items():
+            if order.supplier_id != sid or order.status == PurchaseOrderStatus.CLOSED:
+                continue
+            po_lines = [l for l in lines if l.purchase_order_number == po_number]
+            po_received = sum(_f(l.received_quantity) * _f(l.unit_price) for l in po_lines)
+            po_net = po_received - returns_by_po.get(po_number, 0.0)
+            uninvoiced += max(po_net - confirmed_by_po.get(po_number, 0.0), 0.0)
         bucket["received_amount"] = round(bucket["received_amount"], 2)
         bucket["returned_amount"] = round(bucket.get("returned_amount", 0.0), 2)
         bucket["closed_amount"] = round(max(bucket["closed_amount"], 0.0), 2)
+        bucket["confirmed_invoice_amount"] = confirmed
+        bucket["paid_amount"] = paid
+        bucket["open_invoice_amount"] = round(max(confirmed - paid, 0.0), 2)
+        bucket["uninvoiced_receipt_amount"] = round(uninvoiced, 2)
         bucket["payable_amount"] = round(
-            bucket["received_amount"] - bucket["closed_amount"], 2
+            bucket["open_invoice_amount"] + bucket["uninvoiced_receipt_amount"], 2
         )
 
     items = sorted(by_supplier.values(), key=lambda x: -x["payable_amount"])
@@ -713,6 +772,8 @@ def ap_view(
     return {
         "total_payable": total_payable,
         "total_received": round(sum(x["received_amount"] for x in items), 2),
+        "total_open_invoice": round(sum(x["open_invoice_amount"] for x in items), 2),
+        "total_uninvoiced_receipt": round(sum(x["uninvoiced_receipt_amount"] for x in items), 2),
         "items": items,
     }
 
@@ -1502,3 +1563,249 @@ def cancel_supplier_invoice(
     i.updated_at = datetime.now()
     db.commit()
     return _supplier_invoice_dict(i)
+
+
+# ── 付款单 + 核销（PAID 按核销明细冲减发票已付额；口径由 ap-view 聚合） ──
+class PaymentAllocationItem(BaseModel):
+    invoice_number: str
+    allocated_amount: float = Field(..., gt=0)
+
+
+class PaymentCreate(BaseModel):
+    supplier_id: str = Field(..., description="供应商编码")
+    amount: float = Field(..., gt=0, description="付款金额")
+    method: str = Field("TRANSFER", description="付款方式 TRANSFER/CASH/BILL")
+    remarks: Optional[str] = None
+
+
+class PaymentPayPayload(BaseModel):
+    allocations: list[PaymentAllocationItem] = Field(default_factory=list)
+
+
+class PaymentAllocatePayload(BaseModel):
+    invoice_number: str
+    allocated_amount: float = Field(..., gt=0)
+
+
+def _payment_dict(p: SupplierPayment, allocations: Optional[list[PaymentAllocation]] = None) -> dict:
+    data = {
+        "payment_number": p.payment_number,
+        "supplier_id": p.supplier_id,
+        "supplier_name": p.supplier_name,
+        "amount": _f(p.amount),
+        "payment_date": p.payment_date.isoformat() if p.payment_date else None,
+        "method": _s(p.method),
+        "status": _s(p.status),
+        "remarks": p.remarks,
+        "created_at": p.created_at.isoformat() if p.created_at else None,
+        "allocated_amount": 0.0,
+        "allocations": [],
+    }
+    if allocations is not None:
+        data["allocated_amount"] = round(sum(_f(a.allocated_amount) for a in allocations), 2)
+        data["allocations"] = [
+            {
+                "invoice_number": a.invoice_number,
+                "allocated_amount": _f(a.allocated_amount),
+            }
+            for a in allocations
+        ]
+    return data
+
+
+def _load_payment(db: Session, number: str) -> SupplierPayment:
+    p = (
+        db.query(SupplierPayment)
+        .filter(SupplierPayment.payment_number == number, SupplierPayment.is_deleted.is_(False))
+        .first()
+    )
+    if not p:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"付款单不存在: {number}")
+    return p
+
+
+def _payment_allocations(db: Session, number: str) -> list[PaymentAllocation]:
+    return (
+        db.query(PaymentAllocation)
+        .filter(PaymentAllocation.payment_number == number)
+        .all()
+    )
+
+
+def _validate_allocation(
+    db: Session, payment: SupplierPayment, invoice_number: str, allocated_amount: float
+) -> SupplierInvoice:
+    """核销校验：发票存在且 CONFIRMED、同供应商、单票累计不超发票额、Σ核销不超付款额。"""
+    invoice = (
+        db.query(SupplierInvoice)
+        .filter(
+            SupplierInvoice.invoice_number == invoice_number,
+            SupplierInvoice.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not invoice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"采购发票不存在: {invoice_number}"
+        )
+    if invoice.status != SupplierInvoiceStatus.CONFIRMED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"发票 {invoice_number} 状态为 {_s(invoice.status)}，仅已确认发票可核销",
+        )
+    if invoice.supplier_id and payment.supplier_id and invoice.supplier_id != payment.supplier_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"发票 {invoice_number} 供应商与付款单不一致",
+        )
+    existing = (
+        db.query(PaymentAllocation)
+        .filter(PaymentAllocation.invoice_number == invoice_number)
+        .all()
+    )
+    already = sum(_f(a.allocated_amount) for a in existing)
+    if already + allocated_amount > _f(invoice.amount) + 1e-6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"核销超发票额：{invoice_number} 金额 {_f(invoice.amount):.2f}，已核销 {already:.2f}，本次 {allocated_amount:.2f}",
+        )
+    payment_alloc_rows = _payment_allocations(db, payment.payment_number)
+    payment_used = sum(_f(a.allocated_amount) for a in payment_alloc_rows)
+    if payment_used + allocated_amount > _f(payment.amount) + 1e-6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"核销超付款额：付款 {_f(payment.amount):.2f}，已核销 {payment_used:.2f}，本次 {allocated_amount:.2f}",
+        )
+    return invoice
+
+
+@router.get("/payments")
+def list_payments(
+    supplier_id: Optional[str] = None,
+    payment_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(SupplierPayment).filter(SupplierPayment.is_deleted.is_(False))
+    if supplier_id:
+        query = query.filter(SupplierPayment.supplier_id == supplier_id)
+    if payment_status:
+        query = query.filter(SupplierPayment.status == payment_status)
+    total = query.count()
+    rows = query.order_by(SupplierPayment.id.desc()).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "items": [_payment_dict(p, _payment_allocations(db, p.payment_number)) for p in rows],
+    }
+
+
+@router.get("/payments/{payment_number}")
+def get_payment(payment_number: str, db: Session = Depends(get_db)):
+    p = _load_payment(db, payment_number)
+    return _payment_dict(p, _payment_allocations(db, payment_number))
+
+
+@router.post("/payments", status_code=status.HTTP_201_CREATED)
+def create_payment(
+    payload: PaymentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建付款单（DRAFT）。核销在 allocate/pay 时进行。"""
+    if payload.method not in ("TRANSFER", "CASH", "BILL"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"付款方式非法: {payload.method}"
+        )
+    supplier = db.query(Supplier).filter(Supplier.supplier_code == payload.supplier_id).first()
+    number = NumberGenerator.generate_document_number(db, SupplierPayment, "payment_number", "PAY", 4)
+    p = SupplierPayment(
+        payment_number=number,
+        supplier_id=payload.supplier_id,
+        supplier_name=supplier.supplier_name if supplier else None,
+        amount=payload.amount,
+        payment_date=datetime.now(),
+        method=payload.method,
+        status="DRAFT",
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(p)
+    db.flush()
+    db.commit()
+    return _payment_dict(p)
+
+
+@router.post("/payments/{payment_number}/allocate")
+def allocate_payment(
+    payment_number: str,
+    payload: PaymentAllocatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """付款单核销（DRAFT 期）：追加一条核销明细。"""
+    p = _load_payment(db, payment_number)
+    if _s(p.status) != "DRAFT":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"付款单状态为 {_s(p.status)}，不允许核销",
+        )
+    _validate_allocation(db, p, payload.invoice_number, payload.allocated_amount)
+    db.add(PaymentAllocation(
+        payment_number=p.payment_number,
+        invoice_number=payload.invoice_number,
+        allocated_amount=payload.allocated_amount,
+        created_by=current_user.username,
+    ))
+    db.commit()
+    return _payment_dict(p, _payment_allocations(db, payment_number))
+
+
+@router.post("/payments/{payment_number}/pay")
+def pay_payment(
+    payment_number: str,
+    payload: PaymentPayPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """支付付款单（DRAFT → PAID）：可携带核销明细一并落账。"""
+    p = _load_payment(db, payment_number)
+    if _s(p.status) != "DRAFT":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"付款单状态为 {_s(p.status)}，不允许支付",
+        )
+    for item in payload.allocations:
+        _validate_allocation(db, p, item.invoice_number, item.allocated_amount)
+        db.add(PaymentAllocation(
+            payment_number=p.payment_number,
+            invoice_number=item.invoice_number,
+            allocated_amount=item.allocated_amount,
+            created_by=current_user.username,
+        ))
+    p.status = "PAID"
+    p.payment_date = datetime.now()
+    p.updated_by = current_user.username
+    p.updated_at = datetime.now()
+    db.commit()
+    return _payment_dict(p, _payment_allocations(db, payment_number))
+
+
+@router.post("/payments/{payment_number}/cancel")
+def cancel_payment(
+    payment_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """作废付款单：仅 DRAFT；PAID 单已核销进应付口径，需红字流程（未在 P1 范围）。"""
+    p = _load_payment(db, payment_number)
+    if _s(p.status) != "DRAFT":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"付款单状态为 {_s(p.status)}，不允许作废",
+        )
+    p.status = "CANCELLED"
+    p.updated_by = current_user.username
+    p.updated_at = datetime.now()
+    db.commit()
+    return _payment_dict(p)
