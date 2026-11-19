@@ -1,6 +1,80 @@
 {
-  "version": 13,
+  "version": 14,
   "generatedAt": "2026-11-17T23:49:35",
+  "salesDeliveries": [
+    {
+      "id": 910001,
+      "delivery_number": "DK-20251231-0001",
+      "sales_order_number": "SO-20251231-0001",
+      "customer_id": "FJ002",
+      "customer_name": "永峰2",
+      "material_code": "HF1004ENIGAB01",
+      "quantity": 30,
+      "unit": "PCS",
+      "unit_price": 265,
+      "status": "DRAFT",
+      "ship_date": null,
+      "delivery_date": null,
+      "remarks": "销售发货演示：待发货（DRAFT）",
+      "created_by": "system",
+      "created_at": "2025-12-31T09:00:00",
+      "is_deleted": false
+    },
+    {
+      "id": 910002,
+      "delivery_number": "DK-20251231-0002",
+      "sales_order_number": "SO-20251231-0001",
+      "customer_id": "FJ002",
+      "customer_name": "永峰2",
+      "material_code": "HF1004ENIGAB01",
+      "quantity": 20,
+      "unit": "PCS",
+      "unit_price": 265,
+      "status": "SHIPPED",
+      "ship_date": "2025-12-31T10:00:00",
+      "delivery_date": null,
+      "remarks": "销售发货演示：已发货（SHIPPED，种子已扣库存）",
+      "created_by": "system",
+      "created_at": "2025-12-31T10:00:00",
+      "is_deleted": false
+    }
+  ],
+  "salesInvoices": [
+    {
+      "id": 920001,
+      "invoice_number": "INV-20251231-0001",
+      "sales_order_number": "SO-20251231-0001",
+      "delivery_number": "DK-20251231-0002",
+      "customer_id": "FJ002",
+      "customer_name": "永峰2",
+      "amount": 5300,
+      "currency": "CNY",
+      "status": "ISSUED",
+      "invoice_date": "2025-12-31T11:00:00",
+      "due_date": "2025-12-31T00:00:00",
+      "received_amount": 0,
+      "remarks": "销售发票演示：已开票（ISSUED，生成应收）",
+      "created_by": "system",
+      "created_at": "2025-12-31T11:00:00",
+      "is_deleted": false
+    }
+  ],
+  "receivableEntries": [
+    {
+      "id": 930001,
+      "entry_number": "AR-20251231-0001",
+      "invoice_number": "INV-20251231-0001",
+      "customer_id": "FJ002",
+      "entry_type": "INVOICE",
+      "amount": 5300,
+      "entry_date": "2025-12-31T11:00:00",
+      "reference_number": "INV-20251231-0001",
+      "remarks": "应收流水演示：开票应收（种子）",
+      "created_by": "system",
+      "created_at": "2025-12-31T11:00:00",
+      "is_deleted": false
+    }
+  ],
   "customers": [
     {
       "id": 12,
@@ -729,7 +803,7 @@
       "unit": "张",
       "brand": null,
       "min_package": null,
-      "current_stock": 95,
+      "current_stock": 75,
       "safety_stock": 10,
       "description": null,
       "material_type": "FG",
@@ -8260,6 +8334,23 @@
     }
   ],
   "materialTransactions": [
+    {
+      "id": 900001,
+      "transaction_number": "TR-SD-SEED-0001",
+      "material_code": "HF1004ENIGAB01",
+      "transaction_type": "SALES_ISSUE",
+      "quantity": -20,
+      "unit": "PCS",
+      "reference_number": "DK-20251231-0002",
+      "reference_type": "SALES_DELIVERY",
+      "warehouse": null,
+      "transaction_date": "2025-12-31T10:00:00",
+      "operator": "system",
+      "remarks": "销售发货演示：出库扣减（种子）",
+      "created_by": "system",
+      "created_at": "2025-12-31T10:00:00",
+      "is_deleted": false
+    },
     {
       "id": 1,
       "transaction_number": "TR-20251217-0001",

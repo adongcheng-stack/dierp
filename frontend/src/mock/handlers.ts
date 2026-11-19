@@ -5904,6 +5904,365 @@ function enforceWritePermission(ctx: MockContext) {
   }
 }
 
+// ── 销售域：发货单 / 销售发票 / 应收台账（与后端 sd.py 同构） ─────────
+
+function effectiveDeliveries(db: MockDb, orderNumber: string) {
+  return listOf(db, 'salesDeliveries').filter(
+    (d) => !d.is_deleted && d.sales_order_number === orderNumber && d.status !== 'CANCELLED'
+  )
+}
+
+function shippedQty(db: MockDb, orderNumber: string) {
+  return effectiveDeliveries(db, orderNumber)
+    .filter((d) => d.status === 'SHIPPED' || d.status === 'DELIVERED')
+    .reduce((s: number, d: any) => s + toNumber(d.quantity), 0)
+}
+
+/** 发货/签收联动销售订单状态（复用既有枚举值）。 */
+function syncOrderStatus(db: MockDb, orderNumber: string) {
+  const order = findItem(listOf(db, 'salesOrders'), 'order_number', orderNumber)
+  if (!order) return
+  const rows = effectiveDeliveries(db, orderNumber)
+  if (rows.length === 0) return
+  const totalQty = rows.reduce((s: number, d: any) => s + toNumber(d.quantity), 0)
+  const shippedQtyAll = rows
+    .filter((d) => d.status === 'SHIPPED' || d.status === 'DELIVERED')
+    .reduce((s: number, d: any) => s + toNumber(d.quantity), 0)
+  const deliveredQty = rows
+    .filter((d) => d.status === 'DELIVERED')
+    .reduce((s: number, d: any) => s + toNumber(d.quantity), 0)
+  const orderQty = toNumber(order.quantity)
+  if (deliveredQty >= orderQty && deliveredQty >= totalQty) {
+    order.status = 'DELIVERED'
+  } else if (shippedQtyAll >= orderQty && shippedQtyAll >= totalQty) {
+    order.status = 'SHIPPED'
+  }
+  order.updated_at = nowIso()
+}
+
+function deliveryDict(d: any) {
+  return {
+    delivery_number: d.delivery_number,
+    sales_order_number: d.sales_order_number,
+    customer_id: d.customer_id,
+    customer_name: d.customer_name,
+    material_code: d.material_code,
+    quantity: toNumber(d.quantity),
+    unit: d.unit,
+    unit_price: toNumber(d.unit_price),
+    status: d.status,
+    ship_date: d.ship_date,
+    delivery_date: d.delivery_date,
+    remarks: d.remarks,
+    created_at: d.created_at,
+  }
+}
+
+route('GET', '/sd/deliveries', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'salesDeliveries').filter((d) => !d.is_deleted)
+  if (ctx.query.customer_id) rows = rows.filter((d) => d.customer_id === ctx.query.customer_id)
+  if (ctx.query.order_number) rows = rows.filter((d) => d.sales_order_number === ctx.query.order_number)
+  if (ctx.query.delivery_status) rows = rows.filter((d) => d.status === ctx.query.delivery_status)
+  return ok({ total: rows.length, items: rows.map(deliveryDict) })
+})
+
+route('GET', '/sd/deliveries/:number', (_ctx, params) => {
+  const db = getDb()
+  const d = requireItem(listOf(db, 'salesDeliveries'), 'delivery_number', params.number, '发货单')
+  return ok(deliveryDict(d))
+})
+
+route('POST', '/sd/deliveries', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  const order = findItem(listOf(db, 'salesOrders'), 'order_number', body.sales_order_number)
+  if (!order || order.is_deleted) fail(404, `销售订单不存在: ${body?.sales_order_number}`)
+  if (!order.material_code) fail(400, '销售订单缺少物料编码，无法发货')
+  const quantity = toNumber(body.quantity)
+  if (quantity <= 0) fail(400, '发货数量必须大于 0')
+  const already = effectiveDeliveries(db, order.order_number).reduce(
+    (s: number, d: any) => s + toNumber(d.quantity),
+    0
+  )
+  if (already + quantity > toNumber(order.quantity) + 1e-9) {
+    fail(400, `超发：订单 ${order.order_number} 数量 ${toNumber(order.quantity)}，已发 ${round(already, 2)}，本次 ${quantity}`)
+  }
+  const rows = listOf(db, 'salesDeliveries')
+  const cust = findItem(listOf(db, 'customers'), 'customer_id', order.customer_id)
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      delivery_number: nextNumber(rows, 'delivery_number', 'DK'),
+      sales_order_number: order.order_number,
+      customer_id: order.customer_id,
+      customer_name: cust ? (cust.trade_name ?? cust.legal_name) : null,
+      material_code: order.material_code,
+      quantity,
+      unit: order.sales_unit || 'PCS',
+      unit_price: toNumber(order.unit_price),
+      status: 'DRAFT',
+      ship_date: null,
+      delivery_date: null,
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(deliveryDict(item), 201)
+})
+
+route('POST', '/sd/deliveries/:number/ship', (ctx, params) => {
+  const db = getDb()
+  const d = requireItem(listOf(db, 'salesDeliveries'), 'delivery_number', params.number, '发货单')
+  if (d.status !== 'DRAFT') fail(400, `发货单状态为 ${d.status}，不允许发货`)
+  const material = inventoryMaterial(db, d.material_code)
+  const qty = toNumber(d.quantity)
+  if (toNumber(material.current_stock) < qty) {
+    fail(400, `库存不足：当前 ${toNumber(material.current_stock)}，需 ${qty}`)
+  }
+  material.current_stock = round(toNumber(material.current_stock) - qty, 3)
+  appendTransaction(db, {
+    material_code: d.material_code,
+    transaction_type: 'SALES_ISSUE',
+    quantity: -qty,
+    unit: d.unit,
+    reference_number: d.delivery_number,
+    reference_type: 'SALES_DELIVERY',
+    operator: ctx.user?.username ?? null,
+    remarks: `发货出库 ${d.delivery_number}`,
+  })
+  d.status = 'SHIPPED'
+  d.ship_date = nowIso()
+  d.updated_at = nowIso()
+  syncOrderStatus(db, d.sales_order_number)
+  saveDb()
+  return ok(deliveryDict(d))
+})
+
+route('POST', '/sd/deliveries/:number/deliver', (_ctx, params) => {
+  const db = getDb()
+  const d = requireItem(listOf(db, 'salesDeliveries'), 'delivery_number', params.number, '发货单')
+  if (d.status !== 'SHIPPED') fail(400, `发货单状态为 ${d.status}，不允许签收`)
+  d.status = 'DELIVERED'
+  d.delivery_date = nowIso()
+  d.updated_at = nowIso()
+  syncOrderStatus(db, d.sales_order_number)
+  saveDb()
+  return ok(deliveryDict(d))
+})
+
+route('POST', '/sd/deliveries/:number/cancel', (ctx, params) => {
+  const db = getDb()
+  const d = requireItem(listOf(db, 'salesDeliveries'), 'delivery_number', params.number, '发货单')
+  if (d.status === 'CANCELLED') fail(400, '发货单已作废')
+  if (d.status === 'DELIVERED') fail(400, '已签收的发货单不允许作废，请走退货流程')
+  if (d.status === 'SHIPPED') {
+    // 红字冲回：库存回补 + 正向流水
+    const material = findItem(listOf(db, 'materials'), 'material_code', d.material_code)
+    if (material) {
+      material.current_stock = round(toNumber(material.current_stock) + toNumber(d.quantity), 3)
+    }
+    appendTransaction(db, {
+      material_code: d.material_code,
+      transaction_type: 'SALES_ISSUE_REVERSE',
+      quantity: toNumber(d.quantity),
+      unit: d.unit,
+      reference_number: d.delivery_number,
+      reference_type: 'SALES_DELIVERY',
+      operator: ctx.user?.username ?? null,
+      remarks: `作废冲回 ${d.delivery_number}`,
+    })
+  }
+  d.status = 'CANCELLED'
+  d.updated_at = nowIso()
+  syncOrderStatus(db, d.sales_order_number)
+  saveDb()
+  return ok(deliveryDict(d))
+})
+
+function invoiceDict(i: any) {
+  return {
+    invoice_number: i.invoice_number,
+    sales_order_number: i.sales_order_number,
+    delivery_number: i.delivery_number,
+    customer_id: i.customer_id,
+    customer_name: i.customer_name,
+    amount: toNumber(i.amount),
+    currency: i.currency,
+    status: i.status,
+    invoice_date: i.invoice_date,
+    due_date: i.due_date,
+    received_amount: toNumber(i.received_amount),
+    remarks: i.remarks,
+    created_at: i.created_at,
+  }
+}
+
+function checkInvoiceCap(db: MockDb, orderNumber: string, amount: number, exclude?: string) {
+  const order = findItem(listOf(db, 'salesOrders'), 'order_number', orderNumber)
+  if (!order || order.is_deleted) fail(404, `销售订单不存在: ${orderNumber}`)
+  const cap = shippedQty(db, orderNumber) * toNumber(order.unit_price)
+  const already = listOf(db, 'salesInvoices')
+    .filter(
+      (i: any) =>
+        !i.is_deleted &&
+        i.sales_order_number === orderNumber &&
+        i.status !== 'CANCELLED' &&
+        i.invoice_number !== exclude
+    )
+    .reduce((s: number, i: any) => s + toNumber(i.amount), 0)
+  if (already + amount > cap + 1e-6) {
+    fail(400, `超开：已发货可开票上限 ${round(cap, 2)}，已开 ${round(already, 2)}，本次 ${round(amount, 2)}`)
+  }
+}
+
+route('GET', '/sd/invoices', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'salesInvoices').filter((i) => !i.is_deleted)
+  if (ctx.query.customer_id) rows = rows.filter((i) => i.customer_id === ctx.query.customer_id)
+  if (ctx.query.order_number) rows = rows.filter((i) => i.sales_order_number === ctx.query.order_number)
+  if (ctx.query.invoice_status) rows = rows.filter((i) => i.status === ctx.query.invoice_status)
+  return ok({ total: rows.length, items: rows.map(invoiceDict) })
+})
+
+route('GET', '/sd/invoices/:number', (_ctx, params) => {
+  const db = getDb()
+  const i = requireItem(listOf(db, 'salesInvoices'), 'invoice_number', params.number, '发票')
+  return ok(invoiceDict(i))
+})
+
+route('POST', '/sd/invoices', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  const order = findItem(listOf(db, 'salesOrders'), 'order_number', body.sales_order_number)
+  if (!order || order.is_deleted) fail(404, `销售订单不存在: ${body?.sales_order_number}`)
+  if (body.delivery_number) {
+    const d = findItem(listOf(db, 'salesDeliveries'), 'delivery_number', body.delivery_number)
+    if (!d || d.is_deleted) fail(404, `发货单不存在: ${body.delivery_number}`)
+    if (d.status !== 'SHIPPED' && d.status !== 'DELIVERED') {
+      fail(400, `发货单 ${d.delivery_number} 状态为 ${d.status}，未发货不得开票`)
+    }
+  }
+  const amount = toNumber(body.amount)
+  if (amount <= 0) fail(400, '开票金额必须大于 0')
+  checkInvoiceCap(db, order.order_number, amount)
+  const rows = listOf(db, 'salesInvoices')
+  const cust = findItem(listOf(db, 'customers'), 'customer_id', order.customer_id)
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      invoice_number: nextNumber(rows, 'invoice_number', 'INV'),
+      sales_order_number: order.order_number,
+      delivery_number: body.delivery_number ?? null,
+      customer_id: order.customer_id,
+      customer_name: cust ? (cust.trade_name ?? cust.legal_name) : null,
+      amount,
+      currency: order.currency || 'CNY',
+      status: 'DRAFT',
+      invoice_date: nowIso(),
+      due_date: body.due_date ?? order.delivery_date ?? null,
+      received_amount: 0,
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(invoiceDict(item), 201)
+})
+
+route('POST', '/sd/invoices/:number/issue', (ctx, params) => {
+  const db = getDb()
+  const i = requireItem(listOf(db, 'salesInvoices'), 'invoice_number', params.number, '发票')
+  if (i.status !== 'DRAFT') fail(400, `发票状态为 ${i.status}，不允许开票`)
+  checkInvoiceCap(db, i.sales_order_number, toNumber(i.amount), i.invoice_number)
+  i.status = 'ISSUED'
+  i.updated_at = nowIso()
+  const entries = listOf(db, 'receivableEntries')
+  entries.unshift(
+    stampNew(
+      {
+        id: nextId(entries),
+        entry_number: nextNumber(entries, 'entry_number', 'AR'),
+        invoice_number: i.invoice_number,
+        customer_id: i.customer_id,
+        entry_type: 'INVOICE',
+        amount: toNumber(i.amount),
+        entry_date: nowIso(),
+        reference_number: i.invoice_number,
+        remarks: `开票应收 ${i.invoice_number}`,
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      ctx.user
+    )
+  )
+  saveDb()
+  return ok(invoiceDict(i))
+})
+
+route('GET', '/sd/receivables', (ctx) => {
+  const db = getDb()
+  let invoices = listOf(db, 'salesInvoices').filter((i: any) => !i.is_deleted && i.status !== 'CANCELLED')
+  if (ctx.query.customer_id) invoices = invoices.filter((i: any) => i.customer_id === ctx.query.customer_id)
+  const now = new Date()
+  const byCustomer: Record<string, any> = {}
+  for (const i of invoices) {
+    const row =
+      byCustomer[i.customer_id] ??
+      (byCustomer[i.customer_id] = {
+        customer_id: i.customer_id,
+        customer_name: i.customer_name,
+        invoice_count: 0,
+        invoiced_amount: 0,
+        received_amount: 0,
+        outstanding_amount: 0,
+        aging: { current: 0, d30: 0, d60: 0, d90: 0, d90p: 0 },
+      })
+    const amount = toNumber(i.amount)
+    const outstanding = amount - toNumber(i.received_amount)
+    row.invoice_count += 1
+    row.invoiced_amount += amount
+    row.received_amount += toNumber(i.received_amount)
+    row.outstanding_amount += outstanding
+    let bucket: keyof typeof row.aging = 'current'
+    if (i.due_date && outstanding > 0) {
+      const overdueDays = Math.floor((now.getTime() - new Date(i.due_date).getTime()) / 86_400_000)
+      if (overdueDays > 90) bucket = 'd90p'
+      else if (overdueDays > 60) bucket = 'd90'
+      else if (overdueDays > 30) bucket = 'd60'
+      else if (overdueDays > 0) bucket = 'd30'
+    }
+    row.aging[bucket] += outstanding
+  }
+  const items = Object.values(byCustomer).sort(
+    (a: any, b: any) => b.outstanding_amount - a.outstanding_amount
+  )
+  for (const r of items as any[]) {
+    r.invoiced_amount = round(r.invoiced_amount, 2)
+    r.received_amount = round(r.received_amount, 2)
+    r.outstanding_amount = round(r.outstanding_amount, 2)
+  }
+  return ok({
+    total: items.length,
+    items,
+    totals: {
+      invoiced_amount: round((items as any[]).reduce((s, r) => s + r.invoiced_amount, 0), 2),
+      received_amount: round((items as any[]).reduce((s, r) => s + r.received_amount, 0), 2),
+      outstanding_amount: round((items as any[]).reduce((s, r) => s + r.outstanding_amount, 0), 2),
+    },
+  })
+})
+
 export function handleMockRequest(ctx: MockContext): MockResult {
   enforceWritePermission(ctx)
 
