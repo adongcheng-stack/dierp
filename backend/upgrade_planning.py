@@ -1169,6 +1169,122 @@ def seed_purchase_demo_data(db: Session) -> int:
     return created
 
 
+def seed_sales_delivery_demo(db: Session) -> int:
+    """销售发货/发票/应收演示种子（幂等，按固定单号判重）。
+
+    三线自洽：SHIPPED 发货单在种子时同步扣成品库存并写 SALES_ISSUE 流水；
+    已开票发票金额 = 已发货量×单价（恰好达可开票上限），并生成 AR 应收流水。
+    """
+    from backend.common.models.mm import Material, MaterialTransaction
+    from backend.common.models.planning import (
+        DeliveryStatus,
+        InvoiceStatus,
+        ReceivableEntry,
+        ReceivableEntryType,
+        SalesDelivery,
+        SalesInvoice,
+    )
+    from backend.common.models.sd import SalesOrder
+
+    created = 0
+    order = (
+        db.query(SalesOrder)
+        .filter(SalesOrder.order_number == "SO-20251231-0001", SalesOrder.is_deleted.is_(False))
+        .first()
+    )
+    if order is None:
+        return 0
+    if db.query(SalesDelivery).filter(SalesDelivery.delivery_number == "DK-20251231-0001").first():
+        return 0
+
+    material = (
+        db.query(Material).filter(Material.material_code == order.material_code).first()
+    )
+    unit_price = float(order.unit_price or 0)
+
+    # ── 1) DRAFT 发货单（演示发货动作） ─────────────────────────────
+    db.add(SalesDelivery(
+        delivery_number="DK-20251231-0001",
+        sales_order_number=order.order_number,
+        customer_id=order.customer_id,
+        customer_name=order.customer.legal_name if order.customer else None,
+        material_code=order.material_code,
+        quantity=Decimal("30"),
+        unit=order.sales_unit or "PCS",
+        unit_price=Decimal(str(unit_price)),
+        status=DeliveryStatus.DRAFT,
+        remarks="销售发货演示：待发货（DRAFT）",
+        created_by="system",
+    ))
+    created += 1
+
+    # ── 2) SHIPPED 发货单（同步扣库存 + SALES_ISSUE 流水，保证 reset 后自洽） ──
+    db.add(SalesDelivery(
+        delivery_number="DK-20251231-0002",
+        sales_order_number=order.order_number,
+        customer_id=order.customer_id,
+        customer_name=order.customer.legal_name if order.customer else None,
+        material_code=order.material_code,
+        quantity=Decimal("20"),
+        unit=order.sales_unit or "PCS",
+        unit_price=Decimal(str(unit_price)),
+        status=DeliveryStatus.SHIPPED,
+        ship_date=datetime(2025, 12, 31, 10, 0, 0),
+        remarks="销售发货演示：已发货（SHIPPED，种子已扣库存）",
+        created_by="system",
+    ))
+    if material is not None:
+        material.current_stock = float(material.current_stock or 0) - 20
+    db.add(MaterialTransaction(
+        transaction_number="TXN-SD-SEED-0001",
+        material_code=order.material_code,
+        transaction_type="SALES_ISSUE",
+        quantity=Decimal("-20"),
+        unit=order.sales_unit or "PCS",
+        reference_number="DK-20251231-0002",
+        reference_type="SALES_DELIVERY",
+        transaction_date=datetime(2025, 12, 31, 10, 0, 0),
+        operator="system",
+        remarks="销售发货演示：出库扣减（种子）",
+        created_by="system",
+    ))
+    created += 1
+    db.flush()
+
+    # ── 3) 已开票发票（金额=已发货量×单价）+ AR 应收流水 ────────────
+    amount = Decimal("20") * Decimal(str(unit_price))
+    db.add(SalesInvoice(
+        invoice_number="INV-20251231-0001",
+        sales_order_number=order.order_number,
+        delivery_number="DK-20251231-0002",
+        customer_id=order.customer_id,
+        customer_name=order.customer.legal_name if order.customer else None,
+        amount=amount,
+        currency=order.currency or "CNY",
+        status=InvoiceStatus.ISSUED,
+        invoice_date=datetime(2025, 12, 31, 11, 0, 0),
+        due_date=order.delivery_date,
+        received_amount=Decimal("0"),
+        remarks="销售发票演示：已开票（ISSUED，生成应收）",
+        created_by="system",
+    ))
+    db.flush()  # 发票先落库，避免 receivable_entries FK 乱序
+    db.add(ReceivableEntry(
+        entry_number="AR-20251231-0001",
+        invoice_number="INV-20251231-0001",
+        customer_id=order.customer_id,
+        entry_type=ReceivableEntryType.INVOICE,
+        amount=amount,
+        entry_date=datetime(2025, 12, 31, 11, 0, 0),
+        reference_number="INV-20251231-0001",
+        remarks="应收流水演示：开票应收（种子）",
+        created_by="system",
+    ))
+    created += 1
+    db.commit()
+    return created
+
+
 def seed_suppliers(db: Session) -> int:
     """供应商主数据演示种子（幂等）。
 
@@ -1428,6 +1544,7 @@ def main() -> None:
         print(f"[OK] 采购申请演示新增 {seed_purchase_requests(db)} 张")
         print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
         print(f"[OK] 库存流水基线新增 {seed_material_transactions(db)} 条")
+        print(f"[OK] 销售发货演示新增 {seed_sales_delivery_demo(db)} 张")
         db.commit()
 
         print("-" * 56)

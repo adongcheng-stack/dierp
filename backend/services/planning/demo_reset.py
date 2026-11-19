@@ -26,6 +26,9 @@ from backend.common.models.planning import (
     MaintenanceOrder,
     MaintenancePlan,
     NonConformanceReport,
+    ReceivableEntry,
+    SalesDelivery,
+    SalesInvoice,
     PurchaseOrder,
     PurchaseOrderLine,
     PurchaseRequest,
@@ -95,6 +98,10 @@ def _clear(db: Session) -> dict[str, int]:
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
         ("suppliers", Supplier),
+        # 销售域运行时表（发货单/发票/应收流水，三线打通）
+        ("receivable_entries", ReceivableEntry),
+        ("sales_invoices", SalesInvoice),
+        ("sales_deliveries", SalesDelivery),
         # 库存流水是账本：清空后由 seed_material_transactions 依据现存领料单重建基线，
         # 演示中的新动作（领料/到货/退货）继续实时追加
         ("material_transactions", MaterialTransaction),
@@ -178,6 +185,7 @@ def _rebuild_master_seed(db: Session) -> None:
         seed_purchase_demo_data,
         seed_purchase_requests,
         seed_qms_demo_data,
+        seed_sales_delivery_demo,
         seed_suppliers,
     )
 
@@ -189,6 +197,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_purchase_requests(db)
     seed_suppliers(db)
     seed_material_transactions(db)
+    seed_sales_delivery_demo(db)
 
 
 def _build_demo_run(
