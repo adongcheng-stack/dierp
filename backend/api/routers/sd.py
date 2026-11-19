@@ -15,7 +15,8 @@ from backend.common.models.sd import (
     CustomerSalesData, FactoryProductMapping, Quotation, QuotationItem, 
     SalesOrder, ContractReview, CustomerStatus, QuotationStatus, SalesOrderStatus
 )
-from backend.common.models.mm import Material
+from backend.common.models.mm import Material, MaterialTransaction
+from backend.common.models.planning import SalesDelivery, DeliveryStatus
 from backend.common.models.eng import ProductionVersion
 from sqlalchemy import or_
 from backend.common.utils.number_generator import NumberGenerator
@@ -3216,4 +3217,269 @@ async def delete_factory_product_mapping(
     db_mapping.updated_by = current_user.username
     db.commit()
     return {"message": "映射已删除"}
+
+
+# ── 发货单（销售出库：DRAFT --ship--> SHIPPED --deliver--> DELIVERED） ──
+class DeliveryCreate(BaseModel):
+    sales_order_number: str = Field(..., description="来源销售订单号")
+    quantity: float = Field(..., gt=0, description="发货数量")
+    unit_price: Optional[float] = Field(None, description="销售单价（默认取订单单价）")
+    remarks: Optional[str] = None
+
+
+def _delivery_dict(d: SalesDelivery) -> dict:
+    return {
+        "delivery_number": d.delivery_number,
+        "sales_order_number": d.sales_order_number,
+        "customer_id": d.customer_id,
+        "customer_name": d.customer_name,
+        "material_code": d.material_code,
+        "quantity": float(d.quantity or 0),
+        "unit": d.unit,
+        "unit_price": float(d.unit_price or 0),
+        "status": d.status.value if hasattr(d.status, "value") else str(d.status),
+        "ship_date": d.ship_date.isoformat() if d.ship_date else None,
+        "delivery_date": d.delivery_date.isoformat() if d.delivery_date else None,
+        "remarks": d.remarks,
+        "created_at": d.created_at.isoformat() if d.created_at else None,
+    }
+
+
+def _shipped_qty(db: Session, order_number: str) -> float:
+    """订单有效发货量（非 CANCELLED 的 Σquantity）。"""
+    rows = (
+        db.query(SalesDelivery)
+        .filter(
+            SalesDelivery.sales_order_number == order_number,
+            SalesDelivery.is_deleted.is_(False),
+            SalesDelivery.status != DeliveryStatus.CANCELLED,
+        )
+        .all()
+    )
+    return float(sum((r.quantity or 0) for r in rows))
+
+
+def _sync_order_ship_status(db: Session, order_number: str) -> None:
+    """联动销售订单状态：全量发货→SHIPPED；全部签收→DELIVERED。"""
+    order = (
+        db.query(SalesOrder)
+        .filter(SalesOrder.order_number == order_number, SalesOrder.is_deleted.is_(False))
+        .first()
+    )
+    if not order:
+        return
+    deliveries = (
+        db.query(SalesDelivery)
+        .filter(
+            SalesDelivery.sales_order_number == order_number,
+            SalesDelivery.is_deleted.is_(False),
+            SalesDelivery.status != DeliveryStatus.CANCELLED,
+        )
+        .all()
+    )
+    if not deliveries:
+        return
+    total = float(sum((d.quantity or 0) for d in deliveries))
+    shipped_qty = float(sum((d.quantity or 0) for d in deliveries if d.status in (
+        DeliveryStatus.SHIPPED, DeliveryStatus.DELIVERED)))
+    delivered_qty = float(sum((d.quantity or 0) for d in deliveries if d.status == DeliveryStatus.DELIVERED))
+    if delivered_qty >= float(order.quantity or 0) and delivered_qty >= total:
+        order.status = SalesOrderStatus.DELIVERED
+    elif shipped_qty >= float(order.quantity or 0) and shipped_qty >= total:
+        order.status = SalesOrderStatus.SHIPPED
+    order.updated_at = datetime.now()
+
+
+@router.get("/deliveries")
+def list_deliveries(
+    customer_id: Optional[str] = None,
+    order_number: Optional[str] = None,
+    delivery_status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(SalesDelivery).filter(SalesDelivery.is_deleted.is_(False))
+    if customer_id:
+        query = query.filter(SalesDelivery.customer_id == customer_id)
+    if order_number:
+        query = query.filter(SalesDelivery.sales_order_number == order_number)
+    if delivery_status:
+        query = query.filter(SalesDelivery.status == DeliveryStatus(delivery_status))
+    total = query.count()
+    rows = query.order_by(SalesDelivery.id.desc()).offset(offset).limit(limit).all()
+    return {"total": total, "items": [_delivery_dict(d) for d in rows]}
+
+
+@router.get("/deliveries/{delivery_number}")
+def get_delivery(delivery_number: str, db: Session = Depends(get_db)):
+    d = (
+        db.query(SalesDelivery)
+        .filter(SalesDelivery.delivery_number == delivery_number, SalesDelivery.is_deleted.is_(False))
+        .first()
+    )
+    if not d:
+        raise HTTPException(status_code=404, detail=f"发货单不存在: {delivery_number}")
+    return _delivery_dict(d)
+
+
+@router.post("/deliveries", status_code=http_status.HTTP_201_CREATED)
+def create_delivery(
+    payload: DeliveryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """创建发货单（DRAFT）。两阶段校验：订单存在 → 可发余量。"""
+    order = (
+        db.query(SalesOrder)
+        .filter(
+            SalesOrder.order_number == payload.sales_order_number,
+            SalesOrder.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail=f"销售订单不存在: {payload.sales_order_number}")
+    if not order.material_code:
+        raise HTTPException(status_code=400, detail="销售订单缺少物料编码，无法发货")
+    already = _shipped_qty(db, order.order_number)
+    if already + payload.quantity > float(order.quantity or 0) + 1e-9:
+        raise HTTPException(
+            status_code=400,
+            detail=f"超发：订单 {order.order_number} 数量 {float(order.quantity)}，"
+                   f"已发 {already}，本次 {payload.quantity}",
+        )
+    number = NumberGenerator.generate_document_number(db, SalesDelivery, "delivery_number", "DK", 4)
+    customer = db.query(Customer).filter(Customer.customer_id == order.customer_id).first()
+    d = SalesDelivery(
+        delivery_number=number,
+        sales_order_number=order.order_number,
+        customer_id=order.customer_id,
+        customer_name=(customer.trade_name or customer.legal_name) if customer else None,
+        material_code=order.material_code,
+        quantity=payload.quantity,
+        unit=order.sales_unit or "PCS",
+        unit_price=payload.unit_price if payload.unit_price is not None else float(order.unit_price or 0),
+        status=DeliveryStatus.DRAFT,
+        remarks=payload.remarks,
+        created_by=current_user.username,
+    )
+    db.add(d)
+    db.flush()  # 坑2：同事务生成下一张单号前先落库
+    db.commit()
+    return _delivery_dict(d)
+
+
+def _load_delivery(db: Session, delivery_number: str) -> SalesDelivery:
+    d = (
+        db.query(SalesDelivery)
+        .filter(SalesDelivery.delivery_number == delivery_number, SalesDelivery.is_deleted.is_(False))
+        .first()
+    )
+    if not d:
+        raise HTTPException(status_code=404, detail=f"发货单不存在: {delivery_number}")
+    return d
+
+
+@router.post("/deliveries/{delivery_number}/ship")
+def ship_delivery(
+    delivery_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """发货出库：扣成品库存 + 记 SALES_ISSUE 流水 + 订单状态联动。"""
+    d = _load_delivery(db, delivery_number)
+    if d.status != DeliveryStatus.DRAFT:
+        raise HTTPException(status_code=400, detail=f"发货单状态为 {d.status.value}，不允许发货")
+    material = db.query(Material).filter(Material.material_code == d.material_code).first()
+    if not material:
+        raise HTTPException(status_code=400, detail=f"物料不存在: {d.material_code}")
+    if float(material.current_stock or 0) < float(d.quantity or 0):
+        raise HTTPException(
+            status_code=400,
+            detail=f"库存不足：当前 {float(material.current_stock or 0)}，需 {float(d.quantity)}",
+        )
+    material.current_stock = float(material.current_stock or 0) - float(d.quantity or 0)
+    db.add(MaterialTransaction(
+        transaction_number=NumberGenerator.generate_document_number(
+            db, MaterialTransaction, "transaction_number", "TXN", 6),
+        material_code=d.material_code,
+        transaction_type="SALES_ISSUE",
+        quantity=-float(d.quantity or 0),
+        unit=d.unit,
+        reference_number=d.delivery_number,
+        reference_type="SALES_DELIVERY",
+        transaction_date=datetime.now(),
+        operator=current_user.username,
+        remarks=f"发货出库 {d.delivery_number}",
+        created_by=current_user.username,
+    ))
+    d.status = DeliveryStatus.SHIPPED
+    d.ship_date = datetime.now()
+    d.updated_by = current_user.username
+    d.updated_at = datetime.now()
+    db.flush()
+    _sync_order_ship_status(db, d.sales_order_number)
+    db.commit()
+    return _delivery_dict(d)
+
+
+@router.post("/deliveries/{delivery_number}/deliver")
+def deliver_delivery(
+    delivery_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """客户签收：SHIPPED → DELIVERED。"""
+    d = _load_delivery(db, delivery_number)
+    if d.status != DeliveryStatus.SHIPPED:
+        raise HTTPException(status_code=400, detail=f"发货单状态为 {d.status.value}，不允许签收")
+    d.status = DeliveryStatus.DELIVERED
+    d.delivery_date = datetime.now()
+    d.updated_by = current_user.username
+    d.updated_at = datetime.now()
+    db.flush()
+    _sync_order_ship_status(db, d.sales_order_number)
+    db.commit()
+    return _delivery_dict(d)
+
+
+@router.post("/deliveries/{delivery_number}/cancel")
+def cancel_delivery(
+    delivery_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """作废：DRAFT 直接作废；SHIPPED 需红字冲回出库；DELIVERED 禁止作废。"""
+    d = _load_delivery(db, delivery_number)
+    if d.status == DeliveryStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="发货单已作废")
+    if d.status == DeliveryStatus.DELIVERED:
+        raise HTTPException(status_code=400, detail="已签收的发货单不允许作废，请走退货流程")
+    if d.status == DeliveryStatus.SHIPPED:
+        # 红字冲回：库存回补 + 正向流水
+        material = db.query(Material).filter(Material.material_code == d.material_code).first()
+        if material:
+            material.current_stock = float(material.current_stock or 0) + float(d.quantity or 0)
+        db.add(MaterialTransaction(
+            transaction_number=NumberGenerator.generate_document_number(
+                db, MaterialTransaction, "transaction_number", "TXN", 6),
+            material_code=d.material_code,
+            transaction_type="SALES_ISSUE_REVERSE",
+            quantity=float(d.quantity or 0),
+            unit=d.unit,
+            reference_number=d.delivery_number,
+            reference_type="SALES_DELIVERY",
+            transaction_date=datetime.now(),
+            operator=current_user.username,
+            remarks=f"作废冲回 {d.delivery_number}",
+            created_by=current_user.username,
+        ))
+    d.status = DeliveryStatus.CANCELLED
+    d.updated_by = current_user.username
+    d.updated_at = datetime.now()
+    db.flush()
+    _sync_order_ship_status(db, d.sales_order_number)
+    db.commit()
+    return _delivery_dict(d)
 
