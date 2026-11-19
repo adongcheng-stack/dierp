@@ -856,3 +856,46 @@ entities:
       start_date: {type: datetime, required: true, comment: 起始日}
       end_date: {type: datetime, required: true, comment: 截止日}
       status: {type: enum, enum: PeriodStatus, default: OPEN, index: true, comment: 期间状态(OPEN/CLOSED)}
+
+  Warehouse:
+    table: warehouses
+    label: 仓库
+    ontology_class: Warehouse
+    top_category: PhysicalObject
+    fields:
+      warehouse_code: {type: string, length: 50, required: true, unique: true, index: true, comment: 仓库编码}
+      warehouse_name: {type: string, length: 100, required: true, comment: 仓库名称}
+      location: {type: string, length: 200, comment: 位置/地址}
+      is_active: {type: boolean, default: true, comment: 是否启用}
+      remarks: {type: text, comment: 备注}
+
+  Stocktake:
+    table: stocktakes
+    label: 盘点单
+    ontology_class: Stocktake
+    top_category: Document
+    fields:
+      stocktake_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 盘点单号(STK 前缀)}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 盘点物料}
+      warehouse: {type: string, length: 50, index: true, comment: 盘点仓库(可空，参考字段不迁移)}
+      book_qty: {type: decimal, precision: 15, scale: 2, required: true, comment: 账面数量(创建时快照)}
+      counted_qty: {type: decimal, precision: 15, scale: 2, required: true, comment: 实盘数量}
+      diff: {type: decimal, precision: 15, scale: 2, default: 0, comment: 差异(实盘-账面，创建时计算)}
+      status: {type: enum, enum: StocktakeStatus, default: DRAFT, index: true, comment: 盘点状态(DRAFT/APPROVED/CANCELLED)}
+      stocktake_date: {type: datetime, comment: 盘点日期}
+      remarks: {type: text, comment: 备注}
+
+  StockTransfer:
+    table: stock_transfers
+    label: 调拨单
+    ontology_class: StockTransfer
+    top_category: Document
+    fields:
+      transfer_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 调拨单号(TRF 前缀)}
+      from_warehouse_code: {type: string, length: 50, required: true, index: true, comment: 调出仓库}
+      to_warehouse_code: {type: string, length: 50, required: true, index: true, comment: 调入仓库}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 调拨物料}
+      quantity: {type: decimal, precision: 15, scale: 2, required: true, comment: 调拨数量}
+      status: {type: enum, enum: StockTransferStatus, default: DRAFT, index: true, comment: 调拨状态(DRAFT/CONFIRMED/CANCELLED)}
+      transfer_date: {type: datetime, comment: 调拨日期}
+      remarks: {type: text, comment: 备注}

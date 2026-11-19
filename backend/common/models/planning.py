@@ -222,6 +222,18 @@ class GlSourceType(str, Enum):
     STOCK_ADJUST = "STOCK_ADJUST"
     PRODUCTION_COMPLETE = "PRODUCTION_COMPLETE"
 
+class StocktakeStatus(str, Enum):
+    """StocktakeStatus"""
+    DRAFT = "DRAFT"
+    APPROVED = "APPROVED"
+    CANCELLED = "CANCELLED"
+
+class StockTransferStatus(str, Enum):
+    """StockTransferStatus"""
+    DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+
 class ResourceStatus(str, Enum):
     """ResourceStatus"""
     ACTIVE = "ACTIVE"
@@ -1645,4 +1657,66 @@ class FiscalPeriod(BaseModel):
     end_date = Column(DateTime, nullable=False, comment="截止日")
 
     status = Column(SQLEnum(PeriodStatus), index=True, default=PeriodStatus.OPEN, comment="期间状态(OPEN/CLOSED)")
+
+
+
+class Warehouse(BaseModel):
+    """仓库"""
+    __tablename__ = "warehouses"
+
+    warehouse_code = Column(String(50), nullable=False, unique=True, index=True, comment="仓库编码")
+
+    warehouse_name = Column(String(100), nullable=False, comment="仓库名称")
+
+    location = Column(String(200), comment="位置/地址")
+
+    is_active = Column(Boolean, default=True, comment="是否启用")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class Stocktake(BaseModel):
+    """盘点单"""
+    __tablename__ = "stocktakes"
+
+    stocktake_number = Column(String(50), nullable=False, unique=True, index=True, comment="盘点单号(STK 前缀)")
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, index=True, comment="盘点物料")
+
+    warehouse = Column(String(50), index=True, comment="盘点仓库(可空，参考字段不迁移)")
+
+    book_qty = Column(Numeric(15, 2), nullable=False, comment="账面数量(创建时快照)")
+
+    counted_qty = Column(Numeric(15, 2), nullable=False, comment="实盘数量")
+
+    diff = Column(Numeric(15, 2), default=0, comment="差异(实盘-账面，创建时计算)")
+
+    status = Column(SQLEnum(StocktakeStatus), index=True, default=StocktakeStatus.DRAFT, comment="盘点状态(DRAFT/APPROVED/CANCELLED)")
+
+    stocktake_date = Column(DateTime, comment="盘点日期")
+
+    remarks = Column(Text, comment="备注")
+
+
+
+class StockTransfer(BaseModel):
+    """调拨单"""
+    __tablename__ = "stock_transfers"
+
+    transfer_number = Column(String(50), nullable=False, unique=True, index=True, comment="调拨单号(TRF 前缀)")
+
+    from_warehouse_code = Column(String(50), nullable=False, index=True, comment="调出仓库")
+
+    to_warehouse_code = Column(String(50), nullable=False, index=True, comment="调入仓库")
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, index=True, comment="调拨物料")
+
+    quantity = Column(Numeric(15, 2), nullable=False, comment="调拨数量")
+
+    status = Column(SQLEnum(StockTransferStatus), index=True, default=StockTransferStatus.DRAFT, comment="调拨状态(DRAFT/CONFIRMED/CANCELLED)")
+
+    transfer_date = Column(DateTime, comment="调拨日期")
+
+    remarks = Column(Text, comment="备注")
 

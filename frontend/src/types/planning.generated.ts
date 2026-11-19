@@ -42,6 +42,8 @@ import type {
   JournalStatus,
   PeriodStatus,
   GlSourceType,
+  StocktakeStatus,
+  StockTransferStatus,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -97,6 +99,8 @@ export type {
   JournalStatus,
   PeriodStatus,
   GlSourceType,
+  StocktakeStatus,
+  StockTransferStatus,
   ResourceStatus,
   ScheduleRunStatus,
   ScheduleAlgorithm,
@@ -956,6 +960,49 @@ export interface FiscalPeriod {
   start_date: string
   end_date: string
   status?: PeriodStatus
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 仓库 */
+export interface Warehouse {
+  warehouse_code: string
+  warehouse_name: string
+  location?: string
+  is_active?: boolean
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 盘点单 */
+export interface Stocktake {
+  stocktake_number: string
+  material_code: string
+  warehouse?: string
+  book_qty: number
+  counted_qty: number
+  diff?: number
+  status?: StocktakeStatus
+  stocktake_date?: string
+  remarks?: string
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 调拨单 */
+export interface StockTransfer {
+  transfer_number: string
+  from_warehouse_code: string
+  to_warehouse_code: string
+  material_code: string
+  quantity: number
+  status?: StockTransferStatus
+  transfer_date?: string
+  remarks?: string
   id?: number
   created_at?: string
   updated_at?: string
