@@ -5498,21 +5498,60 @@ route('GET', '/purchase/ap-view', () => {
     bucket.closed_amount -= amount
     buckets[sid] = bucket
   }
+  // 应付口径（P1）：已确认发票 − 付款核销 + 未开票收货暂估（扣已批退货，逐 PO 不为负）
+  const confirmedBySupplier: Record<string, number> = {}
+  const confirmedByPo: Record<string, number> = {}
+  for (const inv of listOf(db, 'supplierInvoices')) {
+    if (inv.is_deleted || inv.status !== 'CONFIRMED') continue
+    confirmedBySupplier[inv.supplier_id] = (confirmedBySupplier[inv.supplier_id] ?? 0) + toNumber(inv.amount)
+    confirmedByPo[inv.purchase_order_number] = (confirmedByPo[inv.purchase_order_number] ?? 0) + toNumber(inv.amount)
+  }
+  const paidBySupplier: Record<string, number> = {}
+  for (const alloc of listOf(db, 'paymentAllocations')) {
+    const inv = findItem(listOf(db, 'supplierInvoices'), 'invoice_number', alloc.invoice_number)
+    if (!inv || inv.is_deleted || inv.status !== 'CONFIRMED') continue
+    paidBySupplier[inv.supplier_id] = (paidBySupplier[inv.supplier_id] ?? 0) + toNumber(alloc.allocated_amount)
+  }
+  const returnsByPo: Record<string, number> = {}
+  for (const ret of listOf(db, 'purchaseReturns')) {
+    if (ret.is_deleted || ret.return_type !== 'RETURN' || !['APPROVED', 'CLOSED'].includes(ret.status)) continue
+    returnsByPo[ret.purchase_order_number] = (returnsByPo[ret.purchase_order_number] ?? 0) + toNumber(ret.total_amount)
+  }
   const items = Object.values(buckets).map((b: any) => {
     const received = round(b.received_amount, 2)
     const closed = round(Math.max(b.closed_amount, 0), 2)
+    const confirmed = round(confirmedBySupplier[b.supplier_id] ?? 0, 2)
+    const paid = round(paidBySupplier[b.supplier_id] ?? 0, 2)
+    let uninvoiced = 0
+    for (const po of orders) {
+      if (po.is_deleted || po.supplier_id !== b.supplier_id || po.status === 'CLOSED') continue
+      const poLines = listOf(db, 'purchaseOrderLines').filter(
+        (l: any) => !l.is_deleted && l.purchase_order_number === po.purchase_order_number
+      )
+      const poReceived = poLines.reduce(
+        (s: number, l: any) => s + toNumber(l.received_quantity) * toNumber(l.unit_price), 0
+      )
+      uninvoiced += Math.max(poReceived - (returnsByPo[po.purchase_order_number] ?? 0) - (confirmedByPo[po.purchase_order_number] ?? 0), 0)
+    }
+    const openInvoice = round(Math.max(confirmed - paid, 0), 2)
     return {
       supplier_id: b.supplier_id,
       supplier_name: b.supplier_name,
       received_amount: received,
       returned_amount: round(b.returned_amount ?? 0, 2),
       closed_amount: closed,
-      payable_amount: round(received - closed, 2),
+      confirmed_invoice_amount: confirmed,
+      paid_amount: paid,
+      open_invoice_amount: openInvoice,
+      uninvoiced_receipt_amount: round(uninvoiced, 2),
+      payable_amount: round(openInvoice + round(uninvoiced, 2), 2),
     }
   })
   return ok({
     total_payable: round(items.reduce((s: number, x: any) => s + x.payable_amount, 0), 2),
     total_received: round(items.reduce((s: number, x: any) => s + x.received_amount, 0), 2),
+    total_open_invoice: round(items.reduce((s: number, x: any) => s + x.open_invoice_amount, 0), 2),
+    total_uninvoiced_receipt: round(items.reduce((s: number, x: any) => s + x.uninvoiced_receipt_amount, 0), 2),
     items,
   })
 })
@@ -6261,6 +6300,428 @@ route('GET', '/sd/receivables', (ctx) => {
       outstanding_amount: round((items as any[]).reduce((s, r) => s + r.outstanding_amount, 0), 2),
     },
   })
+})
+
+// ── 资金域：采购发票 / 付款核销 / 收款核销（与后端同构，P1） ─────────
+
+function receivedValue(db: MockDb, poNumber: string) {
+  return listOf(db, 'purchaseOrderLines')
+    .filter((l: any) => !l.is_deleted && l.purchase_order_number === poNumber)
+    .reduce((s: number, l: any) => s + toNumber(l.received_quantity) * toNumber(l.unit_price), 0)
+}
+
+function supplierInvoiceDict(i: any) {
+  return {
+    invoice_number: i.invoice_number,
+    purchase_order_number: i.purchase_order_number,
+    supplier_id: i.supplier_id,
+    supplier_name: i.supplier_name,
+    amount: toNumber(i.amount),
+    tax_amount: toNumber(i.tax_amount),
+    status: i.status,
+    invoice_date: i.invoice_date,
+    remarks: i.remarks,
+    created_at: i.created_at,
+  }
+}
+
+route('GET', '/purchase/supplier-invoices', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'supplierInvoices').filter((i: any) => !i.is_deleted)
+  if (ctx.query.supplier_id) rows = rows.filter((i: any) => i.supplier_id === ctx.query.supplier_id)
+  if (ctx.query.po_number) rows = rows.filter((i: any) => i.purchase_order_number === ctx.query.po_number)
+  if (ctx.query.invoice_status) rows = rows.filter((i: any) => i.status === ctx.query.invoice_status)
+  return ok({ total: rows.length, items: rows.map(supplierInvoiceDict) })
+})
+
+route('GET', '/purchase/supplier-invoices/:number', (_ctx, params) => {
+  const db = getDb()
+  const i = requireItem(listOf(db, 'supplierInvoices'), 'invoice_number', params.number, '采购发票')
+  return ok(supplierInvoiceDict(i))
+})
+
+route('POST', '/purchase/supplier-invoices', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  const po = findItem(listOf(db, 'purchaseOrders'), 'purchase_order_number', body.purchase_order_number)
+  if (!po || po.is_deleted) fail(404, `采购单不存在: ${body?.purchase_order_number}`)
+  const amount = toNumber(body.amount)
+  if (amount <= 0) fail(400, '发票金额必须大于 0')
+  const cap = receivedValue(db, po.purchase_order_number)
+  const already = listOf(db, 'supplierInvoices')
+    .filter(
+      (i: any) =>
+        !i.is_deleted &&
+        i.purchase_order_number === po.purchase_order_number &&
+        i.status !== 'CANCELLED'
+    )
+    .reduce((s: number, i: any) => s + toNumber(i.amount), 0)
+  if (already + amount > cap + 1e-6) {
+    fail(400, `三单匹配不通过：已收货价值上限 ${round(cap, 2)}，已开票 ${round(already, 2)}，本次 ${round(amount, 2)}`)
+  }
+  const rows = listOf(db, 'supplierInvoices')
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      invoice_number: nextNumber(rows, 'invoice_number', 'PI'),
+      purchase_order_number: po.purchase_order_number,
+      supplier_id: po.supplier_id,
+      supplier_name: po.supplier_name,
+      amount,
+      tax_amount: toNumber(body.tax_amount),
+      status: 'DRAFT',
+      invoice_date: nowIso(),
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(supplierInvoiceDict(item), 201)
+})
+
+route('POST', '/purchase/supplier-invoices/:number/confirm', (_ctx, params) => {
+  const db = getDb()
+  const i = requireItem(listOf(db, 'supplierInvoices'), 'invoice_number', params.number, '采购发票')
+  if (i.status !== 'DRAFT') fail(400, `发票状态为 ${i.status}，不允许确认`)
+  const cap = receivedValue(db, i.purchase_order_number)
+  const already = listOf(db, 'supplierInvoices')
+    .filter(
+      (x: any) =>
+        !x.is_deleted &&
+        x.purchase_order_number === i.purchase_order_number &&
+        x.status !== 'CANCELLED' &&
+        x.invoice_number !== i.invoice_number
+    )
+    .reduce((s: number, x: any) => s + toNumber(x.amount), 0)
+  if (already + toNumber(i.amount) > cap + 1e-6) {
+    fail(400, `三单匹配不通过：已收货价值上限 ${round(cap, 2)}，已开票 ${round(already, 2)}，本次 ${round(toNumber(i.amount), 2)}`)
+  }
+  i.status = 'CONFIRMED'
+  i.updated_at = nowIso()
+  saveDb()
+  return ok(supplierInvoiceDict(i))
+})
+
+route('POST', '/purchase/supplier-invoices/:number/cancel', (_ctx, params) => {
+  const db = getDb()
+  const i = requireItem(listOf(db, 'supplierInvoices'), 'invoice_number', params.number, '采购发票')
+  if (i.status !== 'DRAFT') fail(400, `发票状态为 ${i.status}，不允许作废`)
+  i.status = 'CANCELLED'
+  i.updated_at = nowIso()
+  saveDb()
+  return ok(supplierInvoiceDict(i))
+})
+
+function supplierPaymentDict(p: any, allocations: any[]) {
+  return {
+    payment_number: p.payment_number,
+    supplier_id: p.supplier_id,
+    supplier_name: p.supplier_name,
+    amount: toNumber(p.amount),
+    payment_date: p.payment_date,
+    method: p.method,
+    status: p.status,
+    remarks: p.remarks,
+    created_at: p.created_at,
+    allocated_amount: round(allocations.reduce((s, a) => s + toNumber(a.allocated_amount), 0), 2),
+    allocations: allocations.map((a) => ({
+      invoice_number: a.invoice_number,
+      allocated_amount: toNumber(a.allocated_amount),
+    })),
+  }
+}
+
+function paymentAllocations(db: MockDb, paymentNumber: string) {
+  return listOf(db, 'paymentAllocations').filter((a: any) => a.payment_number === paymentNumber)
+}
+
+function loadMockPayment(db: MockDb, number: string) {
+  return requireItem(listOf(db, 'supplierPayments'), 'payment_number', number, '付款单')
+}
+
+route('GET', '/purchase/payments', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'supplierPayments').filter((p: any) => !p.is_deleted)
+  if (ctx.query.supplier_id) rows = rows.filter((p: any) => p.supplier_id === ctx.query.supplier_id)
+  if (ctx.query.payment_status) rows = rows.filter((p: any) => p.status === ctx.query.payment_status)
+  return ok({
+    total: rows.length,
+    items: rows.map((p: any) => supplierPaymentDict(p, paymentAllocations(db, p.payment_number))),
+  })
+})
+
+route('GET', '/purchase/payments/:number', (_ctx, params) => {
+  const db = getDb()
+  const p = loadMockPayment(db, params.number)
+  return ok(supplierPaymentDict(p, paymentAllocations(db, params.number)))
+})
+
+route('POST', '/purchase/payments', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  if (!['TRANSFER', 'CASH', 'BILL'].includes(body.method ?? 'TRANSFER')) {
+    fail(400, `付款方式非法: ${body.method}`)
+  }
+  const amount = toNumber(body.amount)
+  if (amount <= 0) fail(400, '付款金额必须大于 0')
+  const supplier = findItem(listOf(db, 'suppliers'), 'supplier_code', body.supplier_id)
+  const rows = listOf(db, 'supplierPayments')
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      payment_number: nextNumber(rows, 'payment_number', 'PAY'),
+      supplier_id: body.supplier_id,
+      supplier_name: supplier?.supplier_name ?? null,
+      amount,
+      payment_date: nowIso(),
+      method: body.method ?? 'TRANSFER',
+      status: 'DRAFT',
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(supplierPaymentDict(item, []), 201)
+})
+
+/** 核销校验（与后端 _validate_allocation 同构）。 */
+function validateMockAllocation(db: MockDb, payment: any, invoiceNumber: string, allocated: number) {
+  const invoice = findItem(listOf(db, 'supplierInvoices'), 'invoice_number', invoiceNumber)
+  if (!invoice || invoice.is_deleted) fail(404, `采购发票不存在: ${invoiceNumber}`)
+  if (invoice.status !== 'CONFIRMED') fail(400, `发票 ${invoiceNumber} 状态为 ${invoice.status}，仅已确认发票可核销`)
+  if (invoice.supplier_id && payment.supplier_id && invoice.supplier_id !== payment.supplier_id) {
+    fail(400, `发票 ${invoiceNumber} 供应商与付款单不一致`)
+  }
+  const invoiceUsed = listOf(db, 'paymentAllocations')
+    .filter((a: any) => a.invoice_number === invoiceNumber)
+    .reduce((s: number, a: any) => s + toNumber(a.allocated_amount), 0)
+  if (invoiceUsed + allocated > toNumber(invoice.amount) + 1e-6) {
+    fail(400, `核销超发票额：${invoiceNumber} 金额 ${toNumber(invoice.amount)}，已核销 ${round(invoiceUsed, 2)}，本次 ${round(allocated, 2)}`)
+  }
+  const paymentUsed = paymentAllocations(db, payment.payment_number).reduce(
+    (s: number, a: any) => s + toNumber(a.allocated_amount), 0
+  )
+  if (paymentUsed + allocated > toNumber(payment.amount) + 1e-6) {
+    fail(400, `核销超付款额：付款 ${toNumber(payment.amount)}，已核销 ${round(paymentUsed, 2)}，本次 ${round(allocated, 2)}`)
+  }
+}
+
+route('POST', '/purchase/payments/:number/allocate', (ctx, params) => {
+  const db = getDb()
+  const p = loadMockPayment(db, params.number)
+  if (p.status !== 'DRAFT') fail(400, `付款单状态为 ${p.status}，不允许核销`)
+  const body = ctx.body ?? {}
+  validateMockAllocation(db, p, body.invoice_number, toNumber(body.allocated_amount))
+  const rows = listOf(db, 'paymentAllocations')
+  rows.unshift(stampNew(
+    {
+      id: nextId(rows),
+      payment_number: p.payment_number,
+      invoice_number: body.invoice_number,
+      allocated_amount: toNumber(body.allocated_amount),
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  ))
+  saveDb()
+  return ok(supplierPaymentDict(p, paymentAllocations(db, params.number)))
+})
+
+route('POST', '/purchase/payments/:number/pay', (ctx, params) => {
+  const db = getDb()
+  const p = loadMockPayment(db, params.number)
+  if (p.status !== 'DRAFT') fail(400, `付款单状态为 ${p.status}，不允许支付`)
+  const allocations = Array.isArray(ctx.body?.allocations) ? ctx.body.allocations : []
+  for (const a of allocations) {
+    validateMockAllocation(db, p, a.invoice_number, toNumber(a.allocated_amount))
+  }
+  const rows = listOf(db, 'paymentAllocations')
+  for (const a of allocations) {
+    rows.unshift(stampNew(
+      {
+        id: nextId(rows),
+        payment_number: p.payment_number,
+        invoice_number: a.invoice_number,
+        allocated_amount: toNumber(a.allocated_amount),
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      ctx.user
+    ))
+  }
+  p.status = 'PAID'
+  p.payment_date = nowIso()
+  p.updated_at = nowIso()
+  saveDb()
+  return ok(supplierPaymentDict(p, paymentAllocations(db, params.number)))
+})
+
+route('POST', '/purchase/payments/:number/cancel', (_ctx, params) => {
+  const db = getDb()
+  const p = loadMockPayment(db, params.number)
+  if (p.status !== 'DRAFT') fail(400, `付款单状态为 ${p.status}，不允许作废`)
+  p.status = 'CANCELLED'
+  p.updated_at = nowIso()
+  saveDb()
+  return ok(supplierPaymentDict(p, paymentAllocations(db, params.number)))
+})
+
+function receiptDict(r: any, allocations: any[]) {
+  return {
+    receipt_number: r.receipt_number,
+    customer_id: r.customer_id,
+    customer_name: r.customer_name,
+    amount: toNumber(r.amount),
+    receipt_date: r.receipt_date,
+    method: r.method,
+    status: r.status,
+    remarks: r.remarks,
+    created_at: r.created_at,
+    allocated_amount: round(allocations.reduce((s, a) => s + toNumber(a.allocated_amount), 0), 2),
+    allocations: allocations.map((a) => ({
+      invoice_number: a.invoice_number,
+      allocated_amount: toNumber(a.allocated_amount),
+    })),
+  }
+}
+
+function receiptAllocations(db: MockDb, receiptNumber: string) {
+  return listOf(db, 'receiptAllocations').filter((a: any) => a.receipt_number === receiptNumber)
+}
+
+route('GET', '/sd/receipts', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'receipts').filter((r: any) => !r.is_deleted)
+  if (ctx.query.customer_id) rows = rows.filter((r: any) => r.customer_id === ctx.query.customer_id)
+  if (ctx.query.receipt_status) rows = rows.filter((r: any) => r.status === ctx.query.receipt_status)
+  return ok({
+    total: rows.length,
+    items: rows.map((r: any) => receiptDict(r, receiptAllocations(db, r.receipt_number))),
+  })
+})
+
+route('GET', '/sd/receipts/:number', (_ctx, params) => {
+  const db = getDb()
+  const r = requireItem(listOf(db, 'receipts'), 'receipt_number', params.number, '收款单')
+  return ok(receiptDict(r, receiptAllocations(db, params.number)))
+})
+
+route('POST', '/sd/receipts', (ctx) => {
+  const db = getDb()
+  const body = ctx.body ?? {}
+  if (!['TRANSFER', 'CASH', 'BILL'].includes(body.method ?? 'TRANSFER')) {
+    fail(400, `收款方式非法: ${body.method}`)
+  }
+  const amount = toNumber(body.amount)
+  if (amount <= 0) fail(400, '收款金额必须大于 0')
+  const customer = findItem(listOf(db, 'customers'), 'customer_id', body.customer_id)
+  const rows = listOf(db, 'receipts')
+  const item = stampNew(
+    {
+      id: nextId(rows),
+      receipt_number: nextNumber(rows, 'receipt_number', 'RC'),
+      customer_id: body.customer_id,
+      customer_name: customer ? (customer.trade_name ?? customer.legal_name) : null,
+      amount,
+      receipt_date: nowIso(),
+      method: body.method ?? 'TRANSFER',
+      status: 'DRAFT',
+      remarks: body.remarks ?? null,
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    ctx.user
+  )
+  rows.unshift(item)
+  saveDb()
+  return ok(receiptDict(item, []), 201)
+})
+
+route('POST', '/sd/receipts/:number/pay', (ctx, params) => {
+  const db = getDb()
+  const r = requireItem(listOf(db, 'receipts'), 'receipt_number', params.number, '收款单')
+  if (r.status !== 'DRAFT') fail(400, `收款单状态为 ${r.status}，不允许核销`)
+  const allocations = Array.isArray(ctx.body?.allocations) ? ctx.body.allocations : []
+  if (allocations.length === 0) fail(400, '核销至少需要一张发票明细')
+  let used = 0
+  for (const a of allocations) {
+    const invoice = findItem(listOf(db, 'salesInvoices'), 'invoice_number', a.invoice_number)
+    if (!invoice || invoice.is_deleted) fail(404, `发票不存在: ${a.invoice_number}`)
+    if (!['ISSUED', 'PARTIALLY_PAID'].includes(invoice.status)) {
+      fail(400, `发票 ${a.invoice_number} 状态为 ${invoice.status}，不可核销`)
+    }
+    const outstanding = toNumber(invoice.amount) - toNumber(invoice.received_amount)
+    if (toNumber(a.allocated_amount) > outstanding + 1e-6) {
+      fail(400, `超收核销：发票 ${a.invoice_number} 未收余额 ${round(outstanding, 2)}，本次 ${round(toNumber(a.allocated_amount), 2)}`)
+    }
+    used += toNumber(a.allocated_amount)
+  }
+  if (used > toNumber(r.amount) + 1e-6) {
+    fail(400, `核销超收款额：收款 ${toNumber(r.amount)}，本次合计 ${round(used, 2)}`)
+  }
+  const allocRows = listOf(db, 'receiptAllocations')
+  const entryRows = listOf(db, 'receivableEntries')
+  for (const a of allocations) {
+    const invoice = findItem(listOf(db, 'salesInvoices'), 'invoice_number', a.invoice_number)
+    invoice.received_amount = round(toNumber(invoice.received_amount) + toNumber(a.allocated_amount), 2)
+    invoice.status = invoice.received_amount >= toNumber(invoice.amount) - 1e-6 ? 'PAID' : 'PARTIALLY_PAID'
+    invoice.updated_at = nowIso()
+    allocRows.unshift(stampNew(
+      {
+        id: nextId(allocRows),
+        receipt_number: r.receipt_number,
+        invoice_number: a.invoice_number,
+        allocated_amount: toNumber(a.allocated_amount),
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      ctx.user
+    ))
+    entryRows.unshift(stampNew(
+      {
+        id: nextId(entryRows),
+        entry_number: nextNumber(entryRows, 'entry_number', 'AR'),
+        invoice_number: a.invoice_number,
+        customer_id: r.customer_id,
+        entry_type: 'RECEIPT',
+        amount: -toNumber(a.allocated_amount),
+        entry_date: nowIso(),
+        reference_number: r.receipt_number,
+        remarks: `收款核销 ${r.receipt_number}`,
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      ctx.user
+    ))
+  }
+  r.status = 'PAID'
+  r.updated_at = nowIso()
+  saveDb()
+  return ok(receiptDict(r, receiptAllocations(db, params.number)))
+})
+
+route('POST', '/sd/receipts/:number/cancel', (_ctx, params) => {
+  const db = getDb()
+  const r = requireItem(listOf(db, 'receipts'), 'receipt_number', params.number, '收款单')
+  if (r.status !== 'DRAFT') fail(400, `收款单状态为 ${r.status}，不允许作废`)
+  r.status = 'CANCELLED'
+  r.updated_at = nowIso()
+  saveDb()
+  return ok(receiptDict(r, receiptAllocations(db, params.number)))
 })
 
 export function handleMockRequest(ctx: MockContext): MockResult {

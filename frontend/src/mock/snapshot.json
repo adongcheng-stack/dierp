@@ -1,5 +1,5 @@
 {
-  "version": 14,
+  "version": 15,
   "generatedAt": "2026-11-17T23:49:35",
   "salesDeliveries": [
     {
@@ -75,6 +75,11 @@
       "is_deleted": false
     }
   ],
+  "supplierInvoices": [],
+  "supplierPayments": [],
+  "paymentAllocations": [],
+  "receipts": [],
+  "receiptAllocations": [],
   "customers": [
     {
       "id": 12,

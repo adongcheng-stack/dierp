@@ -205,7 +205,8 @@ def main() -> int:
                            "lotCards", "productionOrders", "salesOrders", "customers", "materials",
                            "suppliers", "purchaseRequests", "purchaseRequestLines",
                            "materialTransactions", "salesDeliveries", "salesInvoices",
-                           "receivableEntries"]:
+                           "receivableEntries", "supplierInvoices", "supplierPayments",
+                           "paymentAllocations", "receipts", "receiptAllocations"]:
             check(f"快照含集合 {collection}", collection in mock, True)
 
         # ── 11) 销售域三线打通：发货单 / 发票 / 应收流水 ─────────────────
