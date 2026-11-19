@@ -334,6 +334,9 @@ cd frontend && npm run build && npm run build:mock
 | N1 工程化加固（git/pytest/parity 校验） | 已完成，`backend/tests` 25 用例 + `check_demo_parity.py` 19 项事实 |
 | N2 权限收紧（RBAC 域写权限门 + CORS 白名单） | 已完成，`test_permissions.py` 6 用例 |
 | N3 采购闭环（采购单页面/收货/库存回冲） | 已完成，`smoke_purchase.py` 全链路验证 |
+| N4 完工入库（complete 回冲成品库存 + 幂等闸） | 已完成，`smoke_receipt.py` 验证 |
+| N4 Alembic 迁移基线 | 已完成，版本 `a1b2c3d4e5f6`，规范见 `backend/migrations/README.md` |
+| N4 演示基线复位 | `reset_demo` 新增物料库存基线 + 生产订单状态基线复位（完工/到货演示可跨轮次重复） |
 | 演示数据一键重置（菜单 + CLI + API） | 已完成，支持幂等与管理员校验 |
 | 前端分包与首屏优化 | 已完成，全部 chunk < 500KB，无构建告警 |
 
@@ -594,6 +597,15 @@ QMS 把「质量」从终检记录升级为贯穿 **来料 → 过程 → 终检
 | N3 采购闭环 | 新增 `api/routers/purchase.py`（列表/详情/收货/关闭），收货实时回冲 `Material.current_stock`，超量与状态机保护；`PurchaseOrderList.tsx` 页面（`/pp/purchase-orders`）；`seed_purchase_demo_data` 两张 RELEASED 演示单；`demo_reset` 清理采购表 + **物料库存基线复位**（领料/到货多轮演示可重复） |
 
 权限矩阵（写操作）：sd=SALES/SALES_MANAGER/总经理，eng=ENGINEER，pp/mm/purchase=PRODUCTION/PLANNER/WAREHOUSE 系，planning/qms=PLANNER/总经理，users=仅 ADMIN；ADMIN 恒通过。多账号演示时注意：用非授权角色执行写操作会得到 403（演示话术可顺势讲权限设计）。
+
+### N4 完工入库与 Alembic 基线（已完成）
+
+| 项 | 内容 |
+|---|---|
+| 成品入库 | `POST /pp/production-orders/{n}/complete` 完工即回冲成品库存：口径 = 报工良品合计（无报工按工单数量）；**幂等闸**禁止重复完成（全局状态验证器对「相同状态」按 no-op 放行，必须业务级显式拦截，否则库存双倍回冲） |
+| mock 同构 | `transitionProductionOrder` 完工分支同样回冲，双模式数字可对照 |
+| 演示基线 | `reset_demo` 新增 `MATERIAL_STOCK_BASELINE`（10 物料）与 `PRODUCTION_ORDER_BASELINE`（9 工单状态/实际完工日），领料、到货、完工入库多轮演示后一键复位 |
+| Alembic | `backend/alembic.ini` + `migrations/`（env.py 挂全量元数据、include_object 白名单防误删遗留表）；基线 `a1b2c3d4e5f6` 已 stamp。**已知问题**：MVP 手写表（lot_cards/mis/factory_product_mappings 等）与元数据存在历史漂移，`alembic check` 会报告——autogenerate 产物必须人工审查再 upgrade，规范见 `backend/migrations/README.md` |
 
 ### 前端交付优化（已完成）
 

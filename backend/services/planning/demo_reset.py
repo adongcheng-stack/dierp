@@ -37,8 +37,21 @@ from backend.common.models.planning import (
     ScheduleRun,
 )
 from backend.common.models.mm import Material
-from backend.common.models.pp import OperationReport
+from backend.common.models.pp import OperationReport, ProductionOrder, ProductionOrderStatus
 from backend.services.planning.aps_engine import ApsEngine
+
+# 生产订单状态演示基线（N4：完工入库演示可重复——每次 reset 复位状态与实际完工日）
+PRODUCTION_ORDER_BASELINE: dict[str, dict] = {
+    "PO-20251217-0001": {"status": ProductionOrderStatus.COMPLETED, "finish": "2025-12-17T02:26:31"},
+    "PO-20251218-0001": {"status": ProductionOrderStatus.CLOSED, "finish": "2026-11-14T23:11:00"},
+    "PO-20251230-0001": {"status": ProductionOrderStatus.COMPLETED, "finish": "2025-12-30T01:56:31"},
+    "PO-20251230-0002": {"status": ProductionOrderStatus.RELEASED, "finish": None},
+    "PO-20251230-0003": {"status": ProductionOrderStatus.IN_PRODUCTION, "finish": None},
+    "PO-APS-01": {"status": ProductionOrderStatus.RELEASED, "finish": None},
+    "PO-APS-02": {"status": ProductionOrderStatus.RELEASED, "finish": None},
+    "PO-APS-03": {"status": ProductionOrderStatus.RELEASED, "finish": None},
+    "PO-APS-04": {"status": ProductionOrderStatus.RELEASED, "finish": None},
+}
 
 # 物料库存演示基线：每次 reset 回到同一初值，保证领料/到货演示可重复
 MATERIAL_STOCK_BASELINE: dict[str, float] = {
@@ -99,6 +112,23 @@ def _reset_material_stock(db: Session) -> int:
         current = float(material.current_stock or 0)
         if abs(current - baseline) > 1e-9:
             material.current_stock = baseline
+            changed += 1
+    db.flush()
+    return changed
+
+
+def _reset_production_orders(db: Session) -> int:
+    """生产订单状态复位到演示基线：保证「完工入库」等动作可跨演示轮次重复。"""
+    changed = 0
+    for order in db.query(ProductionOrder).filter(ProductionOrder.is_deleted == False).all():  # noqa: E712
+        baseline = PRODUCTION_ORDER_BASELINE.get(order.order_number)
+        if baseline is None:
+            continue
+        if order.status != baseline["status"] or order.actual_finish_date is not None and baseline["finish"] is None:
+            order.status = baseline["status"]
+            order.actual_finish_date = (
+                datetime.fromisoformat(baseline["finish"]) if baseline["finish"] else None
+            )
             changed += 1
     db.flush()
     return changed
@@ -201,6 +231,7 @@ def reset_planning_demo(
     cleared = _clear(db)
     resources_reset = _reset_resources(db)
     stock_reset = _reset_material_stock(db)
+    orders_reset = _reset_production_orders(db)
     _rebuild_master_seed(db)
 
     seeded: dict = {
@@ -219,6 +250,7 @@ def reset_planning_demo(
         "cleared": cleared,
         "resources_reset": resources_reset,
         "stock_reset": stock_reset,
+        "orders_reset": orders_reset,
         "seeded": seeded,
         "reset_at": datetime.now().isoformat(timespec="seconds"),
         "reset_by": created_by,

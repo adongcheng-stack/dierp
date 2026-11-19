@@ -2,6 +2,7 @@
 PP模块路由 - 生产计划与控制
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
@@ -926,7 +927,15 @@ async def complete_production_order(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"生产订单不存在: {order_number}"
         )
-    
+
+    # N4 幂等闸：完工入库直接回冲库存，禁止重复完成
+    # （全局状态验证器对「相同状态」按 no-op 放行，这里必须业务级显式拦截）
+    if order.status == ProductionOrderStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"生产订单已完成（完工入库不可重复执行）: {order_number}"
+        )
+
     # 添加状态流转验证
     from backend.common.utils.status_validator import ProductionOrderStatusValidator
     # 将枚举值转换为字符串
@@ -940,6 +949,33 @@ async def complete_production_order(
     order.status = ProductionOrderStatus.COMPLETED
     order.actual_finish_date = datetime.utcnow()
     order.updated_by = current_user.username
+
+    # N4 成品入库：完工即回冲成品库存（口径 = 报工良品合计；无报工时按工单数量）
+    from decimal import Decimal
+    from backend.common.models.mm import Material
+    good_qty = (
+        db.query(func.coalesce(func.sum(OperationReport.good_quantity), 0))
+        .filter(
+            OperationReport.production_order_number == order_number,
+            OperationReport.is_deleted == False,  # noqa: E712
+        )
+        .scalar()
+    )
+    receipt_qty = float(good_qty or 0)
+    if receipt_qty <= 0:
+        receipt_qty = float(order.quantity or 0)
+    if receipt_qty > 0:
+        material = (
+            db.query(Material)
+            .filter(
+                Material.material_code == order.material_code,
+                Material.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        if material is not None:
+            material.current_stock = float(material.current_stock or 0) + receipt_qty
+
     db.commit()
     
     # 同步销售订单状态

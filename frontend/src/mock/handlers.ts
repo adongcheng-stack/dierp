@@ -1600,6 +1600,22 @@ function transitionProductionOrder(
   order.updated_by = requireUser(ctx).username
   if (to === 'IN_PRODUCTION') order.actual_start_date = nowIso()
   if (to === 'COMPLETED' || to === 'CLOSED') order.actual_finish_date = nowIso()
+  // N4 成品入库：完工即回冲成品库存（口径 = 报工良品合计；无报工按工单数量）
+  if (to === 'COMPLETED') {
+    const reports = listOf(db, 'operationReports').filter(
+      (r) => !r.is_deleted && r.production_order_number === order.order_number
+    )
+    const goodQty = reports.reduce((sum, r) => sum + toNumber(r.good_quantity), 0)
+    const receiptQty = goodQty > 0 ? goodQty : toNumber(order.quantity)
+    if (receiptQty > 0) {
+      const material = listOf(db, 'materials').find(
+        (m) => !m.is_deleted && m.material_code === order.material_code
+      )
+      if (material) {
+        material.current_stock = toNumber(material.current_stock) + receiptQty
+      }
+    }
+  }
   syncSalesOrderStatus(db, order.sales_order_number)
   saveDb()
   return ok({ message, status: order.status })
