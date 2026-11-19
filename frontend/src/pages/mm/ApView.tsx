@@ -34,6 +34,10 @@ const ApView: React.FC = () => {
   const columns = [
     { title: '供应商编码', dataIndex: 'supplier_id', key: 'supplier_id', width: 130 },
     { title: '供应商', dataIndex: 'supplier_name', key: 'supplier_name' },
+    { title: '已确认发票', dataIndex: 'confirmed_invoice_amount', key: 'confirmed_invoice_amount', width: 130, align: 'right' as const, render: fmt },
+    { title: '已核销', dataIndex: 'paid_amount', key: 'paid_amount', width: 120, align: 'right' as const, render: fmt },
+    { title: '未核销发票', dataIndex: 'open_invoice_amount', key: 'open_invoice_amount', width: 130, align: 'right' as const, render: fmt },
+    { title: '未开票暂估', dataIndex: 'uninvoiced_receipt_amount', key: 'uninvoiced_receipt_amount', width: 130, align: 'right' as const, render: fmt },
     { title: '已到货金额', dataIndex: 'received_amount', key: 'received_amount', width: 140, align: 'right' as const, render: fmt },
     { title: '已退金额', dataIndex: 'returned_amount', key: 'returned_amount', width: 130, align: 'right' as const, render: fmt },
     { title: '已结金额', dataIndex: 'closed_amount', key: 'closed_amount', width: 140, align: 'right' as const, render: fmt },
@@ -52,7 +56,7 @@ const ApView: React.FC = () => {
     <div>
       <PageHeader
         title="应付账款"
-        description="按供应商汇总采购到货应付：到货金额 = 收货数量 × 单价；整单关闭视为结清"
+        description="应付口径（P1）：已确认发票 − 付款核销 + 未开票收货暂估；整单关闭不计暂估"
         actions={
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
             刷新

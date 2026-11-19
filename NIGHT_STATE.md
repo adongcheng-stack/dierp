@@ -2,7 +2,7 @@
 ## Current Task
 （空）
 ## Pending Tasks
-- [ ] T205 P1 前端发票页+资金核销页+台账升级（25min）
+- [ ] T206 P1 mock+snapshot v15+种子+parity（20min）
 - [ ] T202 P1 TTL/SHACL 同步（20min）
 - [ ] T203 P1 采购发票+三单匹配+confirm（30min）
 - [ ] T204 P1 付款/收款+核销+视图升级（40min）
@@ -43,6 +43,7 @@
 - [x] T202 P1 TTL/SHACL 双绿（02:40 完成）— 证据：validate-type-sync EXIT=0（KEY_ENUMS 含 PaymentMethod 双形状限定）+ validate-consistency EXIT=0；S40-S44 五形状 PI/PAY/RC pattern
 - [x] T203 P1 采购发票+三单匹配（03:00 完成）— 证据：probe_purchase_invoice 6/6 EXIT=0（创建PI/超匹配400/confirm/重复confirm400/cancel/未收货PO400）；pytest 28 passed；smoke_purchase_loop 回归 EXIT=0。注：Supplier 主键列名为 supplier_code（非 supplier_id）；purchase.py 需补 User/get_current_user 导入（既有文件从未用过）；5 新表已入 reset 清理列表（核销明细先于父单据、供应商发票先于采购单）；探针遵循 T109 教训起点+终点双 reset
 - [x] T204 P1 付款/收款+核销+视图升级（03:25 完成）— 证据：probe_finance_payments 8/8 EXIT=0（付款创建/核销PAID+明细/超发票额400/收款创建/核销→PARTIALLY_PAID+AR负流水/超收核销400/补足→PAID/AP新口径+应收递减）；smoke_purchase_loop 33 OK（AP 断言升级为 P1 口径）；smoke_sd_delivery EXIT=0；parity EXIT=0；pytest 28 passed。注：ap-view 未开票暂估按 PO 净额（扣已批退货）；收款核销同事务冲减 received_amount+状态联动+RECEIPT 流水
+- [x] T205 P1 前端 3 页+AP 台账升级（03:55 完成）— 证据：npx tsc --noEmit EXIT=0。注：SupplierInvoiceList/PaymentList（核销对话框 Form.List 多行+合计校验）/ReceiptList；ApView +4 列（已确认发票/已核销/未核销/未开票暂估）；菜单采购+2 销售+1；路由 ×3
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
