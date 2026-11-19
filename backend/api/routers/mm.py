@@ -1032,3 +1032,66 @@ def cancel_stock_transfer(
 
 
 
+
+
+@router.get("/batch-tracking")
+def batch_tracking(db: Session = Depends(get_db)):
+    """批次/效期纯读视图（P3）：按物料聚合 ACTIVE LOT 卡 + shelf_life_days 临期预警。
+
+    口径：LotCard 无效期字段（纯读不加表），到期日=最近完成时间 + 物料 shelf_life_days（估算）；
+    days_to_expiry ≤ 30 或已过期 → warning。
+    """
+    from backend.common.models.pp import LotCard
+
+    now = datetime.now()
+    lots = db.query(LotCard).filter(LotCard.is_deleted.is_(False), LotCard.status == "ACTIVE").all()
+    materials = {
+        m.material_code: m
+        for m in db.query(Material).filter(Material.is_deleted.is_(False)).all()
+    }
+    by_material: dict[str, dict] = {}
+    for lot in lots:
+        material = materials.get(lot.material_code)
+        if material is None:
+            continue
+        row = by_material.setdefault(
+            lot.material_code,
+            {
+                "material_code": lot.material_code,
+                "material_name": material.material_name,
+                "shelf_life_days": material.shelf_life_days,
+                "lot_count": 0,
+                "lot_qty": 0.0,
+                "last_completed_at": None,
+                "estimated_expiry": None,
+                "days_to_expiry": None,
+                "warning": False,
+            },
+        )
+        row["lot_count"] += 1
+        row["lot_qty"] += float(lot.quantity or 0)
+        completed = lot.completed_at
+        if completed is not None:
+            if row["last_completed_at"] is None or completed > row["last_completed_at"]:
+                row["last_completed_at"] = completed
+    items = []
+    for row in by_material.values():
+        row["lot_qty"] = round(row["lot_qty"], 2)
+        row["last_completed_at"] = (
+            row["last_completed_at"].isoformat() if row["last_completed_at"] else None
+        )
+        shelf = row.get("shelf_life_days")
+        if shelf and row["last_completed_at"]:
+            base = datetime.fromisoformat(row["last_completed_at"])
+            expiry = base + __import__("datetime").timedelta(days=int(shelf))
+            days = (expiry - now).days
+            row["estimated_expiry"] = expiry.date().isoformat()
+            row["days_to_expiry"] = days
+            row["warning"] = days <= 30
+        row["estimate_pending"] = row["estimated_expiry"] is None  # 在制批无完成时间，无法估算
+        items.append(row)
+    items.sort(key=lambda x: (
+        not x["warning"],
+        x["days_to_expiry"] if x["days_to_expiry"] is not None else 9e9,
+    ))
+    return {"total": len(items), "items": items, "generated_at": now.isoformat()}
