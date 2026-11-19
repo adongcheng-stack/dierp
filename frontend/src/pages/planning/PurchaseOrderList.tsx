@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Form, InputNumber, Modal, Space, Table, Tag, message } from 'antd'
-import { CheckOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { CheckOutlined, PlusOutlined, ReloadOutlined, FileSearchOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
 
@@ -50,6 +51,7 @@ const PurchaseOrderList: React.FC = () => {
   const [receiveTarget, setReceiveTarget] = useState<PurchaseOrder | null>(null)
   const [receiveForm] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
+  const navigate = useNavigate()
 
   const fetchData = async () => {
     setLoading(true)
@@ -202,6 +204,26 @@ const PurchaseOrderList: React.FC = () => {
           key: 'status',
           width: 100,
           render: (v: string) => <Tag color={LINE_STATUS[v]?.color ?? 'default'}>{LINE_STATUS[v]?.label ?? v}</Tag>,
+        },
+        {
+          title: '来料检验',
+          key: 'iqc',
+          width: 100,
+          render: (_: unknown, line: PoLine) =>
+            line.received_quantity > 0 ? (
+              <Button
+                type="link"
+                size="small"
+                icon={<FileSearchOutlined />}
+                onClick={() =>
+                  navigate(
+                    `/qms/inspections?material_code=${line.material_code}&purchase_order_number=${record.purchase_order_number}`
+                  )
+                }
+              >
+                IQC
+              </Button>
+            ) : null,
         },
       ]}
     />

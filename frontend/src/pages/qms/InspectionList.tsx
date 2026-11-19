@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Form, Input, InputNumber, Modal, Select, Space, Table, message } from 'antd'
 import { CheckOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { useSearchParams } from 'react-router-dom'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
 import {
@@ -12,6 +13,7 @@ import {
 } from './shared'
 
 const InspectionList: React.FC = () => {
+  const [searchParams] = useSearchParams()
   const [rows, setRows] = useState<any[]>([])
   const [typeFilter, setTypeFilter] = useState<string | undefined>()
   const [materials, setMaterials] = useState<any[]>([])
@@ -50,6 +52,21 @@ const InspectionList: React.FC = () => {
 
   useEffect(() => {
     fetchMaterials()
+  }, [])
+
+  // IQC 联动：从采购单页带 query 参数进入时，预填来料检验单并自动打开创建弹窗
+  useEffect(() => {
+    const materialCode = searchParams.get('material_code')
+    const purchaseOrder = searchParams.get('purchase_order_number')
+    if (!materialCode && !purchaseOrder) return
+    form.resetFields()
+    form.setFieldsValue({
+      inspection_type: 'INCOMING',
+      material_code: materialCode || undefined,
+      purchase_order_number: purchaseOrder || undefined,
+    })
+    setCreateOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const openCreate = () => {

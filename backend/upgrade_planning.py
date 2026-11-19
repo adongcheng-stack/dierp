@@ -55,6 +55,7 @@ from backend.common.models.planning import (  # noqa: E402
     Resource,
     ResourceStatus,
     SkillMatrix,
+    Supplier,
     WorkCalendar,
 )
 from backend.common.utils.number_generator import NumberGenerator  # noqa: E402
@@ -1168,6 +1169,77 @@ def seed_purchase_demo_data(db: Session) -> int:
     return created
 
 
+def seed_suppliers(db: Session) -> int:
+    """供应商主数据演示种子（幂等）。
+
+    与采购单 seed_purchase_demo_data 硬编码的 SUP-HQ 对齐：
+    - 华强覆铜板贸易（SUP-HQ）——现有演示采购单的供应商；
+    - 苏州瑞银电子、铜陵金泰铜业——补充供应商下拉可选。
+    """
+    from backend.common.models.planning import Supplier
+
+    demo_suppliers = [
+        {
+            "supplier_code": "SUP-HQ",
+            "supplier_name": "华强覆铜板贸易",
+            "short_name": "华强",
+            "supplier_type": "MATERIAL",
+            "contact_person": "王经理",
+            "contact_phone": "0755-88886666",
+            "email": "sales@huaqiang-fr4.com",
+            "address": "广东省深圳市宝安区",
+            "payment_terms": "月结30天",
+            "lead_time_days": 5,
+            "default_currency": "CNY",
+            "rating": 5,
+        },
+        {
+            "supplier_code": "SUP-RY",
+            "supplier_name": "苏州瑞银电子材料",
+            "short_name": "瑞银电子",
+            "supplier_type": "MATERIAL",
+            "contact_person": "李主管",
+            "contact_phone": "0512-66889900",
+            "email": "sales@ruiyin-pp.com",
+            "address": "江苏省苏州市工业园区",
+            "payment_terms": "月结45天",
+            "lead_time_days": 7,
+            "default_currency": "CNY",
+            "rating": 4,
+        },
+        {
+            "supplier_code": "SUP-JT",
+            "supplier_name": "铜陵金泰铜业",
+            "short_name": "金泰铜业",
+            "supplier_type": "MATERIAL",
+            "contact_person": "周工",
+            "contact_phone": "0562-55667788",
+            "email": "sales@jintai-cu.com",
+            "address": "安徽省铜陵市经济技术开发区",
+            "payment_terms": "预付30%",
+            "lead_time_days": 3,
+            "default_currency": "CNY",
+            "rating": 4,
+        },
+    ]
+    created = 0
+    for item in demo_suppliers:
+        exists = (
+            db.query(Supplier)
+            .filter(
+                Supplier.supplier_code == item["supplier_code"],
+                Supplier.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        if exists is not None:
+            continue
+        db.add(Supplier(**item, created_by="system"))
+        created += 1
+    db.flush()
+    return created
+
+
 def main() -> None:
     print("=" * 56)
     print("DIERP 计划与控制系统 - 增量升级")
@@ -1191,6 +1263,7 @@ def main() -> None:
         print(f"[OK] 报工工艺关联与工时修正 {seed_operation_report_routing(db)} 条")
         print(f"[OK] QMS 演示数据新增 {seed_qms_demo_data(db)} 条")
         print(f"[OK] 采购演示单据新增 {seed_purchase_demo_data(db)} 张")
+        print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
         db.commit()
 
         print("-" * 56)

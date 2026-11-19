@@ -18,6 +18,7 @@ from backend.common.models.planning import (
     PurchaseOrder,
     PurchaseOrderLine,
     PurchaseOrderStatus,
+    Supplier,
 )
 
 router = APIRouter()
@@ -266,3 +267,225 @@ def close_purchase_order(purchase_order_number: str, db: Session = Depends(get_d
     db.commit()
     order, lines = _load_order(db, purchase_order_number)
     return _order_dict(order, lines)
+
+
+# ── 供应商主数据 ────────────────────────────────────────────────────────
+def _supplier_dict(supplier) -> dict:
+    return {
+        "supplier_code": supplier.supplier_code,
+        "supplier_name": supplier.supplier_name,
+        "short_name": supplier.short_name,
+        "supplier_type": supplier.supplier_type,
+        "status": supplier.status,
+        "contact_person": supplier.contact_person,
+        "contact_phone": supplier.contact_phone,
+        "email": supplier.email,
+        "address": supplier.address,
+        "tax_number": supplier.tax_number,
+        "bank_account": supplier.bank_account,
+        "payment_terms": supplier.payment_terms,
+        "lead_time_days": supplier.lead_time_days,
+        "default_currency": supplier.default_currency,
+        "rating": supplier.rating,
+        "remarks": supplier.remarks,
+        "created_at": supplier.created_at.isoformat() if supplier.created_at else None,
+    }
+
+
+def _load_supplier(db: Session, code: str):
+    supplier = (
+        db.query(Supplier)
+        .filter(
+            Supplier.supplier_code == code,
+            Supplier.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if supplier is None:
+        raise HTTPException(status_code=404, detail=f"供应商不存在: {code}")
+    return supplier
+
+
+class SupplierPayload(BaseModel):
+    supplier_name: str
+    short_name: Optional[str] = None
+    supplier_type: str = "MATERIAL"
+    status: str = "ACTIVE"
+    contact_person: Optional[str] = None
+    contact_phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    tax_number: Optional[str] = None
+    bank_account: Optional[str] = None
+    payment_terms: Optional[str] = None
+    lead_time_days: int = 0
+    default_currency: str = "CNY"
+    rating: int = 3
+    remarks: Optional[str] = None
+
+
+@router.get("/suppliers")
+def list_suppliers(
+    skip: int = 0,
+    limit: int = 200,
+    status: Optional[str] = None,
+    supplier_type: Optional[str] = None,
+    keyword: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """供应商列表：可按状态/类型/关键字过滤。"""
+    query = db.query(Supplier).filter(Supplier.is_deleted == False)  # noqa: E712
+    if status:
+        query = query.filter(Supplier.status == status)
+    if supplier_type:
+        query = query.filter(Supplier.supplier_type == supplier_type)
+    if keyword:
+        like = f"%{keyword}%"
+        query = query.filter(
+            (Supplier.supplier_code.like(like)) | (Supplier.supplier_name.like(like))
+        )
+    total = query.count()
+    rows = query.order_by(Supplier.supplier_code).offset(skip).limit(limit).all()
+    return {"total": total, "items": [_supplier_dict(r) for r in rows]}
+
+
+@router.get("/suppliers/refs")
+def list_supplier_refs(db: Session = Depends(get_db)):
+    """下拉引用：仅返回编码 + 名称（供采购单/PR 表单选择）。"""
+    rows = (
+        db.query(Supplier)
+        .filter(
+            Supplier.is_deleted == False,  # noqa: E712
+            Supplier.status == "ACTIVE",
+        )
+        .order_by(Supplier.supplier_code)
+        .all()
+    )
+    return [
+        {"supplier_code": r.supplier_code, "supplier_name": r.supplier_name} for r in rows
+    ]
+
+
+@router.get("/suppliers/{supplier_code}")
+def get_supplier(supplier_code: str, db: Session = Depends(get_db)):
+    supplier = _load_supplier(db, supplier_code)
+    return _supplier_dict(supplier)
+
+
+@router.post("/suppliers", status_code=status.HTTP_201_CREATED)
+def create_supplier(payload: SupplierPayload, db: Session = Depends(get_db)):
+    # 供应商编码自动生成（演示口径 SUP-xxxx，按序号递增）
+    last = db.query(Supplier).order_by(Supplier.id.desc()).first()
+    seq = (last.id + 1) if last else 1
+    supplier_code = f"SUP-{seq:04d}"
+    row = Supplier(
+        supplier_code=supplier_code,
+        supplier_name=payload.supplier_name,
+        short_name=payload.short_name,
+        supplier_type=payload.supplier_type,
+        status=payload.status,
+        contact_person=payload.contact_person,
+        contact_phone=payload.contact_phone,
+        email=payload.email,
+        address=payload.address,
+        tax_number=payload.tax_number,
+        bank_account=payload.bank_account,
+        payment_terms=payload.payment_terms,
+        lead_time_days=payload.lead_time_days,
+        default_currency=payload.default_currency,
+        rating=payload.rating,
+        remarks=payload.remarks,
+        created_by="web",
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _supplier_dict(row)
+
+
+@router.put("/suppliers/{supplier_code}")
+def update_supplier(
+    supplier_code: str, payload: SupplierPayload, db: Session = Depends(get_db)
+):
+    row = _load_supplier(db, supplier_code)
+    for field in payload.dict(exclude_unset=True):
+        setattr(row, field, payload.dict()[field])
+    row.updated_by = "web"
+    db.commit()
+    db.refresh(row)
+    return _supplier_dict(row)
+
+
+@router.post("/suppliers/{supplier_code}/toggle")
+def toggle_supplier(supplier_code: str, db: Session = Depends(get_db)):
+    """停用 / 启用：切换 status = ACTIVE ↔ INACTIVE。"""
+    row = _load_supplier(db, supplier_code)
+    row.status = "INACTIVE" if row.status == "ACTIVE" else "ACTIVE"
+    row.updated_by = "web"
+    db.commit()
+    db.refresh(row)
+    return _supplier_dict(row)
+
+
+# ── 应付账款视图 ────────────────────────────────────────────────────────
+@router.get("/ap-view")
+def ap_view(
+    supplier_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """应付账款：按供应商汇总「已到货金额 - 已收货款 = 应付」。
+
+    - 到货金额 = 各采购行 received_quantity × unit_price 之和；
+    - 已收货款按整单 CLOSED 视为结清（演示口径），否则记 0；
+    - 应收 = 到货金额 - 已收货款。
+    """
+    lines = (
+        db.query(PurchaseOrderLine)
+        .filter(PurchaseOrderLine.is_deleted == False)  # noqa: E712
+        .all()
+    )
+    orders = {
+        o.purchase_order_number: o
+        for o in db.query(PurchaseOrder)
+        .filter(PurchaseOrder.is_deleted == False)  # noqa: E712
+        .all()
+    }
+
+    by_supplier: dict[str, dict] = {}
+    for line in lines:
+        order = orders.get(line.purchase_order_number)
+        if order is None:
+            continue
+        sid = order.supplier_id or "未指定"
+        sname = order.supplier_name or sid
+        if supplier_id and sid != supplier_id:
+            continue
+        bucket = by_supplier.setdefault(
+            sid,
+            {
+                "supplier_id": sid,
+                "supplier_name": sname,
+                "received_amount": 0.0,
+                "closed_amount": 0.0,
+                "payable_amount": 0.0,
+            },
+        )
+        received_qty = _f(line.received_quantity)
+        received_amount = received_qty * _f(line.unit_price)
+        bucket["received_amount"] += received_amount
+        if order.status == PurchaseOrderStatus.CLOSED:
+            bucket["closed_amount"] += received_amount
+        bucket["payable_amount"] += received_amount
+
+    for bucket in by_supplier.values():
+        bucket["payable_amount"] = round(bucket["payable_amount"] - bucket["closed_amount"], 2)
+        bucket["received_amount"] = round(bucket["received_amount"], 2)
+        bucket["closed_amount"] = round(bucket["closed_amount"], 2)
+
+    items = sorted(by_supplier.values(), key=lambda x: -x["payable_amount"])
+    total_payable = round(sum(x["payable_amount"] for x in items), 2)
+    return {
+        "total_payable": total_payable,
+        "total_received": round(sum(x["received_amount"] for x in items), 2),
+        "items": items,
+    }

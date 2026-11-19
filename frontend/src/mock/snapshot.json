@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 11,
   "generatedAt": "2026-11-17T23:49:35",
   "customers": [
     {
@@ -8118,6 +8118,59 @@
       "created_at": "2026-11-18T08:57:52",
       "updated_by": "system",
       "updated_at": "2026-11-18T08:57:52",
+      "is_deleted": false
+    }
+  ],
+  "suppliers": [
+    {
+      "id": 1,
+      "supplier_code": "SUP-HQ",
+      "supplier_name": "华强覆铜板贸易",
+      "short_name": "华强",
+      "supplier_type": "MATERIAL",
+      "status": "ACTIVE",
+      "contact_person": "王经理",
+      "contact_phone": "0755-88886666",
+      "email": "sales@huaqiang-fr4.com",
+      "address": "广东省深圳市宝安区",
+      "payment_terms": "月结30天",
+      "lead_time_days": 5,
+      "default_currency": "CNY",
+      "rating": 5,
+      "is_deleted": false
+    },
+    {
+      "id": 2,
+      "supplier_code": "SUP-RY",
+      "supplier_name": "苏州瑞银电子材料",
+      "short_name": "瑞银电子",
+      "supplier_type": "MATERIAL",
+      "status": "ACTIVE",
+      "contact_person": "李主管",
+      "contact_phone": "0512-66889900",
+      "email": "sales@ruiyin-pp.com",
+      "address": "江苏省苏州市工业园区",
+      "payment_terms": "月结45天",
+      "lead_time_days": 7,
+      "default_currency": "CNY",
+      "rating": 4,
+      "is_deleted": false
+    },
+    {
+      "id": 3,
+      "supplier_code": "SUP-JT",
+      "supplier_name": "铜陵金泰铜业",
+      "short_name": "金泰铜业",
+      "supplier_type": "MATERIAL",
+      "status": "ACTIVE",
+      "contact_person": "周工",
+      "contact_phone": "0562-55667788",
+      "email": "sales@jintai-cu.com",
+      "address": "安徽省铜陵市经济技术开发区",
+      "payment_terms": "预付30%",
+      "lead_time_days": 3,
+      "default_currency": "CNY",
+      "rating": 4,
       "is_deleted": false
     }
   ]

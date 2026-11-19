@@ -5116,6 +5116,140 @@ route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/close', (_ctx, par
   return ok(purchaseOrderDict(db, po))
 })
 
+/* ------------------------------- 供应商 + 应付账款 ------------------------------- */
+
+function supplierDict(s: any) {
+  return { ...clone(s) }
+}
+
+route('GET', '/purchase/suppliers', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'suppliers').filter((s: any) => !s.is_deleted)
+  const kw = String(ctx.query?.keyword ?? '').trim()
+  if (kw) {
+    rows = rows.filter(
+      (s: any) => String(s.supplier_code).includes(kw) || String(s.supplier_name).includes(kw)
+    )
+  }
+  return ok({ total: rows.length, items: rows.map(supplierDict) })
+})
+
+route('GET', '/purchase/suppliers/refs', () => {
+  const db = getDb()
+  const rows = listOf(db, 'suppliers').filter(
+    (s: any) => !s.is_deleted && s.status === 'ACTIVE'
+  )
+  return ok(rows.map((s: any) => ({ supplier_code: s.supplier_code, supplier_name: s.supplier_name })))
+})
+
+route('GET', '/purchase/suppliers/:code', (_ctx, params) => {
+  const s = listOf(getDb(), 'suppliers').find(
+    (x: any) => !x.is_deleted && x.supplier_code === params.code
+  )
+  if (!s) fail(404, `供应商不存在: ${params.code}`)
+  return ok(supplierDict(s))
+})
+
+route('POST', '/purchase/suppliers', (ctx) => {
+  const db = getDb()
+  const rows = listOf(db, 'suppliers')
+  const body = ctx.body ?? {}
+  if (!body?.supplier_name) fail(400, '供应商名称不能为空')
+  const nextId = rows.length ? Math.max(...rows.map((r: any) => r.id)) + 1 : 1
+  const item = {
+    id: nextId,
+    supplier_code: `SUP-${String(nextId).padStart(4, '0')}`,
+    supplier_name: body.supplier_name,
+    short_name: body.short_name ?? null,
+    supplier_type: body.supplier_type ?? 'MATERIAL',
+    status: body.status ?? 'ACTIVE',
+    contact_person: body.contact_person ?? null,
+    contact_phone: body.contact_phone ?? null,
+    email: body.email ?? null,
+    address: body.address ?? null,
+    tax_number: body.tax_number ?? null,
+    bank_account: body.bank_account ?? null,
+    payment_terms: body.payment_terms ?? null,
+    lead_time_days: body.lead_time_days ?? 0,
+    default_currency: body.default_currency ?? 'CNY',
+    rating: body.rating ?? 3,
+    remarks: body.remarks ?? null,
+    created_at: nowIso(),
+    is_deleted: false,
+  }
+  rows.push(item)
+  saveDb()
+  return ok(supplierDict(item), 201)
+})
+
+route('PUT', '/purchase/suppliers/:code', (ctx, params) => {
+  const db = getDb()
+  const s = listOf(db, 'suppliers').find(
+    (x: any) => !x.is_deleted && x.supplier_code === params.code
+  )
+  if (!s) fail(404, `供应商不存在: ${params.code}`)
+  Object.assign(s, ctx.body ?? {}, { updated_at: nowIso() })
+  saveDb()
+  return ok(supplierDict(s))
+})
+
+route('POST', '/purchase/suppliers/:code/toggle', (_ctx, params) => {
+  const db = getDb()
+  const s = listOf(db, 'suppliers').find(
+    (x: any) => !x.is_deleted && x.supplier_code === params.code
+  )
+  if (!s) fail(404, `供应商不存在: ${params.code}`)
+  s.status = s.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+  s.updated_at = nowIso()
+  saveDb()
+  return ok(supplierDict(s))
+})
+
+route('GET', '/purchase/ap-view', () => {
+  const db = getDb()
+  const orders = listOf(db, 'purchaseOrders')
+  const lines: any[] = []
+  for (const po of orders) {
+    if (!po.is_deleted) {
+      const polines = listOf(db, 'purchaseOrderLines').filter(
+        (l: any) => !l.is_deleted && l.purchase_order_number === po.purchase_order_number
+      )
+      lines.push(...polines)
+    }
+  }
+  const buckets: Record<string, any> = {}
+  for (const line of lines) {
+    const po = orders.find((o: any) => o.purchase_order_number === line.purchase_order_number)
+    if (!po) continue
+    const sid = po.supplier_id || '未指定'
+    const bucket = buckets[sid] ?? {
+      supplier_id: sid,
+      supplier_name: po.supplier_name || sid,
+      received_amount: 0,
+      closed_amount: 0,
+      payable_amount: 0,
+    }
+    const receivedQty = toNumber(line.received_quantity)
+    const amount = receivedQty * toNumber(line.unit_price)
+    bucket.received_amount += amount
+    if (po.status === 'CLOSED') bucket.closed_amount += amount
+    bucket.payable_amount += amount
+    buckets[sid] = bucket
+  }
+  const items = Object.values(buckets).map((b: any) => ({
+    supplier_id: b.supplier_id,
+    supplier_name: b.supplier_name,
+    received_amount: round(b.received_amount, 2),
+    closed_amount: round(b.closed_amount, 2),
+    payable_amount: round(b.payable_amount - b.closed_amount, 2),
+  }))
+  return ok({
+    total_payable: round(items.reduce((s: number, x: any) => s + x.payable_amount, 0), 2),
+    total_received: round(items.reduce((s: number, x: any) => s + x.received_amount, 0), 2),
+    items,
+  })
+})
+
 /* ------------------------------- 路由入口 ------------------------------- */
 
 /* ------------------- 写操作权限门（与 backend/api/routers/auth.py 同构） ------------------- */

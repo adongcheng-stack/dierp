@@ -623,6 +623,44 @@ class PurchaseOrderLine(BaseModel):
 
 
 
+class Supplier(BaseModel):
+    """供应商主数据"""
+    __tablename__ = "suppliers"
+
+    supplier_code = Column(String(50), nullable=False, unique=True, index=True, comment="供应商编码")
+
+    supplier_name = Column(String(200), nullable=False, comment="供应商名称")
+
+    short_name = Column(String(50), comment="简称")
+
+    supplier_type = Column(String(20), default="MATERIAL", comment="供应商类型(MATERIAL/OUTSOURCE/SERVICE)")
+
+    status = Column(String(20), default="ACTIVE", index=True, comment="状态(ACTIVE/INACTIVE)")
+
+    contact_person = Column(String(50), comment="联系人")
+
+    contact_phone = Column(String(30), comment="联系电话")
+
+    email = Column(String(100), comment="邮箱")
+
+    address = Column(String(200), comment="地址")
+
+    tax_number = Column(String(50), comment="税号")
+
+    bank_account = Column(String(50), comment="银行账号")
+
+    payment_terms = Column(String(50), comment="付款条款")
+
+    lead_time_days = Column(Integer, default=0, comment="默认交货天数")
+
+    default_currency = Column(String(10), default="CNY", comment="默认币种")
+
+    rating = Column(Integer, default=3, comment="评级(1-5)")
+
+    remarks = Column(Text)
+
+
+
 class CostRate(BaseModel):
     """成本费率"""
     __tablename__ = "cost_rates"

@@ -35,6 +35,7 @@ from backend.common.models.planning import (
     ScheduleException,
     ScheduledOperation,
     ScheduleRun,
+    Supplier,
 )
 from backend.common.models.mm import Material
 from backend.common.models.pp import OperationReport, ProductionOrder, ProductionOrderStatus
@@ -85,6 +86,7 @@ def _clear(db: Session) -> dict[str, int]:
         ("inspection_orders", InspectionOrder),
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
+        ("suppliers", Supplier),
     ]
     for key, model in models:
         cleared[key] = db.query(model).delete(synchronize_session=False)
@@ -163,6 +165,7 @@ def _rebuild_master_seed(db: Session) -> None:
         seed_operation_report_routing,
         seed_purchase_demo_data,
         seed_qms_demo_data,
+        seed_suppliers,
     )
 
     seed_aps_master_data(db)
@@ -170,6 +173,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_operation_report_routing(db)
     seed_qms_demo_data(db)
     seed_purchase_demo_data(db)
+    seed_suppliers(db)
 
 
 def _build_demo_run(
