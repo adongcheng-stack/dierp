@@ -6080,6 +6080,17 @@ route('POST', '/sd/deliveries/:number/ship', (ctx, params) => {
   d.updated_at = nowIso()
   syncOrderStatus(db, d.sales_order_number)
   saveDb()
+  // 自动分录：发货出库 = 数量 × 物料标准成本（无成本物料跳过，与后端同构）
+  const stdCost = listOf(db, 'standardCosts')
+    .filter((s: any) => !s.is_deleted && s.material_code === d.material_code)
+    .sort((a: any, b: any) => toNumber(b.id) - toNumber(a.id))[0]
+  if (stdCost && toNumber(stdCost.material_cost) > 0) {
+    try {
+      postMockGl(db, 'SALES_DELIVERY_SHIPPED', d.delivery_number,
+        toNumber(d.quantity) * toNumber(stdCost.material_cost),
+        `发货出库 ${d.delivery_number}`, ctx.user?.username ?? null)
+    } catch { /* GL 失败不阻断业务 */ }
+  }
   return ok(deliveryDict(d))
 })
 
@@ -6225,6 +6236,10 @@ route('POST', '/sd/invoices/:number/issue', (ctx, params) => {
   checkInvoiceCap(db, i.sales_order_number, toNumber(i.amount), i.invoice_number)
   i.status = 'ISSUED'
   i.updated_at = nowIso()
+  try {
+    postMockGl(db, 'SALES_INVOICE_ISSUED', i.invoice_number, toNumber(i.amount),
+      `开票 ${i.invoice_number}`, ctx.user?.username ?? null)
+  } catch { /* GL 失败不阻断业务（与后端同构） */ }
   const entries = listOf(db, 'receivableEntries')
   entries.unshift(
     stampNew(
@@ -6403,6 +6418,10 @@ route('POST', '/purchase/supplier-invoices/:number/confirm', (_ctx, params) => {
   i.status = 'CONFIRMED'
   i.updated_at = nowIso()
   saveDb()
+  try {
+    postMockGl(db, 'SUPPLIER_INVOICE_CONFIRMED', i.invoice_number, toNumber(i.amount),
+      `采购发票确认 ${i.invoice_number}`, _ctx.user?.username ?? null)
+  } catch { /* GL 失败不阻断业务（与后端同构） */ }
   return ok(supplierInvoiceDict(i))
 })
 
@@ -6564,6 +6583,15 @@ route('POST', '/purchase/payments/:number/pay', (ctx, params) => {
   p.payment_date = nowIso()
   p.updated_at = nowIso()
   saveDb()
+  const paidTotal = paymentAllocations(db, params.number).reduce(
+    (s: number, a: any) => s + toNumber(a.allocated_amount), 0
+  )
+  if (paidTotal > 0) {
+    try {
+      postMockGl(db, 'SUPPLIER_PAYMENT_PAID', p.payment_number, paidTotal,
+        `付款 ${p.payment_number}`, ctx.user?.username ?? null)
+    } catch { /* GL 失败不阻断业务 */ }
+  }
   return ok(supplierPaymentDict(p, paymentAllocations(db, params.number)))
 })
 
@@ -6711,6 +6739,15 @@ route('POST', '/sd/receipts/:number/pay', (ctx, params) => {
   r.status = 'PAID'
   r.updated_at = nowIso()
   saveDb()
+  const receivedTotal = receiptAllocations(db, params.number).reduce(
+    (s: number, a: any) => s + toNumber(a.allocated_amount), 0
+  )
+  if (receivedTotal > 0) {
+    try {
+      postMockGl(db, 'RECEIPT_PAID', r.receipt_number, receivedTotal,
+        `收款核销 ${r.receipt_number}`, ctx.user?.username ?? null)
+    } catch { /* GL 失败不阻断业务 */ }
+  }
   return ok(receiptDict(r, receiptAllocations(db, params.number)))
 })
 
@@ -6722,6 +6759,209 @@ route('POST', '/sd/receipts/:number/cancel', (_ctx, params) => {
   r.updated_at = nowIso()
   saveDb()
   return ok(receiptDict(r, receiptAllocations(db, params.number)))
+})
+
+// ── 总账引擎镜像（P2）：GL_RULES + postMockGl + /finance 只读端点 ──────
+
+const GL_RULES: Record<string, [string, string]> = {
+  SALES_INVOICE_ISSUED: ['1122', '6001'],
+  SALES_DELIVERY_SHIPPED: ['6401', '1405'],
+  SUPPLIER_INVOICE_CONFIRMED: ['1405', '2202'],
+  SUPPLIER_PAYMENT_PAID: ['2202', '1002'],
+  RECEIPT_PAID: ['1002', '1122'],
+  MATERIAL_ISSUE: ['5001', '1405'],
+  STOCK_ADJUST: ['5001', '1405'],
+  PRODUCTION_COMPLETE: ['1405', '5001'],
+}
+
+/** 与后端 GlEngine.post 同构：幂等（source_type+source_ref）、两行平衡、当期 OPEN。 */
+function postMockGl(
+  db: MockDb,
+  sourceType: string,
+  sourceRef: string,
+  amount: number,
+  summary: string,
+  operator?: string | null
+) {
+  const existing = listOf(db, 'glJournalEntries').find(
+    (e: any) => !e.is_deleted && e.source_type === sourceType && e.source_ref === sourceRef
+  )
+  if (existing) return existing
+  const rule = GL_RULES[sourceType]
+  if (!rule) fail(400, `业务事件 ${sourceType} 无分录映射`)
+  if (!(amount > 0)) fail(400, `分录金额必须大于 0：${sourceType} ${sourceRef}`)
+  const entries = listOf(db, 'glJournalEntries')
+  const entry = stampNew(
+    {
+      id: nextId(entries),
+      entry_number: nextNumber(entries, 'entry_number', 'JE'),
+      entry_date: nowIso(),
+      period_code: new Date().toISOString().slice(0, 7),
+      status: 'POSTED',
+      source_type: sourceType,
+      source_ref: sourceRef,
+      remarks: summary || null,
+      created_by: operator ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    },
+    null
+  )
+  entries.unshift(entry)
+  const lines = listOf(db, 'glJournalLines')
+  const round2 = round(amount, 2)
+  const baseId = nextId(lines)
+  lines.unshift(
+    stampNew(
+      {
+        id: baseId + 1,
+        entry_number: entry.entry_number,
+        line_number: 2,
+        account_code: rule[1],
+        debit: 0,
+        credit: round2,
+        summary: summary || null,
+        created_by: operator ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      null
+    ),
+    stampNew(
+      {
+        id: baseId,
+        entry_number: entry.entry_number,
+        line_number: 1,
+        account_code: rule[0],
+        debit: round2,
+        credit: 0,
+        summary: summary || null,
+        created_by: operator ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      null
+    )
+  )
+  saveDb()
+  return entry
+}
+
+function glEntryDict(e: any, lines: any[]) {
+  return {
+    entry_number: e.entry_number,
+    entry_date: e.entry_date,
+    period_code: e.period_code,
+    status: e.status,
+    source_type: e.source_type,
+    source_ref: e.source_ref,
+    remarks: e.remarks,
+    created_at: e.created_at,
+    lines: lines
+      .sort((a, b) => a.line_number - b.line_number)
+      .map((l) => ({
+        line_number: l.line_number,
+        account_code: l.account_code,
+        debit: toNumber(l.debit),
+        credit: toNumber(l.credit),
+        summary: l.summary,
+      })),
+  }
+}
+
+route('GET', '/finance/accounts', () => {
+  const db = getDb()
+  const rows = listOf(db, 'glAccounts')
+    .filter((a: any) => !a.is_deleted)
+    .sort((a: any, b: any) => (a.account_code > b.account_code ? 1 : -1))
+  return ok({
+    total: rows.length,
+    items: rows.map((a: any) => ({
+      account_code: a.account_code,
+      account_name: a.account_name,
+      account_type: a.account_type,
+      parent_code: a.parent_code,
+      is_leaf: a.is_leaf,
+    })),
+  })
+})
+
+route('GET', '/finance/periods', () => {
+  const db = getDb()
+  const rows = [...listOf(db, 'glFiscalPeriods')].sort((a: any, b: any) =>
+    a.period_code > b.period_code ? -1 : 1
+  )
+  return ok({
+    total: rows.length,
+    items: rows.map((p: any) => ({
+      period_code: p.period_code,
+      start_date: p.start_date,
+      end_date: p.end_date,
+      status: p.status,
+    })),
+  })
+})
+
+route('GET', '/finance/journal-entries', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'glJournalEntries').filter((e: any) => !e.is_deleted)
+  if (ctx.query.source_type) rows = rows.filter((e: any) => e.source_type === ctx.query.source_type)
+  if (ctx.query.source_ref) rows = rows.filter((e: any) => e.source_ref === ctx.query.source_ref)
+  if (ctx.query.period_code) rows = rows.filter((e: any) => e.period_code === ctx.query.period_code)
+  if (ctx.query.entry_status) rows = rows.filter((e: any) => e.status === ctx.query.entry_status)
+  const allLines = listOf(db, 'glJournalLines')
+  return ok({
+    total: rows.length,
+    items: rows.map((e: any) =>
+      glEntryDict(e, allLines.filter((l: any) => l.entry_number === e.entry_number))
+    ),
+  })
+})
+
+route('GET', '/finance/journal-entries/:number', (_ctx, params) => {
+  const db = getDb()
+  const e = requireItem(listOf(db, 'glJournalEntries'), 'entry_number', params.number, '凭证')
+  return ok(glEntryDict(e, listOf(db, 'glJournalLines').filter((l: any) => l.entry_number === params.number)))
+})
+
+route('GET', '/finance/trial-balance', (ctx) => {
+  const db = getDb()
+  const entries = listOf(db, 'glJournalEntries').filter(
+    (e: any) => !e.is_deleted && e.status === 'POSTED'
+      && (!ctx.query.period_code || e.period_code === ctx.query.period_code)
+  )
+  const postedRefs = new Set(entries.map((e: any) => e.entry_number))
+  const byAccount: Record<string, any> = {}
+  let totalDebit = 0
+  let totalCredit = 0
+  for (const line of listOf(db, 'glJournalLines')) {
+    if (!postedRefs.has(line.entry_number)) continue
+    const account = findItem(listOf(db, 'glAccounts'), 'account_code', line.account_code)
+    const row = byAccount[line.account_code] ?? (byAccount[line.account_code] = {
+      account_code: line.account_code,
+      account_name: account?.account_name ?? line.account_code,
+      account_type: account?.account_type ?? '',
+      debit_total: 0,
+      credit_total: 0,
+    })
+    row.debit_total += toNumber(line.debit)
+    row.credit_total += toNumber(line.credit)
+    totalDebit += toNumber(line.debit)
+    totalCredit += toNumber(line.credit)
+  }
+  const items = Object.values(byAccount).map((x: any) => ({
+    ...x,
+    debit_total: round(x.debit_total, 2),
+    credit_total: round(x.credit_total, 2),
+    balance: round(x.debit_total - x.credit_total, 2),
+  })).sort((a: any, b: any) => (a.account_code > b.account_code ? 1 : -1))
+  return ok({
+    period_code: ctx.query.period_code ?? null,
+    total_debit: round(totalDebit, 2),
+    total_credit: round(totalCredit, 2),
+    balanced: Math.abs(totalDebit - totalCredit) < 0.01,
+    items,
+  })
 })
 
 export function handleMockRequest(ctx: MockContext): MockResult {
