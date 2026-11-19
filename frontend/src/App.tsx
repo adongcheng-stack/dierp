@@ -20,6 +20,9 @@ const SalesOrderList = lazy(() => import('./pages/sd/SalesOrderList'))
 const SalesOrderForm = lazy(() => import('./pages/sd/SalesOrderForm'))
 const FactoryProductMappingList = lazy(() => import('./pages/sd/FactoryProductMappingList'))
 const FactoryProductMappingForm = lazy(() => import('./pages/sd/FactoryProductMappingForm'))
+const DeliveryList = lazy(() => import('./pages/sd/DeliveryList'))
+const InvoiceList = lazy(() => import('./pages/sd/InvoiceList'))
+const ReceivableView = lazy(() => import('./pages/sd/ReceivableView'))
 const MaterialList = lazy(() => import('./pages/mm/MaterialList'))
 const MaterialForm = lazy(() => import('./pages/mm/MaterialForm'))
 const MaterialIssueList = lazy(() => import('./pages/mm/MaterialIssueList'))
@@ -131,6 +134,9 @@ function App() {
                       <Route path="/sd/sales-orders" element={<SalesOrderList />} />
                       <Route path="/sd/sales-orders/new" element={<SalesOrderForm />} />
                       <Route path="/sd/sales-orders/:id/edit" element={<SalesOrderForm />} />
+                      <Route path="/sd/deliveries" element={<DeliveryList />} />
+                      <Route path="/sd/invoices" element={<InvoiceList />} />
+                      <Route path="/sd/receivables" element={<ReceivableView />} />
                       <Route path="/mm/materials" element={<MaterialList />} />
                       <Route path="/mm/materials/new" element={<MaterialForm />} />
                       <Route path="/mm/materials/:code/edit" element={<MaterialForm />} />

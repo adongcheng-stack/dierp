@@ -2,7 +2,7 @@
 ## Current Task
 （空）
 ## Pending Tasks
-- [ ] T107 P0 前端 3 页（35min）— tsc EXIT=0
+- [ ] T108 P0 mock 同构+snapshot v15（35min）— 探针 6 断言
 - [ ] T103 P0 TTL/SHACL/demo 同步双绿（30min）
 - [ ] T104 P0 发货单后端 4 端点（45min）— 探针 8 断言
 - [ ] T105 P0 发票+应收后端（40min）— 探针 6 断言
@@ -29,6 +29,7 @@
 - [x] T104 P0 发货单后端（23:40 完成）— 证据：探针 8/8 PASS EXIT=0（创建/超发400/扣库存/SALES_ISSUE流水/订单SHIPPED/签收DELIVERED/红字冲回/非法流转400）；pytest 28 passed EXIT=0。注：sd.py +6 端点（GET×2+POST×4），写权限走路由级 _write_gate；Customer 无 customer_name 用 trade_name||legal_name
 - [x] T105 P0 发票+应收后端（23:55 完成）— 证据：探针 6/6 PASS EXIT=0（创建INV/超开400/未发货开票400/issue+AR流水勾稽/重复issue400/receivables聚合）；T104 探针回归 8/8；pytest 28 passed。注：sd.py +5 端点；_check_invoice_cap 支持 exclude 自身（issue 复查不重复计数）；账龄桶 current/30/60/90+
 - [x] T106 P0 种子+reset 卫生（00:10 完成）— 证据：reset×2 均 EXIT=0 且两轮后 deliveries=2(1 DRAFT/1 SHIPPED)/invoices=1(ISSUED 5300)/AR=1/库存 75=95-20/种子 SALES_ISSUE 流水恰 1 条；upgrade_planning 幂等 0 新增；pytest 28 passed。注：修了一个 UOW FK 乱序（发票 add 后补 flush）；探针残留 22 单已被新清理列表清除
+- [x] T107 P0 前端 3 页（00:35 完成）— 证据：npx tsc --noEmit EXIT=0。注：DeliveryList/InvoiceList/ReceivableView 三页 + menuConfig 销售与分销 4→7 项（lucide Truck/Receipt/Wallet）+ App.tsx 路由 ×3；余量/金额上限由后端 400 兜底前端提示；发票页支持 ?customer_id= 下钻预过滤
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
