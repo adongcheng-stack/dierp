@@ -1355,6 +1355,53 @@ def seed_purchase_requests(db: Session) -> int:
     return created
 
 
+def seed_material_transactions(db: Session) -> int:
+    """库存流水基线种子（幂等）：按现存领料单补 ISSUE 流水。
+
+    流水表是账本——reset 清空后依据未删除的领料单重建基线，
+    保证「库存流水」演示页 reset 后不为空；此后领料/到货/退货实时追加。
+    """
+    from backend.common.models.mm import MaterialIssue, MaterialTransaction
+
+    created = 0
+    issues = db.query(MaterialIssue).filter(MaterialIssue.is_deleted == False).all()  # noqa: E712
+    for issue in issues:
+        exists = (
+            db.query(MaterialTransaction)
+            .filter(
+                MaterialTransaction.reference_type == "MATERIAL_ISSUE",
+                MaterialTransaction.reference_number == issue.issue_number,
+                MaterialTransaction.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        if exists is not None:
+            continue
+        db.add(
+            MaterialTransaction(
+                transaction_number=NumberGenerator.generate_document_number(
+                    db, MaterialTransaction, "transaction_number", "TR", 4
+                ),
+                material_code=issue.material_code,
+                transaction_type="ISSUE",
+                quantity=-(issue.quantity or 0),
+                unit=issue.unit or "PCS",
+                reference_number=issue.issue_number,
+                reference_type="MATERIAL_ISSUE",
+                warehouse=issue.warehouse,
+                transaction_date=issue.issued_at or datetime.now(),
+                operator=issue.issued_by or "system",
+                remarks=f"生产领料: {issue.production_order_number}",
+                created_by="system",
+            )
+        )
+        # 同事务连续生成单号：flush 让下一条 generate 能看到刚插入的序号
+        db.flush()
+        created += 1
+    db.flush()
+    return created
+
+
 def main() -> None:
     print("=" * 56)
     print("DIERP 计划与控制系统 - 增量升级")
@@ -1380,6 +1427,7 @@ def main() -> None:
         print(f"[OK] 采购演示单据新增 {seed_purchase_demo_data(db)} 张")
         print(f"[OK] 采购申请演示新增 {seed_purchase_requests(db)} 张")
         print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
+        print(f"[OK] 库存流水基线新增 {seed_material_transactions(db)} 条")
         db.commit()
 
         print("-" * 56)

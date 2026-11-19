@@ -200,7 +200,8 @@ def main() -> int:
         # ── 10) 快照版本与结构 ───────────────────────────────────────────
         for collection in ["inspectionOrders", "nonConformanceReports", "operationReports",
                            "lotCards", "productionOrders", "salesOrders", "customers", "materials",
-                           "suppliers", "purchaseRequests", "purchaseRequestLines"]:
+                           "suppliers", "purchaseRequests", "purchaseRequestLines",
+                           "materialTransactions"]:
             check(f"快照含集合 {collection}", collection in mock, True)
 
         print(f"共 {checks} 项事实对比")

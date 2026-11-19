@@ -510,15 +510,97 @@ async def get_inventory(
     category: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """获取库存信息"""
+    """获取库存信息（含可用量口径）。
+
+    - 在途量 on_order_qty：RELEASED / PARTIALLY_RECEIVED 采购单的未收余量（按物料汇总）；
+    - 已分配量 allocated_qty：开放工单（RELEASED / IN_PRODUCTION）按 BOM 展开的组件需求
+      减去该工单已领料量（复用齐套引擎 KittingService 的展开口径）；
+    - 可用量 available_qty = 当前库存 + 在途量 - 已分配量（负数即缺口）。
+    """
+    from sqlalchemy import func
+    from datetime import datetime as _datetime
+
+    from backend.common.models.pp import ProductionOrder, ProductionOrderStatus
+    from backend.common.models.planning import (
+        PurchaseOrder,
+        PurchaseOrderLine,
+        PurchaseOrderStatus,
+    )
+    from backend.services.planning.kitting_service import KittingService
+
     query = db.query(Material).filter(Material.is_deleted == False)
     if material_code:
         query = query.filter(Material.material_code.like(f"%{material_code}%"))
     if category:
         query = query.filter(Material.category == category)
-    
+
     materials = query.all()
-    
+
+    # ── 在途：开放采购单行余量按物料汇总（单次聚合） ──
+    on_order_rows = (
+        db.query(
+            PurchaseOrderLine.material_code,
+            func.coalesce(
+                func.sum(PurchaseOrderLine.quantity - PurchaseOrderLine.received_quantity), 0
+            ),
+        )
+        .join(
+            PurchaseOrder,
+            PurchaseOrder.purchase_order_number == PurchaseOrderLine.purchase_order_number,
+        )
+        .filter(
+            PurchaseOrderLine.is_deleted == False,  # noqa: E712
+            PurchaseOrder.is_deleted == False,  # noqa: E712
+            PurchaseOrder.status.in_(
+                [PurchaseOrderStatus.RELEASED, PurchaseOrderStatus.PARTIALLY_RECEIVED]
+            ),
+        )
+        .group_by(PurchaseOrderLine.material_code)
+        .all()
+    )
+    on_order_map = {code: float(total or 0) for code, total in on_order_rows}
+
+    # ── 已分配：开放工单 BOM 组件需求 − 该工单已领料（按工单+物料） ──
+    issued_rows = (
+        db.query(
+            MaterialIssue.production_order_number,
+            MaterialIssue.material_code,
+            func.coalesce(func.sum(MaterialIssue.quantity), 0),
+        )
+        .group_by(MaterialIssue.production_order_number, MaterialIssue.material_code)
+        .all()
+    )
+    issued_map = {
+        (order_number, code): float(total or 0)
+        for order_number, code, total in issued_rows
+    }
+
+    open_orders = (
+        db.query(ProductionOrder)
+        .filter(
+            ProductionOrder.is_deleted == False,  # noqa: E712
+            ProductionOrder.status.in_(
+                [ProductionOrderStatus.RELEASED, ProductionOrderStatus.IN_PRODUCTION]
+            ),
+        )
+        .all()
+    )
+    allocated_map: dict[str, float] = {}
+    for order in open_orders:
+        due = order.planned_start_date or order.created_at or _datetime.now()
+        try:
+            components = KittingService._component_requirements(
+                db, order.material_code, order.quantity or 0, due
+            )
+        except Exception:
+            components = []
+        for row in components:
+            code = row["material_code"]
+            required = float(row.get("required_qty") or 0)
+            already_issued = issued_map.get((order.order_number, code), 0.0)
+            net = max(required - already_issued, 0.0)
+            allocated_map[code] = allocated_map.get(code, 0.0) + net
+
     return [
         {
             "material_code": m.material_code,
@@ -527,8 +609,75 @@ async def get_inventory(
             "unit": m.unit,
             "current_stock": float(m.current_stock),
             "safety_stock": float(m.safety_stock),
+            "on_order_qty": round(on_order_map.get(m.material_code, 0.0), 2),
+            "allocated_qty": round(allocated_map.get(m.material_code, 0.0), 2),
+            "available_qty": round(
+                float(m.current_stock) + on_order_map.get(m.material_code, 0.0)
+                - allocated_map.get(m.material_code, 0.0),
+                2,
+            ),
             "stock_status": "充足" if m.current_stock >= m.safety_stock else "不足"
         }
         for m in materials
     ]
+
+
+# 库存事务流水
+@router.get("/transactions")
+async def list_material_transactions(
+    skip: int = 0,
+    limit: int = 100,
+    material_code: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    reference_type: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    db: Session = Depends(get_db)
+):
+    """库存事务流水（账本）：领料/到货/退货/调整的每笔库存变动。
+
+    - quantity 正数入库、负数出库；
+    - reference_number/reference_type 指向来源单据（领料单/采购单/退货单）。
+    """
+    from sqlalchemy.orm import joinedload
+
+    query = db.query(MaterialTransaction).options(joinedload(MaterialTransaction.material))
+    if material_code:
+        query = query.filter(MaterialTransaction.material_code.like(f"%{material_code}%"))
+    if transaction_type:
+        query = query.filter(MaterialTransaction.transaction_type == transaction_type)
+    if reference_type:
+        query = query.filter(MaterialTransaction.reference_type == reference_type)
+    if start_date:
+        query = query.filter(MaterialTransaction.transaction_date >= start_date)
+    if end_date:
+        query = query.filter(MaterialTransaction.transaction_date <= end_date)
+
+    total = query.count()
+    rows = (
+        query.order_by(MaterialTransaction.transaction_date.desc(), MaterialTransaction.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return {
+        "total": total,
+        "items": [
+            {
+                "transaction_number": t.transaction_number,
+                "material_code": t.material_code,
+                "material_name": t.material.material_name if t.material else None,
+                "transaction_type": t.transaction_type,
+                "quantity": float(t.quantity),
+                "unit": t.unit,
+                "reference_number": t.reference_number,
+                "reference_type": t.reference_type,
+                "warehouse": t.warehouse,
+                "transaction_date": t.transaction_date.isoformat() if t.transaction_date else None,
+                "operator": t.operator,
+                "remarks": t.remarks,
+            }
+            for t in rows
+        ],
+    }
 

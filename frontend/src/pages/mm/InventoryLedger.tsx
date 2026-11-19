@@ -11,6 +11,9 @@ interface InventoryRow {
   unit: string
   current_stock: number
   safety_stock: number
+  on_order_qty: number
+  allocated_qty: number
+  available_qty: number
   stock_status: string
 }
 
@@ -51,14 +54,43 @@ const InventoryLedger: React.FC = () => {
       title: '当前库存',
       dataIndex: 'current_stock',
       key: 'current_stock',
-      width: 120,
+      width: 110,
       align: 'right' as const,
+    },
+    {
+      title: '在途',
+      dataIndex: 'on_order_qty',
+      key: 'on_order_qty',
+      width: 95,
+      align: 'right' as const,
+      render: (v: number) => (v > 0 ? v : '-'),
+    },
+    {
+      title: '已分配',
+      dataIndex: 'allocated_qty',
+      key: 'allocated_qty',
+      width: 95,
+      align: 'right' as const,
+      render: (v: number) => (v > 0 ? v : '-'),
+    },
+    {
+      title: '可用量',
+      dataIndex: 'available_qty',
+      key: 'available_qty',
+      width: 110,
+      align: 'right' as const,
+      render: (v: number) => (
+        <span style={{ color: v < 0 ? '#cf1322' : '#3f8600', fontWeight: 600 }}>
+          {v}
+          {v < 0 ? '（缺口）' : ''}
+        </span>
+      ),
     },
     {
       title: '安全库存',
       dataIndex: 'safety_stock',
       key: 'safety_stock',
-      width: 120,
+      width: 100,
       align: 'right' as const,
     },
     {
@@ -80,7 +112,7 @@ const InventoryLedger: React.FC = () => {
     <div>
       <PageHeader
         title="库存台账"
-        description="物料可用量实时视图：生产领料扣减、采购到货回冲、完工成品入库都会即时反映到当前库存"
+        description="可用量 = 当前库存 + 在途（开放采购单未收余量） − 已分配（开放工单 BOM 需求 − 已领料）；领料/到货/退货/完工入库实时反映"
         actions={
           <Space.Compact>
             <Input

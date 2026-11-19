@@ -220,6 +220,41 @@ function inventoryMaterial(db: MockDb, materialCode: string) {
   return material
 }
 
+/** 库存流水账本：领料/到货/退货等每笔库存变动都落一条事务记录。 */
+function appendTransaction(
+  db: MockDb,
+  input: {
+    material_code: string
+    transaction_type: string
+    quantity: number
+    unit?: string
+    reference_number: string
+    reference_type: string
+    warehouse?: string | null
+    operator?: string | null
+    remarks?: string | null
+  }
+) {
+  const rows = listOf(db, 'materialTransactions')
+  rows.unshift({
+    id: nextId(rows),
+    transaction_number: nextNumber(rows, 'transaction_number', 'TR'),
+    material_code: input.material_code,
+    transaction_type: input.transaction_type,
+    quantity: round(input.quantity, 3),
+    unit: input.unit ?? 'PCS',
+    reference_number: input.reference_number,
+    reference_type: input.reference_type,
+    warehouse: input.warehouse ?? null,
+    transaction_date: nowIso(),
+    operator: input.operator ?? null,
+    remarks: input.remarks ?? null,
+    created_by: input.operator ?? null,
+    created_at: nowIso(),
+    is_deleted: false,
+  })
+}
+
 function buildCalculation(body: Record<string, any>, quotation?: any) {
   const orderQuantity = toNumber(body.order_quantity, 1) || 1
   const length = toNumber(body.delivery_length, 0)
@@ -949,10 +984,54 @@ route('GET', '/mm/inventory', (ctx) => {
   let materials = listOf(db, 'materials').filter((m: any) => !m.is_deleted)
   const code = String(ctx.query?.material_code ?? '').trim()
   if (code) materials = materials.filter((m: any) => String(m.material_code).includes(code))
+
+  // 在途：开放采购单行余量按物料汇总（与后端同口径）
+  const onOrder: Record<string, number> = {}
+  for (const line of listOf(db, 'purchaseOrderLines')) {
+    if (line.is_deleted) continue
+    const po = listOf(db, 'purchaseOrders').find(
+      (o: any) => !o.is_deleted && o.purchase_order_number === line.purchase_order_number
+    )
+    if (!po || !['RELEASED', 'PARTIALLY_RECEIVED'].includes(String(po.status))) continue
+    const outstanding = toNumber(line.quantity) - toNumber(line.received_quantity)
+    if (outstanding > 0) {
+      onOrder[line.material_code] = (onOrder[line.material_code] ?? 0) + outstanding
+    }
+  }
+
+  // 已分配：开放工单（RELEASED/IN_PRODUCTION）BOM 组件需求 − 该工单已领料
+  const issued: Record<string, number> = {}
+  for (const issue of listOf(db, 'materialIssues')) {
+    if (issue.is_deleted) continue
+    const key = `${issue.production_order_number}|${issue.material_code}`
+    issued[key] = (issued[key] ?? 0) + toNumber(issue.quantity)
+  }
+  const allocated: Record<string, number> = {}
+  for (const order of listOf(db, 'productionOrders')) {
+    if (order.is_deleted || !['RELEASED', 'IN_PRODUCTION'].includes(String(order.status))) continue
+    const bom = listOf(db, 'boms').find(
+      (b: any) => !b.is_deleted && b.parent_material_code === order.material_code
+    )
+    if (!bom || !Array.isArray(bom.items)) continue
+    const base = toNumber(bom.base_quantity, 1) || 1
+    for (const item of bom.items) {
+      const required =
+        (toNumber(order.quantity) / base) *
+        toNumber(item.quantity) *
+        (1 + toNumber(item.scrap_rate) / 100)
+      if (required <= 0) continue
+      const alreadyIssued = issued[`${order.order_number}|${item.material_code}`] ?? 0
+      const net = Math.max(required - alreadyIssued, 0)
+      allocated[item.material_code] = (allocated[item.material_code] ?? 0) + net
+    }
+  }
+
   return ok(
     materials.map((m: any) => {
       const current = toNumber(m.current_stock)
       const safety = toNumber(m.safety_stock)
+      const onOrderQty = round(onOrder[m.material_code] ?? 0, 2)
+      const allocatedQty = round(allocated[m.material_code] ?? 0, 2)
       return {
         material_code: m.material_code,
         material_name: m.material_name,
@@ -960,10 +1039,35 @@ route('GET', '/mm/inventory', (ctx) => {
         unit: m.unit,
         current_stock: current,
         safety_stock: safety,
+        on_order_qty: onOrderQty,
+        allocated_qty: allocatedQty,
+        available_qty: round(current + onOrderQty - allocatedQty, 2),
         stock_status: current >= safety ? '充足' : '不足',
       }
     })
   )
+})
+
+route('GET', '/mm/transactions', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'materialTransactions').filter((t: any) => !t.is_deleted)
+  if (ctx.query?.material_code) {
+    rows = rows.filter((t: any) => String(t.material_code).includes(String(ctx.query.material_code)))
+  }
+  if (ctx.query?.transaction_type) {
+    rows = rows.filter((t: any) => t.transaction_type === ctx.query.transaction_type)
+  }
+  if (ctx.query?.reference_type) {
+    rows = rows.filter((t: any) => t.reference_type === ctx.query.reference_type)
+  }
+  rows = rows.sort((a: any, b: any) => String(b.transaction_date).localeCompare(String(a.transaction_date)))
+  const withName = rows.map((t: any) => {
+    const material = listOf(db, 'materials').find(
+      (m: any) => m.material_code === t.material_code
+    )
+    return { ...clone(t), material_name: material?.material_name ?? null }
+  })
+  return ok({ total: withName.length, items: clone(paginate(withName, ctx.query)) })
 })
 
 route('GET', '/mm/materials/:code', (_ctx, params) => {
@@ -1046,6 +1150,18 @@ route('POST', '/mm/material-issues', (ctx) => {
     user
   )
   issues.unshift(item)
+  // 库存流水账本：领料即记 ISSUE 出库
+  appendTransaction(db, {
+    material_code: material.material_code,
+    transaction_type: 'ISSUE',
+    quantity: -quantity,
+    unit: item.unit,
+    reference_number: item.issue_number,
+    reference_type: 'MATERIAL_ISSUE',
+    warehouse: ctx.body?.warehouse ?? null,
+    operator: user.username,
+    remarks: `生产领料: ${order.order_number}`,
+  })
   saveDb()
   return ok(clone(item), 201)
 })
@@ -5085,6 +5201,17 @@ route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/receive', (ctx, pa
     if (material) {
       material.current_stock = toNumber(material.current_stock) + quantity
     }
+    // 库存流水账本：到货即记 RECEIPT 入库
+    appendTransaction(db, {
+      material_code: line.material_code,
+      transaction_type: 'RECEIPT',
+      quantity,
+      unit: line.unit,
+      reference_number: number,
+      reference_type: 'PURCHASE_ORDER',
+      operator: ctx.user?.username ?? null,
+      remarks: `采购到货: ${number}`,
+    })
     line.received_quantity = toNumber(line.received_quantity) + quantity
     line.status = toNumber(line.received_quantity) >= toNumber(line.quantity) ? 'RECEIVED' : 'PARTIAL'
     if (body.remarks) line.remarks = body.remarks
@@ -5564,7 +5691,7 @@ route('POST', '/purchase/purchase-returns', (ctx) => {
   return ok(purchaseReturnDict(db, item), 201)
 })
 
-route('POST', '/purchase/purchase-returns/:number/approve', (_ctx, params) => {
+route('POST', '/purchase/purchase-returns/:number/approve', (ctx, params) => {
   const db = getDb()
   const ret = loadMockReturn(db, safeDecode(params.number))
   if (ret.status !== 'DRAFT') fail(400, `退货索赔单状态为 ${ret.status}，仅草稿(DRAFT)可审批`)
@@ -5591,6 +5718,17 @@ route('POST', '/purchase/purchase-returns/:number/approve', (_ctx, params) => {
         material.current_stock = round(toNumber(material.current_stock) - toNumber(line.quantity), 3)
         material.updated_at = nowIso()
       }
+      // 库存流水账本：退货出库记 RETURN
+      appendTransaction(db, {
+        material_code: line.material_code,
+        transaction_type: 'RETURN',
+        quantity: -toNumber(line.quantity),
+        unit: line.unit,
+        reference_number: ret.return_number,
+        reference_type: 'PURCHASE_RETURN',
+        operator: ctx.user?.username ?? null,
+        remarks: `采购退货: ${ret.purchase_order_number}`,
+      })
     }
   }
   ret.status = 'APPROVED'

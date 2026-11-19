@@ -153,6 +153,7 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/mm/purchase-returns', label: '退货 / 索赔', icon: PackageMinus, path: '/mm/purchase-returns' },
       { key: '/mm/suppliers', label: '供应商管理', icon: Building2, path: '/mm/suppliers' },
       { key: '/mm/inventory', label: '库存台账', icon: PackageSearch, path: '/mm/inventory' },
+      { key: '/mm/transactions', label: '库存流水', icon: Activity, path: '/mm/transactions' },
       { key: '/mm/ap-view', label: '应付账款', icon: FileText, path: '/mm/ap-view' },
       { key: '/mm/materials', label: '物料主数据', icon: Boxes, path: '/mm/materials' },
       { key: '/mm/material-issues', label: '生产领料', icon: PackageMinus, path: '/mm/material-issues' },

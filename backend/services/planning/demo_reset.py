@@ -41,7 +41,7 @@ from backend.common.models.planning import (
     ScheduleRun,
     Supplier,
 )
-from backend.common.models.mm import Material
+from backend.common.models.mm import Material, MaterialTransaction
 from backend.common.models.pp import OperationReport, ProductionOrder, ProductionOrderStatus
 from backend.services.planning.aps_engine import ApsEngine
 
@@ -95,6 +95,9 @@ def _clear(db: Session) -> dict[str, int]:
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
         ("suppliers", Supplier),
+        # 库存流水是账本：清空后由 seed_material_transactions 依据现存领料单重建基线，
+        # 演示中的新动作（领料/到货/退货）继续实时追加
+        ("material_transactions", MaterialTransaction),
     ]
     for key, model in models:
         cleared[key] = db.query(model).delete(synchronize_session=False)
@@ -170,6 +173,7 @@ def _rebuild_master_seed(db: Session) -> None:
     from backend.upgrade_planning import (
         seed_aps_master_data,
         seed_eam_demo_data,
+        seed_material_transactions,
         seed_operation_report_routing,
         seed_purchase_demo_data,
         seed_purchase_requests,
@@ -184,6 +188,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_purchase_demo_data(db)
     seed_purchase_requests(db)
     seed_suppliers(db)
+    seed_material_transactions(db)
 
 
 def _build_demo_run(
