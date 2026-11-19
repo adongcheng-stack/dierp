@@ -58,3 +58,6 @@ dist-demo/
 *.zip
 workspace/
 
+
+# 误入项目根的独立仓库
+context-mode/
