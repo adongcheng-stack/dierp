@@ -3,8 +3,7 @@
 （空）
 
 ## Pending Tasks
-- [ ] T403 全门禁+交接更新+提交（20min）
-- [ ] P3 批次拆解（下夜班）：盘点/调拨/批次效期视图/看板资金 KPI（设计 §六，约 4 任务）
+- [ ] P3 批次拆解（下夜班）：盘点/调拨/批次效期视图/看板资金 KPI（设计 §六，约 4 任务；看板 KPI 纯读、批次效期纯视图——适合同夜完成）
 - [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
 - [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
 - [ ] T304 P2★ 全门禁+提交（10min）【stretch】
@@ -24,15 +23,6 @@
 - [ ] T110 P0 全门禁+日志+提交（15min）
 - [ ] T201 P1 本体 4 实体+2 枚举（25min）
 - [ ] T202 P1 TTL/SHACL 同步（20min）
-- [ ] T203 P1 采购发票+三单匹配+confirm（30min）
-- [ ] T204 P1 付款/收款+核销+视图升级（40min）
-- [ ] T205 P1 前端发票页+资金核销页+台账升级（25min）
-- [ ] T206 P1 mock+snapshot v16+种子+parity（20min）
-- [ ] T207 P1 smoke_finance_loop≥14+全门禁+提交（20min）
-- [ ] T301 P2★ 总账实体（30min）【stretch：仅剩余≥45min】
-- [ ] T302 P2★ 科目种子+gl_rules+GlEngine.post（25min）【stretch】
-- [ ] T303 P2★ 挂分录+端点+smoke_gl≥8（35min）【stretch】
-- [ ] T304 P2★ 全门禁+提交（10min）【stretch】
 ## Completed Tasks
 - [x] T101 P0 本体枚举+3（22:08 完成）— 证据：generate-types EXIT=0（46 枚举含 3 新）；validate-type-sync EXIT=0；validate-consistency EXIT=0；mappings v1.2.0
 - [x] T102 P0 实体+3（22:18 完成）— 证据：generate_models EXIT=0（39 实体）；upgrade_planning EXIT=0（3 新表入库）；alembic check EXIT=0；validate-type-sync EXIT=0；tsc EXIT=0。注：FK 目标列为 sales_orders.order_number（sd.py 实际列名）
@@ -57,13 +47,14 @@
 - [x] T304 P2★ 全门禁终验（06:00 完成）— 证据：全门禁 24 项全绿（本体×2/alembic/pytest/八冒烟/parity×2/前端×4/六探针）；里程碑 P2 已勾稽（注明前端页未做的边界）
 - [x] T401 P2 前端财务管理 3 页（05:30 完成）— 证据：npx tsc --noEmit EXIT=0；/finance 四数据源真实后端 200。注：AccountList/JournalEntryList（展开行分录）/TrialBalance（Σ借=Σ贷 铁律横幅+合计行）；新一级菜单「财务管理」3 项；路由 ×3。P2 前端缺口关闭
 - [x] T402 mock v16 资金域同构（06:00 完成）— 证据：probe-mock-gl 8/8 EXIT=0（科目/确认分录/金额勾稽/付款/开票/发货标准成本/试算平衡/期间）；probe-mock-sd/finance 回归 EXIT=0；mock-rbac EXIT=0；parity 集合 +4 EXIT=0；tsc EXIT=0。注：snapshot v16 +glAccounts(8)/glFiscalPeriods/glJournalEntries/glJournalLines；postMockGl 镜像后端引擎；踩坑：confirm 路由参数 _ctx 而钩子引用 ctx → ReferenceError 被 catch 吞（改用 _ctx 后修复）
+- [x] T403 全门禁终验（06:40 完成）— 证据：全门禁 28 项全绿（本体×2/alembic/pytest/八冒烟/parity×2/前端×4/七探针含 mock-gl 8/8）；日志与里程碑 P2 已闭合（后端+前端+mock 全绿）
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 06:05 收尾：P0+P1+P2★ 全部 21 任务完成（22:03–06:05，7h02m/9h）。提交链 T101→T304 共 21 个 night commit（23348ad…9ceed69+本提交）。
+2026-11-20 06:45 收尾：P0+P1+P2（含前端补齐与 mock GL）全部 24 任务完成（22:03 起 8h42m/9h）。提交链 23348ad…ba6ba79+本提交，全门禁 28 项绿。
 
-## 交接摘要（2026-11-20 06:05）
-- **完成**：P0 发货/销售发票/应收三线打通（后端 11 端点+前端 3 页+mock v14）；P1 应付/核销双闭环（采购发票三单匹配、付款/收款核销 13 端点、AP 新口径、前端 3 页、mock v15）；P2★ 总账引擎（4 实体、8 科目种子、GlEngine 幂等/平衡、5 业务钩子、/finance 6 端点、smoke_gl 11 断言）。全门禁 24 项绿。
-- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic 基线绿；本体 mappings v1.4.0（52 枚举）；planning.yaml 48 实体。
-- **未完成/移交**：① P2 前端财务管理 3 页+mock v16（后端 /finance/* 已就绪）② P3 库存补强+看板资金维度（需先拆原子任务）③ 发票 cancel 红字流程（P1 设计明确未含）④ 期初 opening entry 未做（demo 口径，增量入账）。
-- **建议下一步**：下一夜班先补 P2 前端 3 页（约 35min，端点契约见 backend/api/routers/finance.py），再拆 P3 任务清单（对齐 §六+坑清单）。
+## 交接摘要（2026-11-20 06:45，v2）
+- **完成**：P0 发货/销售发票/应收三线打通（后端 11 端点+前端 3 页+mock v14）；P1 应付/核销双闭环（采购发票三单匹配、付款/收款核销 13 端点、AP 新口径、前端 3 页、mock v15）；P2 总账（4 实体、8 科目种子、GlEngine 幂等/平衡、5 业务钩子、/finance 6 端点、前端 3 页、mock GL v16、smoke_gl 11 断言）。全门禁 28 项绿。
+- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic 基线绿；本体 mappings v1.4.0（52 枚举）；planning.yaml 48 实体；mock snapshot v16。
+- **未完成/移交**：① P3 库存补强+看板资金维度（设计 §六未拆原子任务，建议 4 任务：盘点、调拨、批次效期视图、看板 KPI——后两者纯读最轻）② 发票红字冲回流程（P1 设计明确未含）③ 期初 opening entry（demo 口径，增量入账）④ 长期债见设计 §七（月结/移动加权/遗留表收养等）。
+- **建议下一步**：下一夜班拆 P3 任务清单并执行（盘点单+调拨单走「本体→生成→alembic→端点→前端→mock→smoke」既有节奏；看板 KPI 纯读可并列）。
