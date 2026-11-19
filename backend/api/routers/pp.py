@@ -946,11 +946,8 @@ async def complete_production_order(
         new_status=new_status_str
     )
     
-    order.status = ProductionOrderStatus.COMPLETED
-    order.actual_finish_date = datetime.utcnow()
-    order.updated_by = current_user.username
-
     # N4 成品入库：完工即回冲成品库存（口径 = 报工良品合计；无报工时按工单数量）
+    # 口径校验放在任何状态变更之前，避免校验失败时留下半改状态。
     from backend.common.models.mm import Material
     good_qty = (
         db.query(func.coalesce(func.sum(OperationReport.good_quantity), 0))
@@ -961,8 +958,23 @@ async def complete_production_order(
         .scalar()
     )
     receipt_qty = float(good_qty or 0)
+    order_qty = float(order.quantity or 0)
     if receipt_qty <= 0:
-        receipt_qty = float(order.quantity or 0)
+        receipt_qty = order_qty
+    elif order_qty > 0 and receipt_qty < order_qty:
+        # 短报工完工会让「订单已完成」但余量永久无法入库，必须显式拒绝
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"报工良品合计 {receipt_qty:g} 小于工单数量 {order_qty:g}："
+                f"请先补齐报工或删除错误报工，再执行完工"
+            ),
+        )
+
+    order.status = ProductionOrderStatus.COMPLETED
+    order.actual_finish_date = datetime.utcnow()
+    order.updated_by = current_user.username
+
     if receipt_qty > 0:
         material = (
             db.query(Material)

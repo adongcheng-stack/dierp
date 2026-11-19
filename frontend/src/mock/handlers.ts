@@ -1596,24 +1596,35 @@ function transitionProductionOrder(
   if (!from.includes(order.status)) {
     fail(400, `生产订单状态不允许该操作，当前状态: ${order.status}`)
   }
-  order.status = to
-  order.updated_by = requireUser(ctx).username
-  if (to === 'IN_PRODUCTION') order.actual_start_date = nowIso()
-  if (to === 'COMPLETED' || to === 'CLOSED') order.actual_finish_date = nowIso()
-  // N4 成品入库：完工即回冲成品库存（口径 = 报工良品合计；无报工按工单数量）
+
+  // N4 成品入库口径：报工良品合计；无报工按工单数量。
+  // 与后端同构：短报工完工必须拒绝（否则余量永久无法入库）。
+  let receiptQty = 0
   if (to === 'COMPLETED') {
     const reports = listOf(db, 'operationReports').filter(
       (r) => !r.is_deleted && r.production_order_number === order.order_number
     )
     const goodQty = reports.reduce((sum, r) => sum + toNumber(r.good_quantity), 0)
-    const receiptQty = goodQty > 0 ? goodQty : toNumber(order.quantity)
-    if (receiptQty > 0) {
-      const material = listOf(db, 'materials').find(
-        (m) => !m.is_deleted && m.material_code === order.material_code
+    const orderQty = toNumber(order.quantity)
+    receiptQty = goodQty > 0 ? goodQty : orderQty
+    if (goodQty > 0 && orderQty > 0 && goodQty < orderQty) {
+      fail(
+        400,
+        `报工良品合计 ${goodQty} 小于工单数量 ${orderQty}：请先补齐报工或删除错误报工，再执行完工`
       )
-      if (material) {
-        material.current_stock = toNumber(material.current_stock) + receiptQty
-      }
+    }
+  }
+
+  order.status = to
+  order.updated_by = requireUser(ctx).username
+  if (to === 'IN_PRODUCTION') order.actual_start_date = nowIso()
+  if (to === 'COMPLETED' || to === 'CLOSED') order.actual_finish_date = nowIso()
+  if (to === 'COMPLETED' && receiptQty > 0) {
+    const material = listOf(db, 'materials').find(
+      (m) => !m.is_deleted && m.material_code === order.material_code
+    )
+    if (material) {
+      material.current_stock = toNumber(material.current_stock) + receiptQty
     }
   }
   syncSalesOrderStatus(db, order.sales_order_number)
@@ -5085,7 +5096,37 @@ route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/close', (_ctx, par
 
 /* ------------------------------- 路由入口 ------------------------------- */
 
+/* ------------------- 写操作权限门（与 backend/api/routers/auth.py 同构） ------------------- */
+
+const WRITE_ROLE_POLICY: Record<string, string[]> = {
+  sd: ['SALES', 'SALES_MANAGER', 'GENERAL_MANAGER', 'ADMIN'],
+  eng: ['ENGINEER', 'GENERAL_MANAGER', 'ADMIN'],
+  pp: ['PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
+  mm: ['WAREHOUSE', 'PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
+  planning: ['PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
+  qms: ['PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
+  purchase: ['WAREHOUSE', 'PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
+  users: ['ADMIN'],
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH'])
+
+/** 写方法按域校验角色；只读请求（含 CORS 预检）匿名放行。 */
+function enforceWritePermission(ctx: MockContext) {
+  if (!WRITE_METHODS.has(ctx.method)) return
+  const domain = ctx.path.split('/').filter(Boolean)[0] ?? ''
+  const allowed = WRITE_ROLE_POLICY[domain]
+  if (!allowed) return
+  const user = requireUser(ctx)
+  if (user.role === 'ADMIN') return
+  if (!allowed.includes(user.role)) {
+    fail(403, `当前角色(${user.role})无权在「${domain}」域执行写操作`)
+  }
+}
+
 export function handleMockRequest(ctx: MockContext): MockResult {
+  enforceWritePermission(ctx)
+
   const pathSegments = ctx.path.split('/').filter(Boolean)
   for (const candidate of routes) {
     if (candidate.method !== ctx.method) continue

@@ -28,23 +28,38 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+# MVP 时代由手写 SQL / 一次性脚本创建的表：结构在库里，模型只是「够用」的映射，
+# 双方在注释、索引、可空性上长期不一致。这些表由手写脚本自己管理，
+# 不纳入 Alembic 比对，否则 `alembic check` 永远红、autogenerate 会生成
+# 删除注释/删除约束一类破坏性脚本。
+# 若将来要改这些表的结构，先做一次「收养迁移」（把它们对齐后从本集合移除）。
+LEGACY_UNMANAGED_TABLES = {
+    "factory_product_mappings",
+    "lot_card_instructions",
+    "lot_cards",
+    "mi_instructions",
+}
+
+
+def _managed(table_name: str) -> bool:
+    return table_name in Base.metadata.tables and table_name not in LEGACY_UNMANAGED_TABLES
+
 
 def include_object(obj, name, type_, reflected, compare_to):
-    """白名单：只管理应用元数据里的表/对象。
+    """白名单：只管理应用元数据里、且未被标记为遗留的表/对象。
 
-    - 表：必须在 Base.metadata 中登记（历史遗留表永不纳入）；
+    - 表：必须在 Base.metadata 中登记且不在遗留集合；
     - 索引 / 约束 / 列：MVP 手写脚本创建、元数据中没有的对象
-      （reflected=True 且 compare_to=None）一律忽略。否则 autogenerate 会生成
-      `drop_index idx_sales_order_production_version`、`drop_column mi_content`
-      这类破坏性操作——这是本基线最大的踩坑点。
+      （reflected=True 且 compare_to=None）一律忽略，避免
+      `drop_index idx_sales_order_production_version` 这类破坏性操作。
     """
     if type_ == "table":
-        return name in Base.metadata.tables
+        return _managed(name)
     if reflected and compare_to is None:
         return False
     table = getattr(obj, "table", None)
     if table is not None:
-        return table.name in Base.metadata.tables
+        return _managed(table.name)
     return True
 
 

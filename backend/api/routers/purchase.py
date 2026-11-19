@@ -175,33 +175,49 @@ def receive_purchase_order(
         )
 
     line_map = {line.line_number: line for line in lines}
-    targets = payload.lines or [
-        ReceiveItem(line_number=line.line_number, quantity=None) for line in lines
-    ]
-    if not targets:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="收货行为空")
 
-    received_any = False
-    for item in targets:
-        line = line_map.get(item.line_number)
-        if line is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"采购行不存在: {purchase_order_number}#{item.line_number}",
-            )
-        outstanding = _f(line.quantity) - _f(line.received_quantity)
-        if item.quantity is not None:
-            if _f(item.quantity) > outstanding:
+    # ── 第一阶段：全量校验并生成收货计划（任一失败整单不落库） ──
+    planned: list[tuple[PurchaseOrderLine, float]] = []
+    if payload.lines:
+        wanted: dict[int, float | None] = {}
+        for item in payload.lines:
+            line = line_map.get(item.line_number)
+            if line is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"采购行不存在: {purchase_order_number}#{item.line_number}",
+                )
+            if item.quantity is None:
+                wanted[item.line_number] = None  # 整行余量，优先级最高
+                continue
+            if wanted.get(item.line_number, 0.0) is None:
+                continue  # 已被「整行余量」覆盖，忽略后续显式数量
+            wanted[item.line_number] = wanted.get(item.line_number, 0.0) + _f(item.quantity)
+
+        for line_number, quantity in wanted.items():
+            line = line_map[line_number]
+            outstanding = _f(line.quantity) - _f(line.received_quantity)
+            target = outstanding if quantity is None else quantity
+            if target <= 0:
+                continue
+            if target > outstanding:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"行 {item.line_number} 收货超量：余量 {outstanding}，请求 {_f(item.quantity)}",
+                    detail=f"行 {line_number} 收货超量：余量 {outstanding}，请求 {_f(target)}",
                 )
-            quantity = _f(item.quantity)
-        else:
-            quantity = outstanding
-        if quantity <= 0:
-            continue
+            planned.append((line, target))
+    else:
+        for line in lines:
+            outstanding = _f(line.quantity) - _f(line.received_quantity)
+            if outstanding > 0:
+                planned.append((line, outstanding))
 
+    if not planned:
+        # 没有可收数量：保持单据原状（幂等），不产生任何写入
+        return _order_dict(order, lines)
+
+    # ── 第二阶段：落库（此时已无校验失败可能） ──
+    for line, quantity in planned:
         # 库存回冲（原料入库）
         material = (
             db.query(Material)
@@ -212,24 +228,20 @@ def receive_purchase_order(
             .first()
         )
         if material is not None:
-            material.current_stock = (_f(material.current_stock) + quantity)
+            material.current_stock = _f(material.current_stock) + quantity
 
         line.received_quantity = _f(line.received_quantity) + quantity
         line.status = "RECEIVED" if _f(line.received_quantity) >= _f(line.quantity) else "PARTIAL"
         if payload.remarks:
             line.remarks = payload.remarks
-        received_any = True
 
-    if received_any:
-        lines_full = all(
-            _f(l.received_quantity) >= _f(l.quantity) for l in lines
-        )
-        order.status = (
-            PurchaseOrderStatus.RECEIVED if lines_full else PurchaseOrderStatus.PARTIALLY_RECEIVED
-        )
-        if payload.remarks:
-            order.remarks = payload.remarks
-        order.updated_at = datetime.now()
+    lines_full = all(_f(l.received_quantity) >= _f(l.quantity) for l in lines)
+    order.status = (
+        PurchaseOrderStatus.RECEIVED if lines_full else PurchaseOrderStatus.PARTIALLY_RECEIVED
+    )
+    if payload.remarks:
+        order.remarks = payload.remarks
+    order.updated_at = datetime.now()
 
     db.commit()
     order, lines = _load_order(db, purchase_order_number)

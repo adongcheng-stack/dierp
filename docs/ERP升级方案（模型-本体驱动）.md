@@ -331,11 +331,11 @@ cd frontend && npm run build && npm run build:mock
 | QMS 双向联动（报工→NCR、NCR→EAM 故障） | 已完成，`smoke_qms.py` 全链路验证 |
 | P2 双向追溯（批次/物料/订单 正向+反向全链路） | 已完成，`smoke_traceability.py` + `smoke_traceability_api.py` 验证 |
 | P2 经营看板（六域 KPI + 自动点评） | 已完成，`smoke_dashboard.py` 验证 |
-| N1 工程化加固（git/pytest/parity 校验） | 已完成，`backend/tests` 25 用例 + `check_demo_parity.py` 19 项事实 |
-| N2 权限收紧（RBAC 域写权限门 + CORS 白名单） | 已完成，`test_permissions.py` 6 用例 |
-| N3 采购闭环（采购单页面/收货/库存回冲） | 已完成，`smoke_purchase.py` 全链路验证 |
-| N4 完工入库（complete 回冲成品库存 + 幂等闸） | 已完成，`smoke_receipt.py` 验证 |
-| N4 Alembic 迁移基线 | 已完成，版本 `a1b2c3d4e5f6`，规范见 `backend/migrations/README.md` |
+| N1 工程化加固（git/pytest/parity 校验） | 已完成，`backend/tests` 28 用例 + `check_demo_parity.py` 19 项事实 + `check_rbac_parity.py` 双栈权限矩阵 |
+| N2 权限收紧（RBAC 域写权限门 + CORS 白名单） | 已完成，`test_permissions.py` 9 用例（SQLite 隔离，含匿名 GET/OPTIONS 回归断言）；mock 同构写权限门 + `npm run check:mock-rbac` |
+| N3 采购闭环（采购单页面/收货/库存回冲） | 已完成，`smoke_purchase.py` 全链路验证（收货两阶段：先全量校验后落库） |
+| N4 完工入库（complete 回冲成品库存 + 幂等闸） | 已完成，`smoke_receipt.py` 验证（含重复完工拒绝 + 短报工拒绝） |
+| N4 Alembic 迁移基线 | 已完成，版本 `a1b2c3d4e5f6`；`LEGACY_UNMANAGED_TABLES` 划定托管范围后 `alembic check` EXIT=0，规范见 `backend/migrations/README.md` |
 | N4 演示基线复位 | `reset_demo` 新增物料库存基线 + 生产订单状态基线复位（完工/到货演示可跨轮次重复） |
 | 演示数据一键重置（菜单 + CLI + API） | 已完成，支持幂等与管理员校验 |
 | 前端分包与首屏优化 | 已完成，全部 chunk < 500KB，无构建告警 |
@@ -590,10 +590,10 @@ QMS 把「质量」从终检记录升级为贯穿 **来料 → 过程 → 终检
 | 项 | 内容 |
 |---|---|
 | N1 版本控制 | `git init` + 全量基线提交；此后每个夜间任务独立提交，可回滚 |
-| N1 单元测试 | `backend/tests/`（SQLite 内存库夹具，模型无方言依赖）：编号生成 6 例、QMS 闭环 4 例（含报工→NCR 物料解析、设备联动幂等）、看板点评规则 4 例、追溯图容器 3 例、RBAC 6 例 |
-| N1 演示数据一致性 | `check_demo_parity.py`：mock 快照 ↔ 数据库种子 19 项关键事实对比（APS 工单销售关联、检验/NCR 事实、采购单、库存等），不一致即退出码 1 |
+| N1 单元测试 | `backend/tests/`（SQLite 内存库夹具，模型无方言依赖）：编号生成 6 例、QMS 闭环 4 例（含报工→NCR 物料解析、设备联动幂等）、看板点评规则 4 例、追溯图容器 3 例、RBAC 9 例（`dependency_overrides[get_db]` 全隔离，含匿名 GET/OPTIONS 回归） |
+| N1 演示数据一致性 | `check_demo_parity.py`：mock 快照 ↔ 数据库种子 19 项关键事实对比（APS 工单销售关联、检验/NCR 事实、采购单、库存等），不一致即退出码 1；`check_rbac_parity.py`：两侧写权限矩阵逐域比对 |
 | N1 冒烟去日期化 | traceability 冒烟断言改为「静态单据精确 + 动态单据前缀」，消除跨午夜失效 |
-| N2 RBAC | `auth.py` 新增 `WRITE_ROLE_POLICY` + `require_write_permission`（按域 × 写方法），`main.py` 单点挂载；GET 保持开放（冒烟契约）；CORS 收敛为 `ERP_CORS_ORIGINS` 白名单；前端 403 统一文案 |
+| N2 RBAC | `auth.py` 新增 `WRITE_ROLE_POLICY` + `require_write_permission`（按域 × 写方法），`main.py` 单点挂载；**GET 与 CORS 预检保持匿名**（可选 token 依赖，写方法才判定 401/403）；CORS 收敛为 `ERP_CORS_ORIGINS` 白名单；前端 403 统一文案；mock 侧同构策略 + `npm run check:mock-rbac` |
 | N3 采购闭环 | 新增 `api/routers/purchase.py`（列表/详情/收货/关闭），收货实时回冲 `Material.current_stock`，超量与状态机保护；`PurchaseOrderList.tsx` 页面（`/pp/purchase-orders`）；`seed_purchase_demo_data` 两张 RELEASED 演示单；`demo_reset` 清理采购表 + **物料库存基线复位**（领料/到货多轮演示可重复） |
 
 权限矩阵（写操作）：sd=SALES/SALES_MANAGER/总经理，eng=ENGINEER，pp/mm/purchase=PRODUCTION/PLANNER/WAREHOUSE 系，planning/qms=PLANNER/总经理，users=仅 ADMIN；ADMIN 恒通过。多账号演示时注意：用非授权角色执行写操作会得到 403（演示话术可顺势讲权限设计）。
@@ -602,10 +602,10 @@ QMS 把「质量」从终检记录升级为贯穿 **来料 → 过程 → 终检
 
 | 项 | 内容 |
 |---|---|
-| 成品入库 | `POST /pp/production-orders/{n}/complete` 完工即回冲成品库存：口径 = 报工良品合计（无报工按工单数量）；**幂等闸**禁止重复完成（全局状态验证器对「相同状态」按 no-op 放行，必须业务级显式拦截，否则库存双倍回冲） |
-| mock 同构 | `transitionProductionOrder` 完工分支同样回冲，双模式数字可对照 |
+| 成品入库 | `POST /pp/production-orders/{n}/complete` 完工即回冲成品库存：口径 = 报工良品合计（无报工按工单数量）；报工良品 < 工单数量时显式 400（避免「已完成但余量无法入库」）；**幂等闸**禁止重复完成（全局状态验证器对「相同状态」按 no-op 放行，必须业务级显式拦截，否则库存双倍回冲） |
+| mock 同构 | `transitionProductionOrder` 完工分支同样回冲，短报工同样拒绝，双模式数字可对照 |
 | 演示基线 | `reset_demo` 新增 `MATERIAL_STOCK_BASELINE`（10 物料）与 `PRODUCTION_ORDER_BASELINE`（9 工单状态/实际完工日），领料、到货、完工入库多轮演示后一键复位 |
-| Alembic | `backend/alembic.ini` + `migrations/`（env.py 挂全量元数据、include_object 白名单防误删遗留表）；基线 `a1b2c3d4e5f6` 已 stamp。**已知问题**：MVP 手写表（lot_cards/mis/factory_product_mappings 等）与元数据存在历史漂移，`alembic check` 会报告——autogenerate 产物必须人工审查再 upgrade，规范见 `backend/migrations/README.md` |
+| Alembic | `backend/alembic.ini` + `migrations/`；`LEGACY_UNMANAGED_TABLES` 划定托管范围（四张 MVP 手写表不参与比对），`alembic check` **EXIT=0** 可作门禁；基线 `a1b2c3d4e5f6` 已 stamp；改动遗留表前需先做「收养迁移」，规范见 `backend/migrations/README.md` |
 
 ### 前端交付优化（已完成）
 

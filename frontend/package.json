@@ -40,6 +40,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "dev:mock": "vite --mode mock --port 3100",
     "build:mock": "tsc && vite build --mode mock",
-    "preview:mock": "vite preview --mode mock --port 4173"
+    "preview:mock": "vite preview --mode mock --port 4173",
+    "check:mock-rbac": "node scripts/check-mock-rbac.mjs"
   }
 }
