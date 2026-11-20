@@ -43,6 +43,7 @@
     "build:mock": "tsc && vite build --mode mock",
     "preview:mock": "vite preview --mode mock --port 4173",
     "check:mock-rbac": "node scripts/check-mock-rbac.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:offline": "npm run build:mock && node scripts/build-offline-demo.mjs"
   }
 }
