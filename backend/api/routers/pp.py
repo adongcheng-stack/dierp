@@ -962,6 +962,7 @@ async def complete_production_order(
     )
     receipt_qty = float(good_qty or 0)
     order_qty = float(order.quantity or 0)
+    valuation_move = None
     if receipt_qty <= 0:
         receipt_qty = order_qty
     elif order_qty > 0 and receipt_qty < order_qty:
@@ -1001,7 +1002,7 @@ async def complete_production_order(
                     StandardCost.material_code == order.material_code
                 ).order_by(StandardCost.id.desc()).first()
                 unit_cost = float(std.material_cost or 0) if std else float(get_cost(db, order.material_code))
-            InventoryValuationService.post(
+            valuation_move = InventoryValuationService.post(
                 db, material_code=order.material_code, qty_delta=receipt_qty,
                 unit_cost=unit_cost, source_type="PRODUCTION_COMPLETE",
                 source_ref=order_number, operator=current_user.username,
@@ -1009,21 +1010,15 @@ async def complete_production_order(
 
     db.commit()
 
-    # 自动分录 PRODUCTION_COMPLETE：借库存商品 / 贷生产成本（入库量×标准成本）
-    try:
-        std = (
-            db.query(StandardCost)
-            .filter(StandardCost.material_code == order.material_code)
-            .order_by(StandardCost.id.desc())
-            .first()
-        )
-        if std and float(std.material_cost or 0) > 0 and receipt_qty > 0:
+    # 自动分录 PRODUCTION_COMPLETE：金额取移动加权估值快照
+    if valuation_move is not None and float(valuation_move.amount) > 0:
+        try:
             gl_post(db, "PRODUCTION_COMPLETE", order_number,
-                    amount=receipt_qty * float(std.material_cost),
+                    amount=float(valuation_move.amount),
                     summary=f"完工入库 {order_number}", operator=current_user.username)
             db.commit()
-    except GlEngineError as exc:
-        print(f"[GL] 完工分录失败 {order_number}: {exc}")
+        except GlEngineError as exc:
+            print(f"[GL] 完工分录失败 {order_number}: {exc}")
 
     # 同步销售订单状态
     try:

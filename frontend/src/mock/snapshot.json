@@ -89,7 +89,8 @@
     { "id": 940006, "account_code": "5001", "account_name": "生产成本", "account_type": "EXPENSE", "parent_code": null, "is_leaf": true, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
     { "id": 940007, "account_code": "6001", "account_name": "主营业务收入", "account_type": "REVENUE", "parent_code": null, "is_leaf": true, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
     { "id": 940008, "account_code": "6401", "account_name": "主营业务成本", "account_type": "EXPENSE", "parent_code": null, "is_leaf": true, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
-    { "id": 940009, "account_code": "3131", "account_name": "本年利润", "account_type": "EQUITY", "parent_code": null, "is_leaf": true, "created_at": "2026-11-01T00:00:00", "is_deleted": false }
+    { "id": 940009, "account_code": "3131", "account_name": "本年利润", "account_type": "EQUITY", "parent_code": null, "is_leaf": true, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
+    { "id": 940010, "account_code": "6402", "account_name": "存货差异", "account_type": "EXPENSE", "parent_code": null, "is_leaf": true, "created_at": "2026-11-01T00:00:00", "is_deleted": false }
   ],
   "glFiscalPeriods": [
     { "id": 941001, "period_code": "2026-11", "start_date": "2026-11-01T00:00:00", "end_date": "2026-12-01T00:00:00", "status": "OPEN", "created_at": "2026-11-01T00:00:00", "is_deleted": false }

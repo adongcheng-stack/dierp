@@ -62,10 +62,13 @@ def main() -> int:
         db = SessionLocal()
         try:
             entries_after = db.query(planning.JournalEntry).count()
+            opening_after = db.query(planning.JournalEntry).filter(
+                planning.JournalEntry.source_type == "OPENING").count()
         finally:
             db.close()
-        check("12.reset 复位（凭证清空+科目保留）",
-              rc == 0 and entries_after == 0, f"reset={rc} entries={entries_after}")
+        check("12.reset 复位（仅留期初分录+科目保留）",
+              rc == 0 and entries_after == 1 and opening_after == 1,
+              f"reset={rc} entries={entries_after} opening={opening_after}")
         passed = sum(1 for _, ok, _ in CHECKS if ok)
         print(f"\n===== 总账全链路冒烟：{passed}/{len(CHECKS)} 通过 =====")
         sys.exit(0 if passed == len(CHECKS) and len(CHECKS) >= 10 else 1)
@@ -125,7 +128,7 @@ def _run() -> int:
 
     # 1. 科目种子 8 个
     r = client.get("/api/finance/accounts")
-    check("1.科目表 9 个一级科目（含本年利润 3131）", r.status_code == 200 and r.json()["total"] == 9,
+    check("1.科目表 10 个一级科目（含 3131/6402）", r.status_code == 200 and r.json()["total"] == 10,
           f"{r.status_code} total={r.json().get('total')}")
 
     # 2. 采购发票确认 → 自动分录 SUPPLIER_INVOICE_CONFIRMED
@@ -296,6 +299,42 @@ def _run() -> int:
     reopened = client.post(f"/api/finance/periods/{current}/reopen", headers=H)
     check("19.反结账恢复 OPEN", reopened.status_code == 200
           and reopened.json().get("status") == "OPEN", f"{reopened.status_code} {reopened.text[:150]}")
+
+    # 20. 出库分录金额 = 估值流水快照（移动加权口径，不再用标准成本）
+    db = SessionLocal()
+    try:
+        sales_moves = db.query(planning.ValuationMove).filter(
+            planning.ValuationMove.source_type == "SALES_ISSUE").all()
+        matched = 0
+        moves_with_gl = 0
+        for move in sales_moves:
+            entries = db.query(planning.JournalEntry).filter(
+                planning.JournalEntry.source_type == "SALES_DELIVERY_SHIPPED",
+                planning.JournalEntry.source_ref == move.source_ref,
+            ).all()
+            if not entries:
+                continue  # 演示种子发货无 GL 分录，不参与对账
+            moves_with_gl += 1
+            for entry in entries:
+                lines = db.query(planning.JournalLine).filter(
+                    planning.JournalLine.entry_number == entry.entry_number).all()
+                credit = sum(float(l.credit or 0) for l in lines)
+                if abs(credit - float(move.amount)) < 0.01:
+                    matched += 1
+        check("20.出库分录金额=估值快照",
+              moves_with_gl > 0 and matched == moves_with_gl,
+              f"moves_with_gl={moves_with_gl} matched={matched}")
+    finally:
+        db.close()
+
+    # 21. 期初分录存在（借1405/贷4001）
+    entries = client.get("/api/finance/journal-entries",
+                         params={"source_type": "OPENING"}).json()
+    opening_ok = entries.get("total", 0) >= 1 and any(
+        {l["account_code"] for l in e["lines"]} >= {"1405", "4001"}
+        for e in entries.get("items", [])
+    )
+    check("21.期初分录借1405/贷4001", opening_ok, f"total={entries.get('total')}")
 
     return 0
 

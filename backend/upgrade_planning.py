@@ -1300,6 +1300,8 @@ def seed_inventory_opening(db: Session) -> int:
 
     created = 0
     for code, qty in MATERIAL_STOCK_BASELINE.items():
+        if not qty or float(qty) <= 0:
+            continue
         if db.query(InventoryValuation).filter(InventoryValuation.material_code == code).first():
             continue
         std = (
@@ -1322,6 +1324,26 @@ def seed_inventory_opening(db: Session) -> int:
         except Exception as exc:
             print(f"[VALUATION] 期初建账跳过 {code}: {exc}")
     db.commit()
+    # 期初 GL 分录（按用户默认：借 1405 库存商品 / 贷 4001 实收资本）
+    total = sum(
+        float(v.amount or 0) for v in db.query(InventoryValuation).all()
+    )
+    if total > 0:
+        from backend.services.finance.gl_engine import GlEngineError
+        from backend.services.finance.gl_engine import post as gl_post
+        try:
+            gl_post(
+                db, "OPENING", f"OPENING-{datetime.now().strftime('%Y-%m')}",
+                amount=total,
+                lines=[
+                    ("1405", total, 0, "期初库存建账"),
+                    ("4001", 0, total, "期初库存建账"),
+                ],
+                summary="移动加权期初建账", operator="system",
+            )
+            db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 期初分录跳过（可能已存在）: {exc}")
     return created
 
 

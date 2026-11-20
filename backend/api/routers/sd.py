@@ -3414,7 +3414,7 @@ def ship_delivery(
             detail=f"库存不足：当前 {float(material.current_stock or 0)}，需 {float(d.quantity)}",
         )
     from backend.services.inventory.valuation import InventoryValuationService
-    InventoryValuationService.post(
+    valuation_move = InventoryValuationService.post(
         db, material_code=d.material_code, qty_delta=-float(d.quantity or 0),
         source_type="SALES_ISSUE", source_ref=d.delivery_number,
         operator=current_user.username,
@@ -3440,18 +3440,11 @@ def ship_delivery(
     db.flush()
     _sync_order_ship_status(db, d.sales_order_number)
     db.commit()
-    # 自动分录：SALES_DELIVERY_SHIPPED 借主营业务成本 / 贷库存商品（数量×物料标准成本）
-    from backend.common.models.planning import StandardCost
-    std = (
-        db.query(StandardCost)
-        .filter(StandardCost.material_code == d.material_code)
-        .order_by(StandardCost.id.desc())
-        .first()
-    )
-    if std is not None and float(std.material_cost or 0) > 0:
+    # 自动分录：金额取移动加权估值流水快照（不再用数量×标准成本）
+    if valuation_move is not None and float(valuation_move.amount) > 0:
         try:
             gl_post(db, "SALES_DELIVERY_SHIPPED", d.delivery_number,
-                    amount=float(d.quantity or 0) * float(std.material_cost),
+                    amount=float(valuation_move.amount),
                     summary=f"发货出库 {d.delivery_number}", operator=current_user.username)
             db.commit()
         except GlEngineError as exc:

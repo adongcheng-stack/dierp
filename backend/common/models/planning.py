@@ -239,6 +239,8 @@ class GlSourceType(str, Enum):
     STOCK_ADJUST = "STOCK_ADJUST"
     PRODUCTION_COMPLETE = "PRODUCTION_COMPLETE"
     PERIOD_CLOSE = "PERIOD_CLOSE"
+    OPENING = "OPENING"
+    COST_VARIANCE = "COST_VARIANCE"
 
 class StocktakeStatus(str, Enum):
     """StocktakeStatus"""

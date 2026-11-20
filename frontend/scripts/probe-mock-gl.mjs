@@ -51,7 +51,7 @@ const call = (method, p, body = null) => {
 
 // 1. 科目种子 8 个
 const accounts = call('GET', '/finance/accounts')
-check('1.科目表 9 个一级科目（含本年利润 3131）', accounts.status === 200 && accounts.data?.total === 9,
+check('1.科目表 10 个一级科目（含 3131/6402）', accounts.status === 200 && accounts.data?.total === 10,
   `status=${accounts.status} total=${accounts.data?.total}`)
 
 // 2. 采购收货+发票确认 → SUPPLIER_INVOICE_CONFIRMED 分录

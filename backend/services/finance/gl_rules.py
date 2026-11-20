@@ -18,6 +18,7 @@ GL_ACCOUNTS: list[tuple[str, str, str]] = [
     ("5001", "生产成本", "EXPENSE"),
     ("6001", "主营业务收入", "REVENUE"),
     ("6401", "主营业务成本", "EXPENSE"),
+    ("6402", "存货差异", "EXPENSE"),
 ]
 
 # 业务事件 → (借方科目, 贷方科目)

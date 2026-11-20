@@ -141,11 +141,26 @@ class InventoryValuationService:
             qty_after = qty_before - qty_out
             amount_after = amount_before - qty_out * cost
             if amount_after < 0:
+                variance = abs(amount_after)
                 print(
                     f"[VALUATION] 负金额钳制：{material_code} 余额 {amount_after}，"
-                    f"原余额 {amount_before}，出账 {qty_out}×{cost}（差额待归属成本差异）"
+                    f"原余额 {amount_before}，出账 {qty_out}×{cost}，差额 {variance} 入存货差异"
                 )
                 amount_after = Decimal("0")
+                # 差异归属：借 6402 存货差异 / 贷 1405 库存商品（gl_post 自带幂等）
+                try:
+                    from backend.services.finance.gl_engine import post as gl_post
+                    gl_post(
+                        db, "COST_VARIANCE", f"VAR-{source_ref}",
+                        amount=variance,
+                        lines=[
+                            ("6402", variance, 0, f"存货差异 {source_ref}"),
+                            ("1405", 0, variance, f"存货差异 {source_ref}"),
+                        ],
+                        summary=f"存货差异 {material_code}", operator=operator,
+                    )
+                except Exception as exc:
+                    print(f"[VALUATION] 差异分录失败 {source_ref}: {exc}")
 
         avg_after = _dec(amount_after) / qty_after if qty_after > 0 else Decimal("0")
         valuation.qty = _q(qty_after, Q2)

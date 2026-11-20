@@ -417,7 +417,7 @@ async def create_material_issue(
         
         # 移动加权：唯一库存写入口（数量+金额+成本快照）
         from backend.services.inventory.valuation import InventoryValuationService
-        InventoryValuationService.post(
+        valuation_move = InventoryValuationService.post(
             db, material_code=issue.material_code, qty_delta=-issue_quantity_decimal,
             source_type="MATERIAL_ISSUE", source_ref=issue_number,
             operator=current_user.username,
@@ -464,21 +464,15 @@ async def create_material_issue(
                 detail=f"创建库存事务记录失败: {str(trans_e)}。请检查后端控制台日志获取详细信息。"
             )
         
-        # 自动分录 MATERIAL_ISSUE：借生产成本 / 贷库存商品（领料量×标准成本）
-        try:
-            std = (
-                db.query(StandardCost)
-                .filter(StandardCost.material_code == issue.material_code)
-                .order_by(StandardCost.id.desc())
-                .first()
-            )
-            if std and float(std.material_cost or 0) > 0 and float(issue.quantity or 0) > 0:
+        # 自动分录 MATERIAL_ISSUE：金额取移动加权估值快照
+        if valuation_move is not None and float(valuation_move.amount) > 0:
+            try:
                 gl_post(db, "MATERIAL_ISSUE", issue_number,
-                        amount=float(issue.quantity) * float(std.material_cost),
+                        amount=float(valuation_move.amount),
                         summary=f"生产领料 {issue_number}", operator=current_user.username)
                 db.commit()
-        except GlEngineError as exc:
-            print(f"[GL] 领料分录失败 {issue_number}: {exc}")
+            except GlEngineError as exc:
+                print(f"[GL] 领料分录失败 {issue_number}: {exc}")
 
         try:
             db.commit()
@@ -883,9 +877,10 @@ def approve_stocktake(
             status_code=400,
             detail=f"调整后库存为负：当前 {float(material.current_stock or 0)}，差异 {diff}",
         )
+    valuation_move = None
     if abs(diff) > 1e-9:
         from backend.services.inventory.valuation import InventoryValuationService, get_cost
-        InventoryValuationService.post(
+        valuation_move = InventoryValuationService.post(
             db, material_code=s.material_code, qty_delta=diff,
             unit_cost=get_cost(db, s.material_code),
             source_type="STOCKTAKE", source_ref=s.stocktake_number,
@@ -910,27 +905,20 @@ def approve_stocktake(
     s.updated_by = current_user.username
     s.updated_at = datetime.now()
     db.commit()
-    # 自动分录 STOCK_ADJUST：盘亏走正向映射（借5001/贷1405）；盘盈反向（借1405/贷5001）
-    if abs(diff) > 1e-9:
+    # 自动分录 STOCK_ADJUST：金额取移动加权估值快照；盘盈反向（借1405/贷5001）
+    if valuation_move is not None and float(valuation_move.amount) > 0:
+        amount = float(valuation_move.amount)
+        lines = None
+        if diff > 0:
+            lines = [
+                ("1405", amount, 0, f"盘盈调整 {s.stocktake_number}"),
+                ("5001", 0, amount, f"盘盈调整 {s.stocktake_number}"),
+            ]
         try:
-            std = (
-                db.query(StandardCost)
-                .filter(StandardCost.material_code == s.material_code)
-                .order_by(StandardCost.id.desc())
-                .first()
-            )
-            if std and float(std.material_cost or 0) > 0:
-                amount = abs(diff) * float(std.material_cost)
-                lines = None
-                if diff > 0:
-                    lines = [
-                        ("1405", amount, 0, f"盘盈调整 {s.stocktake_number}"),
-                        ("5001", 0, amount, f"盘盈调整 {s.stocktake_number}"),
-                    ]
-                gl_post(db, "STOCK_ADJUST", s.stocktake_number, amount=amount,
-                        lines=lines, summary=f"盘点调整 {s.stocktake_number}",
-                        operator=current_user.username)
-                db.commit()
+            gl_post(db, "STOCK_ADJUST", s.stocktake_number, amount=amount,
+                    lines=lines, summary=f"盘点调整 {s.stocktake_number}",
+                    operator=current_user.username)
+            db.commit()
         except GlEngineError as exc:
             print(f"[GL] 盘点分录失败 {s.stocktake_number}: {exc}")
     return _stocktake_dict(s)
