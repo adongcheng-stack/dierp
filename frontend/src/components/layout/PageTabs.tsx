@@ -68,7 +68,9 @@ export function PageTabs({
     active?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [activeKey])
 
-  // 右键菜单：点击任意处 / Esc / 滚动即关闭
+  // 右键菜单：左键点击任意处 / Esc / 缩放即关闭。
+  // 注意：不要监听 document 的 contextmenu——它会在 React onContextMenu 之后同轮触发，
+  // 把刚打开的菜单立刻清掉（表现为右键无反应）；在别处右键时，新的 onContextMenu 会直接覆盖旧菜单。
   useEffect(() => {
     if (!contextMenu) return
     const close = () => setContextMenu(null)
@@ -76,12 +78,10 @@ export function PageTabs({
       if (event.key === 'Escape') close()
     }
     document.addEventListener('click', close)
-    document.addEventListener('contextmenu', close)
     window.addEventListener('resize', close)
     window.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('click', close)
-      document.removeEventListener('contextmenu', close)
       window.removeEventListener('resize', close)
       window.removeEventListener('keydown', onKey)
     }
