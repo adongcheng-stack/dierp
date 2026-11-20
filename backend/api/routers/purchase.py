@@ -796,6 +796,8 @@ def _pr_line_dict(line: PurchaseRequestLine) -> dict:
         "unit_price": _f(line.unit_price),
         "expected_date": line.expected_date.isoformat() if line.expected_date else None,
         "status": _s(line.status),
+        "converted_quantity": _f(getattr(line, "converted_quantity", 0)),
+        "remaining_quantity": round(_f(line.quantity) - _f(getattr(line, "converted_quantity", 0)), 2),
         "remarks": line.remarks,
     }
 
@@ -813,6 +815,7 @@ def _pr_dict(pr: PurchaseRequest, lines: list[PurchaseRequestLine]) -> dict:
         "source_planned_order": pr.source_planned_order,
         "requested_by": pr.requested_by,
         "converted_po_number": pr.converted_po_number,
+        "converted_po_numbers": getattr(pr, "converted_po_numbers", None),
         "remarks": pr.remarks,
         "created_at": pr.created_at.isoformat() if pr.created_at else None,
         "lines": [_pr_line_dict(line) for line in lines],
@@ -1066,13 +1069,122 @@ def convert_purchase_request(purchase_request_number: str, db: Session = Depends
             )
         )
         line.status = "CONVERTED"
+        line.converted_quantity = line.quantity
     pr.status = PurchaseRequestStatus.CONVERTED
     pr.converted_po_number = po_number
+    pr.converted_po_numbers = po_number
     pr.updated_at = datetime.now()
     db.commit()
     pr, lines = _load_pr(db, purchase_request_number)
     return _pr_dict(pr, lines)
 
+
+class PartialConvertLine(BaseModel):
+    line_number: int
+    quantity: Optional[float] = Field(None, gt=0, description="本次转换数量（不传则转该行剩余全部）")
+
+
+class PartialConvertPayload(BaseModel):
+    lines: list[PartialConvertLine] = Field(min_length=1)
+
+
+@router.post("/purchase-requests/{purchase_request_number}/convert-lines")
+def convert_purchase_request_lines(
+    purchase_request_number: str,
+    payload: PartialConvertPayload,
+    db: Session = Depends(get_db),
+):
+    """行级部分转采购单：只转指定行（可指定部分数量），支持多次转换。
+
+    - 申请状态 RELEASED / PARTIALLY_CONVERTED 可转；每次生成一张 RELEASED 采购单；
+    - 行剩余 = quantity − converted_quantity；请求量须 (0, 剩余]；
+    - 行全部转完才置 CONVERTED，否则保持 OPEN；申请无 OPEN 行时置 CONVERTED；
+    - 整单转换字段 converted_po_number 保留首张 PO，新字段 converted_po_numbers 记录全部。
+    """
+    pr, lines = _load_pr(db, purchase_request_number)
+    if pr.status not in (PurchaseRequestStatus.RELEASED, PurchaseRequestStatus.PARTIALLY_CONVERTED):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"采购申请状态为 {_s(pr.status)}，仅已下达/部分转换的申请可转采购单",
+        )
+    if not payload.lines:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="至少选择一行进行转换")
+
+    line_map = {line.line_number: line for line in lines}
+    planned: list[tuple[PurchaseRequestLine, float]] = []
+    seen: set[int] = set()
+    for item in payload.lines:
+        line = line_map.get(item.line_number)
+        if line is None:
+            raise HTTPException(status_code=404, detail=f"采购申请行不存在: {item.line_number}")
+        if item.line_number in seen:
+            raise HTTPException(status_code=400, detail=f"重复选择采购申请行: {item.line_number}")
+        seen.add(item.line_number)
+        if _s(line.status) == "CONVERTED":
+            raise HTTPException(status_code=400, detail=f"行 {item.line_number} 已全部转换")
+        remaining = round(_f(line.quantity) - _f(getattr(line, "converted_quantity", 0)), 2)
+        wanted = remaining if item.quantity is None else _f(item.quantity)
+        if wanted <= 0 or wanted > remaining + 1e-6:
+            raise HTTPException(
+                status_code=400,
+                detail=f"行 {item.line_number} 可转余量 {remaining}，请求 {wanted}",
+            )
+        planned.append((line, wanted))
+
+    po_number = NumberGenerator.generate_document_number(
+        db, PurchaseOrder, "purchase_order_number", "PUR", 4
+    )
+    order = PurchaseOrder(
+        purchase_order_number=po_number,
+        supplier_id=pr.supplier_id,
+        supplier_name=pr.supplier_name,
+        status=PurchaseOrderStatus.RELEASED,
+        order_date=datetime.now(),
+        expected_date=pr.expected_date,
+        currency=pr.currency or "CNY",
+        total_amount=round(sum(qty * _f(l.unit_price) for l, qty in planned), 2),
+        source_planned_order=pr.source_planned_order,
+        remarks=f"来源采购申请(部分转换): {pr.purchase_request_number}",
+        created_by="web",
+    )
+    db.add(order)
+    db.flush()
+    for line, qty in planned:
+        db.add(
+            PurchaseOrderLine(
+                purchase_order_number=po_number,
+                line_number=line.line_number,
+                material_code=line.material_code,
+                quantity=qty,
+                received_quantity=0,
+                unit=line.unit,
+                unit_price=line.unit_price,
+                expected_date=line.expected_date or pr.expected_date,
+                status="OPEN",
+                created_by="web",
+            )
+        )
+        line.converted_quantity = round(_f(getattr(line, "converted_quantity", 0)) + qty, 2)
+        if line.converted_quantity >= _f(line.quantity) - 1e-6:
+            line.status = "CONVERTED"
+
+    existing_numbers = [n for n in (pr.converted_po_numbers or "").split(",") if n]
+    pr.converted_po_numbers = ",".join(existing_numbers + [po_number])
+    if not pr.converted_po_number:
+        pr.converted_po_number = po_number
+    remaining_open = any(
+        _s(line.status) != "CONVERTED"
+        for line in lines
+    )
+    pr.status = (
+        PurchaseRequestStatus.PARTIALLY_CONVERTED if remaining_open
+        else PurchaseRequestStatus.CONVERTED
+    )
+    pr.updated_at = datetime.now()
+    db.commit()
+    result = _pr_dict(*_load_pr(db, purchase_request_number))
+    result["new_po_number"] = po_number
+    return result
 
 # ── 采购退货 / 索赔 ─────────────────────────────────────────────────────
 def _return_line_dict(line: PurchaseReturnLine) -> dict:
