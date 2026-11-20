@@ -285,7 +285,7 @@ const Dashboard: React.FC = () => {
       {/* 业务链路说明 */}
       <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
         {[
-          { title: '销售与分销', desc: '客户建档 → 报价三级审核 → 销售订单 → 发货签收', path: '/sd/customers' },
+          { title: '销售管理', desc: '客户建档 → 报价三级审核 → 销售订单 → 发货签收', path: '/sd/customers' },
           { title: '工程管理', desc: 'BOM → 工艺路线 → MI → 生产版本建立', path: '/eng/boms' },
           { title: '生产与物料', desc: '工作中心 → 工单 → LOT卡 → 工序报工 → 生产领料', path: '/pp/work-centers' },
         ].map((item) => (

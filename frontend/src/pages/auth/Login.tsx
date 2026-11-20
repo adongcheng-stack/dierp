@@ -20,7 +20,7 @@ import { SliderCaptcha } from '../../components/common/SliderCaptcha'
 import { isMockMode } from '../../mock'
 
 const CAPABILITIES = [
-  { icon: ShoppingCart, title: '销售与分销', desc: '客户建档 · 报价审批 · 销售订单' },
+  { icon: ShoppingCart, title: '销售管理', desc: '客户建档 · 报价审批 · 销售订单' },
   { icon: Factory, title: '工程管理', desc: 'BOM · 工艺路线 · MI · 生产版本' },
   { icon: ClipboardCheck, title: '生产执行', desc: '工作中心 · 工单 · LOT卡 · 工序报工' },
   { icon: Package, title: '物料管理', desc: '物料主数据 · 生产领料 · 库存扣减' },

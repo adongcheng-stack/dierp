@@ -53,7 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: '/', label: '仪表盘', icon: LayoutDashboard, path: '/' },
   {
     key: 'sd',
-    label: '销售与分销',
+    label: '销售管理',
     icon: ShoppingCart,
     children: [
       { key: '/sd/customers', label: '客户管理', icon: Users, path: '/sd/customers' },
