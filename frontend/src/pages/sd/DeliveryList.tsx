@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
 import { CheckOutlined, PlusOutlined, ReloadOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
@@ -42,6 +43,8 @@ const DeliveryList: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
+  const [searchParams] = useSearchParams()
+  const [numberFilter, setNumberFilter] = useState(() => searchParams.get('delivery_number') || '')
   const [orderFilter, setOrderFilter] = useState<string>('')
   const [form] = Form.useForm()
 
@@ -51,6 +54,7 @@ const DeliveryList: React.FC = () => {
       const params: Record<string, unknown> = { limit: 100 }
       if (statusFilter) params.delivery_status = statusFilter
       if (orderFilter) params.order_number = orderFilter
+      if (numberFilter) params.delivery_number = numberFilter
       const response = await api.get('/sd/deliveries', { params })
       setRows(response.data.items || [])
       setTotal(response.data.total || 0)
@@ -73,7 +77,7 @@ const DeliveryList: React.FC = () => {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, orderFilter])
+  }, [statusFilter, orderFilter, numberFilter])
 
   const openCreate = () => {
     form.resetFields()
@@ -183,6 +187,13 @@ const DeliveryList: React.FC = () => {
               style={{ width: 180 }}
               value={orderFilter}
               onChange={(e) => setOrderFilter(e.target.value)}
+            />
+            <Input
+              allowClear
+              placeholder="按单号过滤"
+              style={{ width: 160 }}
+              value={numberFilter}
+              onChange={(event) => setNumberFilter(event.target.value)}
             />
             <Button icon={<ReloadOutlined />} onClick={fetchData}>刷新</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建发货单</Button>

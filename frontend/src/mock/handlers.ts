@@ -6004,6 +6004,7 @@ route('GET', '/sd/deliveries', (ctx) => {
   let rows = listOf(db, 'salesDeliveries').filter((d) => !d.is_deleted)
   if (ctx.query.customer_id) rows = rows.filter((d) => d.customer_id === ctx.query.customer_id)
   if (ctx.query.order_number) rows = rows.filter((d) => d.sales_order_number === ctx.query.order_number)
+  if (ctx.query.delivery_number) rows = rows.filter((d) => d.delivery_number === ctx.query.delivery_number)
   if (ctx.query.delivery_status) rows = rows.filter((d) => d.status === ctx.query.delivery_status)
   return ok({ total: rows.length, items: rows.map(deliveryDict) })
 })
@@ -6178,6 +6179,7 @@ route('GET', '/sd/invoices', (ctx) => {
   let rows = listOf(db, 'salesInvoices').filter((i) => !i.is_deleted)
   if (ctx.query.customer_id) rows = rows.filter((i) => i.customer_id === ctx.query.customer_id)
   if (ctx.query.order_number) rows = rows.filter((i) => i.sales_order_number === ctx.query.order_number)
+  if (ctx.query.invoice_number) rows = rows.filter((i) => i.invoice_number === ctx.query.invoice_number)
   if (ctx.query.invoice_status) rows = rows.filter((i) => i.status === ctx.query.invoice_status)
   return ok({ total: rows.length, items: rows.map(invoiceDict) })
 })
@@ -6347,6 +6349,7 @@ route('GET', '/purchase/supplier-invoices', (ctx) => {
   let rows = listOf(db, 'supplierInvoices').filter((i: any) => !i.is_deleted)
   if (ctx.query.supplier_id) rows = rows.filter((i: any) => i.supplier_id === ctx.query.supplier_id)
   if (ctx.query.po_number) rows = rows.filter((i: any) => i.purchase_order_number === ctx.query.po_number)
+  if (ctx.query.invoice_number) rows = rows.filter((i: any) => i.invoice_number === ctx.query.invoice_number)
   if (ctx.query.invoice_status) rows = rows.filter((i: any) => i.status === ctx.query.invoice_status)
   return ok({ total: rows.length, items: rows.map(supplierInvoiceDict) })
 })
@@ -6468,6 +6471,7 @@ route('GET', '/purchase/payments', (ctx) => {
   const db = getDb()
   let rows = listOf(db, 'supplierPayments').filter((p: any) => !p.is_deleted)
   if (ctx.query.supplier_id) rows = rows.filter((p: any) => p.supplier_id === ctx.query.supplier_id)
+  if (ctx.query.payment_number) rows = rows.filter((p: any) => p.payment_number === ctx.query.payment_number)
   if (ctx.query.payment_status) rows = rows.filter((p: any) => p.status === ctx.query.payment_status)
   return ok({
     total: rows.length,
@@ -6634,6 +6638,7 @@ route('GET', '/sd/receipts', (ctx) => {
   const db = getDb()
   let rows = listOf(db, 'receipts').filter((r: any) => !r.is_deleted)
   if (ctx.query.customer_id) rows = rows.filter((r: any) => r.customer_id === ctx.query.customer_id)
+  if (ctx.query.receipt_number) rows = rows.filter((r: any) => r.receipt_number === ctx.query.receipt_number)
   if (ctx.query.receipt_status) rows = rows.filter((r: any) => r.status === ctx.query.receipt_status)
   return ok({
     total: rows.length,

@@ -1,8 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Select, Space, Table, Tag, message } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
+
+/** 凭证来源事件 → 单据列表路由（点击 source_ref 溯源跳转，设计 §5.3） */
+const SOURCE_ROUTES: Record<string, { path: string; param: string }> = {
+  SALES_INVOICE_ISSUED: { path: '/sd/invoices', param: 'invoice_number' },
+  SALES_DELIVERY_SHIPPED: { path: '/sd/deliveries', param: 'delivery_number' },
+  SUPPLIER_INVOICE_CONFIRMED: { path: '/mm/supplier-invoices', param: 'invoice_number' },
+  SUPPLIER_PAYMENT_PAID: { path: '/mm/payments', param: 'payment_number' },
+  RECEIPT_PAID: { path: '/sd/receipts', param: 'receipt_number' },
+  MATERIAL_ISSUE: { path: '/mm/material-issues', param: 'issue_number' },
+  STOCK_ADJUST: { path: '/mm/stocktakes', param: 'stocktake_number' },
+  PRODUCTION_COMPLETE: { path: '/pp/production-orders', param: 'order_number' },
+}
 
 const SOURCE_TYPE: Record<string, string> = {
   SALES_INVOICE_ISSUED: '销售开票',
@@ -42,6 +55,7 @@ interface JournalEntry {
 const money = (v: number | undefined | null) => (v ?? 0).toFixed(2)
 
 const JournalEntryList: React.FC = () => {
+  const navigate = useNavigate()
   const [rows, setRows] = useState<JournalEntry[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -88,7 +102,23 @@ const JournalEntryList: React.FC = () => {
       width: 140,
       render: (v: string) => SOURCE_TYPE[v] || v,
     },
-    { title: '来源单据', dataIndex: 'source_ref', width: 170 },
+    {
+      title: '来源单据',
+      dataIndex: 'source_ref',
+      width: 170,
+      render: (ref: string, record: JournalEntry) => {
+        const route = SOURCE_ROUTES[record.source_type]
+        if (!route || !ref) return <span>{ref || '-'}</span>
+        return (
+          <a
+            onClick={() => navigate(`${route.path}?${route.param}=${encodeURIComponent(ref)}`)}
+            title={`跳转到 ${ref} 的来源单据`}
+          >
+            {ref}
+          </a>
+        )
+      },
+    },
     { title: '摘要', dataIndex: 'remarks', ellipsis: true },
   ]
 

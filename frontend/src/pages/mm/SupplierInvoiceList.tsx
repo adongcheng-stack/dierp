@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
 import { CheckOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
@@ -37,6 +38,8 @@ const SupplierInvoiceList: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
+  const [searchParams] = useSearchParams()
+  const [numberFilter, setNumberFilter] = useState(() => searchParams.get('invoice_number') || '')
   const [form] = Form.useForm()
 
   const selectedPo = Form.useWatch('purchase_order_number', form)
@@ -49,6 +52,7 @@ const SupplierInvoiceList: React.FC = () => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { limit: 100 }
+      if (numberFilter) params.invoice_number = numberFilter
       if (statusFilter) params.invoice_status = statusFilter
       const response = await api.get('/purchase/supplier-invoices', { params })
       setRows(response.data.items || [])
@@ -63,7 +67,7 @@ const SupplierInvoiceList: React.FC = () => {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter])
+  }, [statusFilter, numberFilter])
 
   const openCreate = async () => {
     form.resetFields()
@@ -159,6 +163,13 @@ const SupplierInvoiceList: React.FC = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               options={Object.entries(STATUS).map(([k, v]) => ({ value: k, label: v.label }))}
+            />
+            <Input
+              allowClear
+              placeholder="按单号过滤"
+              style={{ width: 160 }}
+              value={numberFilter}
+              onChange={(event) => setNumberFilter(event.target.value)}
             />
             <Button icon={<ReloadOutlined />} onClick={fetchData}>刷新</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建发票</Button>

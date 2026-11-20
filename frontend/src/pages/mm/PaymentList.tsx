@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
@@ -50,6 +51,8 @@ const PaymentList: React.FC = () => {
   const [payOpen, setPayOpen] = useState<Payment | null>(null)
   const [busy, setBusy] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
+  const [searchParams] = useSearchParams()
+  const [numberFilter, setNumberFilter] = useState(() => searchParams.get('payment_number') || '')
   const [form] = Form.useForm()
   const [payForm] = Form.useForm()
 
@@ -63,6 +66,7 @@ const PaymentList: React.FC = () => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { limit: 100 }
+      if (numberFilter) params.payment_number = numberFilter
       if (statusFilter) params.payment_status = statusFilter
       const response = await api.get('/purchase/payments', { params })
       setRows(response.data.items || [])
@@ -77,7 +81,7 @@ const PaymentList: React.FC = () => {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter])
+  }, [statusFilter, numberFilter])
 
   const openCreate = async () => {
     form.resetFields()
@@ -219,6 +223,13 @@ const PaymentList: React.FC = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               options={Object.entries(STATUS).map(([k, v]) => ({ value: k, label: v.label }))}
+            />
+            <Input
+              allowClear
+              placeholder="按单号过滤"
+              style={{ width: 160 }}
+              value={numberFilter}
+              onChange={(event) => setNumberFilter(event.target.value)}
             />
             <Button icon={<ReloadOutlined />} onClick={fetchData}>刷新</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建付款单</Button>

@@ -7,6 +7,7 @@
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T602 凭证溯源+账龄统一（10:10 完成）— 证据：smoke_gl_loop 17/17（source_ref 过滤/单号过滤）；账龄分桶改按 invoice_date（设计 §4.2）；凭证 source_ref 可点击跳来源单据（8 事件映射）；5 单据页 URL 参数预填单号；四 mock 探针 EXIT=0；tsc EXIT=0；pytest 28 passed。注：批量脚本多次静默丢编辑，改用 edit 工具逐处补齐
 - [x] T601 P2 GL 三事件钩子补齐（09:30 完成）— 证据：smoke_gl_loop 15/15（领料/盘点/完工分录+试算平衡）；四 mock 探针回归 EXIT=0；tsc EXIT=0；pytest 28 passed；parity EXIT=0。注：盘盈反向借贷 custom lines；GL 失败记日志不阻断业务
 - [x] T507 P3 smoke_inventory_loop+全门禁（09:00 完成）— 证据：smoke_inventory_loop 13/13 EXIT=0（仓库/盘点快照/盘盈/负库存并发 400/状态机/调拨双流水/重复确认/批次效期/KPI 勾稽/复位）；全门禁 31 项全绿（本体×2/alembic/pytest/九冒烟/parity×2/前端×4/九探针）
 - [x] T506 P3 mock v17 同构（08:15 完成）— 证据：probe-mock-stock 8/8 EXIT=0 双跑稳定（仓库/盘点快照+diff/盘盈+流水/负库存 400/from=to 400/调拨双流水总量不变/重复确认 400/finance-kpi）；四探针回归 EXIT=0；mock-rbac EXIT=0；parity 集合 +3 EXIT=0；tsc EXIT=0；pytest 28 passed。注：snapshot v17 +warehouses(2 种子)/stocktakes/stockTransfers；finance-kpi mock 聚合同源；踩坑：mock materials 响应为裸数组（探针取数需兼容）

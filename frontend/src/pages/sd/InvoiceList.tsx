@@ -53,7 +53,8 @@ const InvoiceList: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
-  const [customerFilter, setCustomerFilter] = useState<string>('')
+  const [numberFilter, setNumberFilter] = useState(() => searchParams.get('invoice_number') || '')
+  const [customerFilter, setCustomerFilter] = useState<string>('')  // 溯源参数在下方 numberFilter
   const [form] = Form.useForm()
   const [searchParams] = useSearchParams()
 
@@ -65,6 +66,7 @@ const InvoiceList: React.FC = () => {
       const params: Record<string, unknown> = { limit: 100 }
       if (statusFilter) params.invoice_status = statusFilter
       if (customerFilter) params.customer_id = customerFilter
+      if (numberFilter) params.invoice_number = numberFilter
       const response = await api.get('/sd/invoices', { params })
       setRows(response.data.items || [])
       setTotal(response.data.total || 0)
@@ -84,7 +86,7 @@ const InvoiceList: React.FC = () => {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, customerFilter])
+  }, [statusFilter, customerFilter, numberFilter])
 
   const openCreate = async () => {
     form.resetFields()
@@ -222,6 +224,13 @@ const InvoiceList: React.FC = () => {
               style={{ width: 150 }}
               value={customerFilter}
               onChange={(e) => setCustomerFilter(e.target.value)}
+            />
+            <Input
+              allowClear
+              placeholder="按单号过滤"
+              style={{ width: 160 }}
+              value={numberFilter}
+              onChange={(event) => setNumberFilter(event.target.value)}
             />
             <Button icon={<ReloadOutlined />} onClick={fetchData}>刷新</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建发票</Button>

@@ -1461,6 +1461,7 @@ def _load_supplier_invoice(db: Session, number: str) -> SupplierInvoice:
 def list_supplier_invoices(
     supplier_id: Optional[str] = None,
     po_number: Optional[str] = None,
+    invoice_number: Optional[str] = None,
     invoice_status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
@@ -1471,6 +1472,8 @@ def list_supplier_invoices(
         query = query.filter(SupplierInvoice.supplier_id == supplier_id)
     if po_number:
         query = query.filter(SupplierInvoice.purchase_order_number == po_number)
+    if invoice_number:
+        query = query.filter(SupplierInvoice.invoice_number == invoice_number)
     if invoice_status:
         query = query.filter(SupplierInvoice.status == SupplierInvoiceStatus(invoice_status))
     total = query.count()
@@ -1692,6 +1695,7 @@ def _validate_allocation(
 @router.get("/payments")
 def list_payments(
     supplier_id: Optional[str] = None,
+    payment_number: Optional[str] = None,
     payment_status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
@@ -1700,6 +1704,8 @@ def list_payments(
     query = db.query(SupplierPayment).filter(SupplierPayment.is_deleted.is_(False))
     if supplier_id:
         query = query.filter(SupplierPayment.supplier_id == supplier_id)
+    if payment_number:
+        query = query.filter(SupplierPayment.payment_number == payment_number)
     if payment_status:
         query = query.filter(SupplierPayment.status == payment_status)
     total = query.count()

@@ -264,6 +264,24 @@ def _run() -> int:
           tb2["balanced"] is True and tb2["total_debit"] > tb["total_debit"],
           f"before={tb['total_debit']} after={tb2['total_debit']}")
 
+    # 15. 凭证 source_ref 过滤（溯源跳转后端契约）
+    seeded = client.get("/api/finance/journal-entries",
+                        params={"source_type": "SALES_INVOICE_ISSUED"}).json().get("items", [])
+    if seeded:
+        ref = seeded[0]["source_ref"]
+        hit = client.get("/api/finance/journal-entries", params={"source_ref": ref}).json()
+        check("15.凭证 source_ref 过滤", hit.get("total", 0) >= 1
+              and all(e["source_ref"] == ref for e in hit.get("items", [])),
+              f"ref={ref} total={hit.get('total')}")
+    else:
+        check("15.凭证 source_ref 过滤", False, "无 SALES_INVOICE_ISSUED 凭证")
+
+    # 16. 单据号过滤（溯源跳转落地契约）：种子发票 INV-20251231-0001
+    hit = client.get("/api/sd/invoices", params={"invoice_number": "INV-20251231-0001"}).json()
+    check("16.发票单号过滤", hit.get("total") == 1
+          and hit["items"][0]["invoice_number"] == "INV-20251231-0001",
+          f"total={hit.get('total')}")
+
     return 0
 
 

@@ -3305,6 +3305,7 @@ def _sync_order_ship_status(db: Session, order_number: str) -> None:
 def list_deliveries(
     customer_id: Optional[str] = None,
     order_number: Optional[str] = None,
+    delivery_number: Optional[str] = None,
     delivery_status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
@@ -3315,6 +3316,8 @@ def list_deliveries(
         query = query.filter(SalesDelivery.customer_id == customer_id)
     if order_number:
         query = query.filter(SalesDelivery.sales_order_number == order_number)
+    if delivery_number:
+        query = query.filter(SalesDelivery.delivery_number == delivery_number)
     if delivery_status:
         query = query.filter(SalesDelivery.status == DeliveryStatus(delivery_status))
     total = query.count()
@@ -3597,6 +3600,7 @@ def _check_invoice_cap(
 def list_invoices(
     customer_id: Optional[str] = None,
     order_number: Optional[str] = None,
+    invoice_number: Optional[str] = None,
     invoice_status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
@@ -3607,6 +3611,8 @@ def list_invoices(
         query = query.filter(SalesInvoice.customer_id == customer_id)
     if order_number:
         query = query.filter(SalesInvoice.sales_order_number == order_number)
+    if invoice_number:
+        query = query.filter(SalesInvoice.invoice_number == invoice_number)
     if invoice_status:
         query = query.filter(SalesInvoice.status == InvoiceStatus(invoice_status))
     total = query.count()
@@ -3648,8 +3654,9 @@ def receivables_summary(
         row["outstanding_amount"] += outstanding
         row["invoice_count"] += 1
         bucket = "current"
-        if i.due_date and outstanding > 0:
-            overdue_days = (now - i.due_date).days
+        # 账龄口径（设计 §4.2）：未核销余额按【发票日期】分 0-30/31-60/61-90/90+ 四段
+        if i.invoice_date and outstanding > 0:
+            overdue_days = (now - i.invoice_date).days
             if overdue_days > 90:
                 bucket = "d90p"
             elif overdue_days > 60:
@@ -3844,6 +3851,7 @@ def _receipt_allocations(db: Session, number: str) -> list[ReceiptAllocation]:
 @router.get("/receipts")
 def list_receipts(
     customer_id: Optional[str] = None,
+    receipt_number: Optional[str] = None,
     receipt_status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
@@ -3852,6 +3860,8 @@ def list_receipts(
     query = db.query(Receipt).filter(Receipt.is_deleted.is_(False))
     if customer_id:
         query = query.filter(Receipt.customer_id == customer_id)
+    if receipt_number:
+        query = query.filter(Receipt.receipt_number == receipt_number)
     if receipt_status:
         query = query.filter(Receipt.status == receipt_status)
     total = query.count()
