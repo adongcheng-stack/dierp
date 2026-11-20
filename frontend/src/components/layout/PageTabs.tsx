@@ -14,12 +14,32 @@ interface PageTabsProps {
   activeKey: string
   onTabClick: (tab: TabItem) => void
   onTabClose: (key: string) => void
+  onCloseOthers?: (key: string) => void
+  onCloseLeft?: (key: string) => void
+  onCloseRight?: (key: string) => void
+  onCloseAll?: () => void
 }
 
-export function PageTabs({ tabs, activeKey, onTabClick, onTabClose }: PageTabsProps) {
+interface TabContextMenu {
+  x: number
+  y: number
+  key: string
+}
+
+export function PageTabs({
+  tabs,
+  activeKey,
+  onTabClick,
+  onTabClose,
+  onCloseOthers,
+  onCloseLeft,
+  onCloseRight,
+  onCloseAll,
+}: PageTabsProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
+  const [contextMenu, setContextMenu] = useState<TabContextMenu | null>(null)
 
   const updateScrollState = () => {
     const el = scrollRef.current
@@ -48,9 +68,53 @@ export function PageTabs({ tabs, activeKey, onTabClick, onTabClose }: PageTabsPr
     active?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [activeKey])
 
+  // 右键菜单：点击任意处 / Esc / 滚动即关闭
+  useEffect(() => {
+    if (!contextMenu) return
+    const close = () => setContextMenu(null)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close()
+    }
+    document.addEventListener('click', close)
+    document.addEventListener('contextmenu', close)
+    window.addEventListener('resize', close)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', close)
+      document.removeEventListener('contextmenu', close)
+      window.removeEventListener('resize', close)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [contextMenu])
+
   const scrollBy = (delta: number) => {
     scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' })
   }
+
+  const targetIndex = contextMenu ? tabs.findIndex((tab) => tab.key === contextMenu.key) : -1
+  const menuItems: Array<{ label: string; disabled?: boolean; action: () => void }> = [
+    { label: '关闭标签页', action: () => contextMenu && onTabClose(contextMenu.key) },
+    { label: '关闭其他', disabled: !onCloseOthers, action: () => contextMenu && onCloseOthers?.(contextMenu.key) },
+    {
+      label: '关闭左侧',
+      disabled: !onCloseLeft || targetIndex <= 0 || !tabs.slice(0, targetIndex).some((tab) => tab.closable),
+      action: () => contextMenu && onCloseLeft?.(contextMenu.key),
+    },
+    {
+      label: '关闭右侧',
+      disabled:
+        !onCloseRight ||
+        targetIndex < 0 ||
+        targetIndex >= tabs.length - 1 ||
+        !tabs.slice(targetIndex + 1).some((tab) => tab.closable),
+      action: () => contextMenu && onCloseRight?.(contextMenu.key),
+    },
+    {
+      label: '关闭全部',
+      disabled: !onCloseAll || !tabs.some((tab) => tab.closable),
+      action: () => onCloseAll?.(),
+    },
+  ]
 
   return (
     <div className="relative flex items-center gap-2 border-b border-line bg-surface px-3 py-1.5">
@@ -81,6 +145,10 @@ export function PageTabs({ tabs, activeKey, onTabClick, onTabClose }: PageTabsPr
             type="button"
             data-tab-key={tab.key}
             onClick={() => onTabClick(tab)}
+            onContextMenu={(event) => {
+              event.preventDefault()
+              setContextMenu({ x: event.clientX, y: event.clientY, key: tab.key })
+            }}
             className={cn(
               'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-sm transition-colors',
               activeKey === tab.key
@@ -129,6 +197,34 @@ export function PageTabs({ tabs, activeKey, onTabClick, onTabClose }: PageTabsPr
       >
         <ChevronsRight className="h-3.5 w-3.5" />
       </button>
+
+      {contextMenu && (
+        <div
+          className="fixed z-50 min-w-[140px] rounded-md border border-line bg-surface py-1 shadow-lg"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {menuItems.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              disabled={item.disabled}
+              onClick={() => {
+                item.action()
+                setContextMenu(null)
+              }}
+              className={cn(
+                'block w-full px-3 py-1.5 text-left text-sm transition-colors',
+                item.disabled
+                  ? 'cursor-not-allowed text-ink-faint/50'
+                  : 'text-ink-soft hover:bg-surface-hover hover:text-ink'
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

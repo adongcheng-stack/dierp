@@ -46,6 +46,46 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     })
   }
 
+  /** 批量关闭的公共兜底：若当前激活页签被关掉，跳到保留列表里最近的页签 */
+  const applyBatchClose = (next: TabItem[], fallback: string) => {
+    setTabs(next.length > 0 ? next : [HOME_TAB])
+    if (!next.some((tab) => tab.key === location.pathname)) {
+      navigate(next.find((tab) => tab.key === fallback)?.key ?? fallback)
+    }
+  }
+
+  const handleCloseOthers = (key: string) => {
+    applyBatchClose(
+      tabs.filter((tab) => !tab.closable || tab.key === key),
+      key,
+    )
+  }
+
+  const handleCloseLeft = (key: string) => {
+    const index = tabs.findIndex((tab) => tab.key === key)
+    if (index < 0) return
+    applyBatchClose(
+      tabs.filter((tab, i) => i >= index || !tab.closable),
+      key,
+    )
+  }
+
+  const handleCloseRight = (key: string) => {
+    const index = tabs.findIndex((tab) => tab.key === key)
+    if (index < 0) return
+    applyBatchClose(
+      tabs.filter((tab, i) => i <= index || !tab.closable),
+      key,
+    )
+  }
+
+  const handleCloseAll = () => {
+    applyBatchClose(
+      tabs.filter((tab) => !tab.closable),
+      HOME_TAB.key,
+    )
+  }
+
   return (
     <div className="h-screen overflow-hidden bg-surface-sunken">
       <Sidebar />
@@ -61,6 +101,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             activeKey={location.pathname}
             onTabClick={(tab) => navigate(tab.key)}
             onTabClose={handleTabClose}
+            onCloseOthers={handleCloseOthers}
+            onCloseLeft={handleCloseLeft}
+            onCloseRight={handleCloseRight}
+            onCloseAll={handleCloseAll}
           />
         </div>
 
