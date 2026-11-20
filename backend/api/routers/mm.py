@@ -19,6 +19,9 @@ from backend.common.models.planning import (
     Warehouse,
 )
 from backend.common.utils.number_generator import NumberGenerator
+from backend.common.models.planning import StandardCost
+from backend.services.finance.gl_engine import GlEngineError
+from backend.services.finance.gl_engine import post as gl_post
 
 router = APIRouter()
 
@@ -457,6 +460,22 @@ async def create_material_issue(
                 detail=f"创建库存事务记录失败: {str(trans_e)}。请检查后端控制台日志获取详细信息。"
             )
         
+        # 自动分录 MATERIAL_ISSUE：借生产成本 / 贷库存商品（领料量×标准成本）
+        try:
+            std = (
+                db.query(StandardCost)
+                .filter(StandardCost.material_code == issue.material_code)
+                .order_by(StandardCost.id.desc())
+                .first()
+            )
+            if std and float(std.material_cost or 0) > 0 and float(issue.quantity or 0) > 0:
+                gl_post(db, "MATERIAL_ISSUE", issue_number,
+                        amount=float(issue.quantity) * float(std.material_cost),
+                        summary=f"生产领料 {issue_number}", operator=current_user.username)
+                db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 领料分录失败 {issue_number}: {exc}")
+
         try:
             db.commit()
             db.refresh(db_issue)
@@ -881,6 +900,29 @@ def approve_stocktake(
     s.updated_by = current_user.username
     s.updated_at = datetime.now()
     db.commit()
+    # 自动分录 STOCK_ADJUST：盘亏走正向映射（借5001/贷1405）；盘盈反向（借1405/贷5001）
+    if abs(diff) > 1e-9:
+        try:
+            std = (
+                db.query(StandardCost)
+                .filter(StandardCost.material_code == s.material_code)
+                .order_by(StandardCost.id.desc())
+                .first()
+            )
+            if std and float(std.material_cost or 0) > 0:
+                amount = abs(diff) * float(std.material_cost)
+                lines = None
+                if diff > 0:
+                    lines = [
+                        ("1405", amount, 0, f"盘盈调整 {s.stocktake_number}"),
+                        ("5001", 0, amount, f"盘盈调整 {s.stocktake_number}"),
+                    ]
+                gl_post(db, "STOCK_ADJUST", s.stocktake_number, amount=amount,
+                        lines=lines, summary=f"盘点调整 {s.stocktake_number}",
+                        operator=current_user.username)
+                db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 盘点分录失败 {s.stocktake_number}: {exc}")
     return _stocktake_dict(s)
 
 

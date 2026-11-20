@@ -16,6 +16,9 @@ from backend.common.models.pp import (
     WorkCenterType, WorkCenterStatus, ProductionOrderStatus, OperationReportStatus
 )
 from backend.common.utils.number_generator import NumberGenerator
+from backend.common.models.planning import StandardCost
+from backend.services.finance.gl_engine import GlEngineError
+from backend.services.finance.gl_engine import post as gl_post
 from backend.services.production_order_service import ProductionOrderService
 from backend.common.exceptions import BusinessException
 from backend.common.models.sd import SalesOrderStatus
@@ -988,7 +991,23 @@ async def complete_production_order(
             material.current_stock = float(material.current_stock or 0) + receipt_qty
 
     db.commit()
-    
+
+    # 自动分录 PRODUCTION_COMPLETE：借库存商品 / 贷生产成本（入库量×标准成本）
+    try:
+        std = (
+            db.query(StandardCost)
+            .filter(StandardCost.material_code == order.material_code)
+            .order_by(StandardCost.id.desc())
+            .first()
+        )
+        if std and float(std.material_cost or 0) > 0 and receipt_qty > 0:
+            gl_post(db, "PRODUCTION_COMPLETE", order_number,
+                    amount=receipt_qty * float(std.material_cost),
+                    summary=f"完工入库 {order_number}", operator=current_user.username)
+            db.commit()
+    except GlEngineError as exc:
+        print(f"[GL] 完工分录失败 {order_number}: {exc}")
+
     # 同步销售订单状态
     try:
         sync_sales_order_status(order.sales_order_number, db)

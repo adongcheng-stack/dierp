@@ -1163,6 +1163,7 @@ route('POST', '/mm/material-issues', (ctx) => {
     remarks: `生产领料: ${order.order_number}`,
   })
   saveDb()
+  postMockGlStandard(db, 'MATERIAL_ISSUE', item.issue_number, material.material_code, quantity, ctx)
   return ok(clone(item), 201)
 })
 
@@ -1764,6 +1765,7 @@ function transitionProductionOrder(
     if (material) {
       material.current_stock = toNumber(material.current_stock) + receiptQty
     }
+    postMockGlStandard(db, 'PRODUCTION_COMPLETE', order.order_number, order.material_code, receiptQty, ctx)
   }
   syncSalesOrderStatus(db, order.sales_order_number)
   saveDb()
@@ -6781,7 +6783,8 @@ function postMockGl(
   sourceRef: string,
   amount: number,
   summary: string,
-  operator?: string | null
+  operator?: string | null,
+  customLines?: Array<[string, number, number, string]>
 ) {
   const existing = listOf(db, 'glJournalEntries').find(
     (e: any) => !e.is_deleted && e.source_type === sourceType && e.source_ref === sourceRef
@@ -6810,41 +6813,52 @@ function postMockGl(
   entries.unshift(entry)
   const lines = listOf(db, 'glJournalLines')
   const round2 = round(amount, 2)
+  const effectiveLines: Array<[string, number, number, string]> = customLines ?? [
+    [rule[0], round2, 0, summary],
+    [rule[1], 0, round2, summary],
+  ]
   const baseId = nextId(lines)
-  lines.unshift(
-    stampNew(
-      {
-        id: baseId + 1,
-        entry_number: entry.entry_number,
-        line_number: 2,
-        account_code: rule[1],
-        debit: 0,
-        credit: round2,
-        summary: summary || null,
-        created_by: operator ?? null,
-        created_at: nowIso(),
-        is_deleted: false,
-      },
-      null
-    ),
-    stampNew(
-      {
-        id: baseId,
-        entry_number: entry.entry_number,
-        line_number: 1,
-        account_code: rule[0],
-        debit: round2,
-        credit: 0,
-        summary: summary || null,
-        created_by: operator ?? null,
-        created_at: nowIso(),
-        is_deleted: false,
-      },
-      null
+  effectiveLines.forEach(([account, debit, credit, lineSummary], index) => {
+    lines.unshift(
+      stampNew(
+        {
+          id: baseId + effectiveLines.length - 1 - index,
+          entry_number: entry.entry_number,
+          line_number: index + 1,
+          account_code: account,
+          debit: round(debit, 2),
+          credit: round(credit, 2),
+          summary: lineSummary || null,
+          created_by: operator ?? null,
+          created_at: nowIso(),
+          is_deleted: false,
+        },
+        null
+      )
     )
-  )
+  })
   saveDb()
   return entry
+}
+
+/** 库存类事件分录：金额 = 数量 × 物料标准成本（与后端口径一致） */
+function postMockGlStandard(
+  db: MockDb,
+  sourceType: string,
+  sourceRef: string,
+  materialCode: string,
+  quantity: number,
+  ctx: MockContext,
+  customLines?: Array<[string, number, number, string]>
+) {
+  const std = listOf(db, 'standardCosts')
+    .filter((s: any) => !s.is_deleted && s.material_code === materialCode && toNumber(s.material_cost) > 0)
+    .sort((a: any, b: any) => toNumber(b.id) - toNumber(a.id))[0]
+  if (!std || !(quantity > 0)) return
+  try {
+    postMockGl(db, sourceType, sourceRef, quantity * toNumber(std.material_cost),
+      `${sourceType} ${sourceRef}`, ctx.user?.username ?? null, customLines)
+  } catch { /* GL 失败不阻断业务（与后端同构） */ }
 }
 
 function glEntryDict(e: any, lines: any[]) {
@@ -7108,6 +7122,16 @@ route('POST', '/mm/stocktakes/:number/approve', (ctx, params) => {
   s.status = 'APPROVED'
   s.updated_at = nowIso()
   saveDb()
+  if (Math.abs(diff) > 1e-9) {
+    const customLines: Array<[string, number, number, string]> | undefined =
+      diff > 0
+        ? [
+            ['1405', Math.abs(diff), 0, `盘盈调整 ${s.stocktake_number}`],
+            ['5001', 0, Math.abs(diff), `盘盈调整 ${s.stocktake_number}`],
+          ]
+        : undefined
+    postMockGlStandard(db, 'STOCK_ADJUST', s.stocktake_number, s.material_code, Math.abs(diff), ctx, customLines)
+  }
   return ok(stocktakeDict(s))
 })
 

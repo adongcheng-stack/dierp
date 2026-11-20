@@ -212,6 +212,58 @@ def _run() -> int:
     check("10.当月期间 OPEN", r.status_code == 200 and row is not None and row["status"] == "OPEN",
           f"period={row}")
 
+    # 11. 领料 → MATERIAL_ISSUE 分录（数量×标准成本）
+    db = SessionLocal()
+    try:
+        prod_order = (
+            db.query(pp.ProductionOrder)
+            .filter(pp.ProductionOrder.is_deleted.is_(False),
+                    pp.ProductionOrder.status == pp.ProductionOrderStatus.IN_PRODUCTION)
+            .order_by(pp.ProductionOrder.id)
+            .first()
+        )
+        issue_order = prod_order.order_number if prod_order else None
+        issue_material = prod_order.material_code if prod_order else None
+        mat = db.query(mm.Material).filter(mm.Material.material_code == issue_material).first()
+        issue_unit = mat.unit if mat else "PCS"
+    finally:
+        db.close()
+    if issue_order:
+        r = client.post("/api/mm/material-issues", headers=H,
+                        json={"production_order_number": issue_order, "material_code": issue_material,
+                              "quantity": 1, "unit": issue_unit, "remarks": "GL冒烟领料"})
+        entries = client.get("/api/finance/journal-entries",
+                             params={"source_type": "MATERIAL_ISSUE"}).json().get("items", [])
+        check("11.领料→分录 MATERIAL_ISSUE", r.status_code == 201
+              and any(e["source_ref"] == r.json().get("issue_number") for e in entries),
+              f"{r.status_code} {r.text[:150]}")
+    else:
+        check("11.领料→分录 MATERIAL_ISSUE", False, "无 IN_PRODUCTION 工单")
+
+    # 12. 盘点审批 → STOCK_ADJUST 分录
+    r = client.post("/api/mm/stocktakes", headers=H,
+                    json={"material_code": MATERIAL, "counted_qty": 9999})  # 大额盘盈，后续不审批业务姿势无所谓
+    stk = r.json().get("stocktake_number")
+    client.post(f"/api/mm/stocktakes/{stk}/approve", headers=H)
+    entries = client.get("/api/finance/journal-entries",
+                         params={"source_type": "STOCK_ADJUST"}).json().get("items", [])
+    check("12.盘点→分录 STOCK_ADJUST", any(e["source_ref"] == stk for e in entries),
+          f"entries={len(entries)}")
+
+    # 13. 完工 → PRODUCTION_COMPLETE 分录
+    r = client.post(f"/api/pp/production-orders/{issue_order}/complete", headers=H)
+    entries = client.get("/api/finance/journal-entries",
+                         params={"source_type": "PRODUCTION_COMPLETE"}).json().get("items", [])
+    check("13.完工→分录 PRODUCTION_COMPLETE", r.status_code == 200
+          and any(e["source_ref"] == issue_order for e in entries),
+          f"{r.status_code} {r.text[:150]}")
+
+    # 14. 三钩子入账后试算仍平衡
+    tb2 = client.get("/api/finance/trial-balance").json()
+    check("14.新增分录后试算平衡 Σ借=Σ贷",
+          tb2["balanced"] is True and tb2["total_debit"] > tb["total_debit"],
+          f"before={tb['total_debit']} after={tb2['total_debit']}")
+
     return 0
 
 
