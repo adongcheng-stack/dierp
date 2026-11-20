@@ -53,10 +53,11 @@ const InvoiceList: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string | undefined>()
-  const [numberFilter, setNumberFilter] = useState(() => searchParams.get('invoice_number') || '')
-  const [customerFilter, setCustomerFilter] = useState<string>('')  // 溯源参数在下方 numberFilter
-  const [form] = Form.useForm()
+  // searchParams 必须先声明：下面的 numberFilter 初始化闭包会立即读取它
   const [searchParams] = useSearchParams()
+  const [numberFilter, setNumberFilter] = useState(() => searchParams.get('invoice_number') || '')
+  const [customerFilter, setCustomerFilter] = useState<string>('')
+  const [form] = Form.useForm()
 
   const selectedOrder = Form.useWatch('sales_order_number', form)
 

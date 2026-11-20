@@ -56,6 +56,7 @@ function manualChunks(id: string): string | undefined {
 
 export default defineConfig(({ mode }) => {
   const isMock = mode === 'mock'
+  const isOffline = mode === 'offline'
   return {
     plugins: [react()],
     server: {
@@ -69,14 +70,12 @@ export default defineConfig(({ mode }) => {
       },
     },
     // 演示版：独立产物目录 + 相对 base（hash 路由下可直接以静态文件打开）
-    base: isMock ? './' : '/',
+    base: isMock || isOffline ? './' : '/',
     build: {
-      outDir: isMock ? 'dist-demo' : 'dist',
-      rollupOptions: {
-        output: {
-          manualChunks,
-        },
-      },
+      outDir: isOffline ? 'dist-offline' : isMock ? 'dist-demo' : 'dist',
+      rollupOptions: isOffline
+        ? { output: { inlineDynamicImports: true } } // 单文件离线版：Rollup 阶段内联全部动态 import
+        : { output: { manualChunks } },
     },
   }
 })
