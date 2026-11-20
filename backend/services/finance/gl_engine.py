@@ -8,7 +8,7 @@ GlEngine.post(db, source_type, source_ref, amount=..., lines=...)：
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -93,8 +93,11 @@ def post(
         if account is None:
             raise GlEngineError(f"科目不存在: {account_code}（请先执行科目种子）")
 
-    total_debit = sum(Decimal(str(l[1])) for l in lines)
-    total_credit = sum(Decimal(str(l[2])) for l in lines)
+    def _cent(value) -> Decimal:
+        return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    total_debit = sum((_cent(l[1]) for l in lines), Decimal("0"))
+    total_credit = sum((_cent(l[2]) for l in lines), Decimal("0"))
     if total_debit <= 0 or total_debit != total_credit:
         raise GlEngineError(
             f"分录借贷不平衡：Σ借 {total_debit} != Σ贷 {total_credit}（{source_type} {source_ref}）"
@@ -119,8 +122,8 @@ def post(
             entry_number=entry.entry_number,
             line_number=index,
             account_code=account_code,
-            debit=Decimal(str(debit)),
-            credit=Decimal(str(credit)),
+            debit=_cent(debit),
+            credit=_cent(credit),
             summary=line_summary,
         ))
     db.flush()

@@ -14,6 +14,7 @@ GL_ACCOUNTS: list[tuple[str, str, str]] = [
     ("1405", "库存商品", "ASSET"),
     ("2202", "应付账款", "LIABILITY"),
     ("4001", "实收资本", "EQUITY"),
+    ("3131", "本年利润", "EQUITY"),
     ("5001", "生产成本", "EXPENSE"),
     ("6001", "主营业务收入", "REVENUE"),
     ("6401", "主营业务成本", "EXPENSE"),

@@ -51,7 +51,7 @@ const call = (method, p, body = null) => {
 
 // 1. 科目种子 8 个
 const accounts = call('GET', '/finance/accounts')
-check('1.科目表 8 个一级科目', accounts.status === 200 && accounts.data?.total === 8,
+check('1.科目表 9 个一级科目（含本年利润 3131）', accounts.status === 200 && accounts.data?.total === 9,
   `status=${accounts.status} total=${accounts.data?.total}`)
 
 // 2. 采购收货+发票确认 → SUPPLIER_INVOICE_CONFIRMED 分录
@@ -136,6 +136,24 @@ check('7.试算平衡 Σ借=Σ贷',
 const periods = call('GET', '/finance/periods')
 const p = (periods.data?.items ?? []).find((x) => x.period_code === '2026-11')
 check('8.当月期间 OPEN', Boolean(p) && p.status === 'OPEN')
+
+// 9. 月结闭环：预览 → 结账 → 反结账
+const periodCode = new Date().toISOString().slice(0, 7)
+let preview
+try {
+  const r = handleMockRequest({ method: 'GET', path: '/finance/month-end/preview',
+    query: { period_code: periodCode }, body: null, user: admin, config: null })
+  preview = { status: r.status, data: r.data }
+} catch (e) {
+  preview = { status: e.status ?? 500, data: e.response?.data ?? null }
+}
+const closed = call('POST', `/finance/periods/${periodCode}/close`)
+const reopened = call('POST', `/finance/periods/${periodCode}/reopen`)
+check('9.月结闭环(预览/CLOSE/REOPEN)',
+  preview.status === 200 && preview.data?.balanced === true
+    && closed.status === 200 && closed.data?.period_status === 'CLOSED'
+    && reopened.status === 200 && reopened.data?.status === 'OPEN',
+  `preview=${preview.status} close=${closed.status} reopen=${reopened.status} ${JSON.stringify(closed.data).slice(0,120)}`)
 
 await rm(workDir, { recursive: true, force: true })
 

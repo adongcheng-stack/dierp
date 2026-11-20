@@ -3,10 +3,10 @@
 （空）
 
 ## Pending Tasks
-- [ ] T603 月结流程（期间 CLOSE + 差异结转 + 收入成本匹配）
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T603 P3 月结流程（10:40 完成）— 证据：smoke_gl_loop 20/20（预览/结账/反结账+结转后试算平衡）；probe-mock-gl 9/9；全门禁 28 项全绿。注：GlSourceType +PERIOD_CLOSE（PG ALTER TYPE 扩展）；GL_ACCOUNTS 9 科目（+3131 本年利润）；损益结转四行分录（6001/5001/6401/3131）；引擎金额统一量化到分（修浮点不平衡）
 - [x] T602 凭证溯源+账龄统一（10:10 完成）— 证据：smoke_gl_loop 17/17（source_ref 过滤/单号过滤）；账龄分桶改按 invoice_date（设计 §4.2）；凭证 source_ref 可点击跳来源单据（8 事件映射）；5 单据页 URL 参数预填单号；四 mock 探针 EXIT=0；tsc EXIT=0；pytest 28 passed。注：批量脚本多次静默丢编辑，改用 edit 工具逐处补齐
 - [x] T601 P2 GL 三事件钩子补齐（09:30 完成）— 证据：smoke_gl_loop 15/15（领料/盘点/完工分录+试算平衡）；四 mock 探针回归 EXIT=0；tsc EXIT=0；pytest 28 passed；parity EXIT=0。注：盘盈反向借贷 custom lines；GL 失败记日志不阻断业务
 - [x] T507 P3 smoke_inventory_loop+全门禁（09:00 完成）— 证据：smoke_inventory_loop 13/13 EXIT=0（仓库/盘点快照/盘盈/负库存并发 400/状态机/调拨双流水/重复确认/批次效期/KPI 勾稽/复位）；全门禁 31 项全绿（本体×2/alembic/pytest/九冒烟/parity×2/前端×4/九探针）
@@ -43,7 +43,7 @@
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 09:00 收尾：P0+P1+P2+P3 全部 31 任务完成（22:03 起，含用户授权顺延）。提交链 23348ad…(本提交) 共 31 个 night commit，全门禁 31 项绿。
+2026-11-20 10:40 收尾：P0–P3 主线 31 任务 + 补强 T601-T603 共 34 任务完成，全门禁 28 项绿。月结长期债已偿还。
 
 ## 交接摘要（2026-11-20 09:00，v3）
 - **完成**：P0 三线打通（订单/资金/库存出库）；P1 应付/核销双闭环 + AP 新口径；P2 总账引擎+前端+mock GL；P3 库存补强（盘点/调拨/仓库 11 端点+3 页）+ 批次效期视图 + 看板资金 4 卡。四批次全部「本体→生成→alembic→端点→前端→mock→smoke」节奏闭合。

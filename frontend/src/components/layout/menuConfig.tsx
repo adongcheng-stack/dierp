@@ -19,6 +19,7 @@ import {
   Calculator,
   ArrowLeftRight,
   CalendarClock,
+  CalendarCheck,
   Factory,
   Boxes,
   Route,
@@ -137,6 +138,7 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/finance/accounts', label: '会计科目', icon: BookText, path: '/finance/accounts' },
       { key: '/finance/journal-entries', label: '凭证查询', icon: FileSearch, path: '/finance/journal-entries' },
       { key: '/finance/trial-balance', label: '余额表', icon: Scale, path: '/finance/trial-balance' },
+      { key: '/finance/periods', label: '期间与月结', icon: CalendarCheck, path: '/finance/periods' },
     ],
   },
   {

@@ -1304,6 +1304,15 @@ def seed_gl_accounts(db: Session) -> int:
         ))
         created += 1
 
+    # PG 原生枚举 ALTER TYPE（create_all 不会扩展已有 ENUM 值）
+    from sqlalchemy import text
+    try:
+        db.execute(text("ALTER TYPE glsourcetype ADD VALUE IF NOT EXISTS 'PERIOD_CLOSE'"))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        print(f"[GL] 枚举扩展跳过（可能已存在）: {exc}")
+
     now = datetime.now()
     period_code = now.strftime("%Y-%m")
     if db.query(FiscalPeriod).filter(FiscalPeriod.period_code == period_code).first() is None:

@@ -29,6 +29,7 @@ const PaymentList = lazy(() => import('./pages/mm/PaymentList'))
 const AccountList = lazy(() => import('./pages/finance/AccountList'))
 const JournalEntryList = lazy(() => import('./pages/finance/JournalEntryList'))
 const TrialBalance = lazy(() => import('./pages/finance/TrialBalance'))
+const PeriodClose = lazy(() => import('./pages/finance/PeriodClose'))
 const StocktakeList = lazy(() => import('./pages/mm/StocktakeList'))
 const StockTransferList = lazy(() => import('./pages/mm/StockTransferList'))
 const BatchTracking = lazy(() => import('./pages/mm/BatchTracking'))
@@ -152,6 +153,7 @@ function App() {
                       <Route path="/finance/accounts" element={<AccountList />} />
                       <Route path="/finance/journal-entries" element={<JournalEntryList />} />
                       <Route path="/finance/trial-balance" element={<TrialBalance />} />
+                      <Route path="/finance/periods" element={<PeriodClose />} />
                       <Route path="/mm/stocktakes" element={<StocktakeList />} />
                       <Route path="/mm/stock-transfers" element={<StockTransferList />} />
                       <Route path="/mm/batch-tracking" element={<BatchTracking />} />

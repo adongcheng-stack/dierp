@@ -7321,6 +7321,83 @@ route('GET', '/dashboard/finance-kpi', () => {
   })
 })
 
+// ── 月结（P3）：试算门禁 + 损益结转 + 期间 CLOSE/REOPEN（与后端同构） ──
+function mockMonthEndFigures(db: MockDb, periodCode: string) {
+  const postedRefs = new Set(
+    listOf(db, 'glJournalEntries')
+      .filter((e: any) => !e.is_deleted && e.status === 'POSTED' && e.period_code === periodCode)
+      .map((e: any) => e.entry_number)
+  )
+  const byAccount: Record<string, { debit: number; credit: number }> = {}
+  let entryCount = 0
+  for (const line of listOf(db, 'glJournalLines')) {
+    if (!postedRefs.has(line.entry_number)) continue
+    entryCount += 1
+    const bucket = byAccount[line.account_code] ?? (byAccount[line.account_code] = { debit: 0, credit: 0 })
+    bucket.debit += toNumber(line.debit)
+    bucket.credit += toNumber(line.credit)
+  }
+  const net = (code: string) => round((byAccount[code]?.debit ?? 0) - (byAccount[code]?.credit ?? 0), 2)
+  const totalDebit = round(Object.values(byAccount).reduce((s, b) => s + b.debit, 0), 2)
+  const totalCredit = round(Object.values(byAccount).reduce((s, b) => s + b.credit, 0), 2)
+  const revenue = Math.max(-net('6001'), 0)
+  const cost5001 = Math.max(net('5001'), 0)
+  const cost6401 = Math.max(net('6401'), 0)
+  return {
+    total_debit: totalDebit,
+    total_credit: totalCredit,
+    balanced: Math.abs(totalDebit - totalCredit) < 0.01,
+    revenue,
+    cost_5001: cost5001,
+    cost_6401: cost6401,
+    expense: round(cost5001 + cost6401, 2),
+    variance: round(revenue - cost5001 - cost6401, 2),
+    entry_count: entryCount,
+  }
+}
+
+route('GET', '/finance/month-end/preview', (ctx) => {
+  const db = getDb()
+  const code = String(ctx.query.period_code ?? '')
+  const period = findItem(listOf(db, 'glFiscalPeriods'), 'period_code', code)
+  if (!period) fail(404, `会计期间不存在: ${code}`)
+  return ok({ period_code: code, period_status: period.status, ...mockMonthEndFigures(db, code) })
+})
+
+route('POST', '/finance/periods/:code/close', (ctx, params) => {
+  const db = getDb()
+  const period = requireItem(listOf(db, 'glFiscalPeriods'), 'period_code', params.code, '会计期间')
+  if (period.status === 'CLOSED') fail(400, `期间 ${params.code} 已结账`)
+  const fig = mockMonthEndFigures(db, params.code)
+  if (!fig.balanced) fail(400, `试算不平衡（借 ${fig.total_debit} / 贷 ${fig.total_credit}），禁止月结`)
+  if (Math.max(fig.revenue, fig.expense) > 0) {
+    const lines: Array<[string, number, number, string]> = [
+      ['6001', fig.revenue, 0, `月结结转收入 ${params.code}`],
+      ['5001', 0, fig.cost_5001, `月结结转生产成本 ${params.code}`],
+      ['6401', 0, fig.cost_6401, `月结结转主营业务成本 ${params.code}`],
+      ['3131', Math.max(fig.expense - fig.revenue, 0), Math.max(fig.revenue - fig.expense, 0), `损益结转差额 ${params.code}`],
+    ].filter((l) => Number(l[1]) > 0 || Number(l[2]) > 0) as Array<[string, number, number, string]>
+    try {
+      postMockGl(db, 'PERIOD_CLOSE', params.code, Math.max(fig.revenue, fig.expense),
+        `月结损益结转 ${params.code}`, ctx.user?.username ?? null, lines)
+    } catch { /* GL 失败不阻断（与后端同构） */ }
+  }
+  period.status = 'CLOSED'
+  period.updated_at = nowIso()
+  saveDb()
+  return ok({ period_code: params.code, period_status: 'CLOSED', ...mockMonthEndFigures(db, params.code) })
+})
+
+route('POST', '/finance/periods/:code/reopen', (_ctx, params) => {
+  const db = getDb()
+  const period = requireItem(listOf(db, 'glFiscalPeriods'), 'period_code', params.code, '会计期间')
+  if (period.status !== 'CLOSED') fail(400, `期间状态为 ${period.status}，无需反结账`)
+  period.status = 'OPEN'
+  period.updated_at = nowIso()
+  saveDb()
+  return ok({ period_code: params.code, status: 'OPEN' })
+})
+
 export function handleMockRequest(ctx: MockContext): MockResult {
   enforceWritePermission(ctx)
 

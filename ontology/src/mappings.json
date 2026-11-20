@@ -1,6 +1,6 @@
 {
   "namespace": "https://dierp.local/ontology/erp/v1#",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "DIERP 制造 ERP 领域本体枚举唯一事实源。修改枚举必须先改本文件，再同步 generated/types.ts 与 src/shapes.ttl。",
   "enumerations": {
     "MaterialType": ["FG", "SEMI", "RAW", "PACKAGING", "SERVICE"],
@@ -37,7 +37,7 @@
     "AccountType": ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"],
     "JournalStatus": ["DRAFT", "POSTED"],
     "PeriodStatus": ["OPEN", "CLOSED"],
-    "GlSourceType": ["SALES_INVOICE_ISSUED", "SALES_DELIVERY_SHIPPED", "SUPPLIER_INVOICE_CONFIRMED", "SUPPLIER_PAYMENT_PAID", "RECEIPT_PAID", "MATERIAL_ISSUE", "STOCK_ADJUST", "PRODUCTION_COMPLETE"],
+    "GlSourceType": ["SALES_INVOICE_ISSUED", "SALES_DELIVERY_SHIPPED", "SUPPLIER_INVOICE_CONFIRMED", "SUPPLIER_PAYMENT_PAID", "RECEIPT_PAID", "MATERIAL_ISSUE", "STOCK_ADJUST", "PRODUCTION_COMPLETE", "PERIOD_CLOSE"],
     "StocktakeStatus": ["DRAFT", "APPROVED", "CANCELLED"],
     "StockTransferStatus": ["DRAFT", "CONFIRMED", "CANCELLED"],
     "ResourceStatus": ["ACTIVE", "MAINTENANCE", "DOWN"],

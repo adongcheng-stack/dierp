@@ -125,7 +125,7 @@ def _run() -> int:
 
     # 1. 科目种子 8 个
     r = client.get("/api/finance/accounts")
-    check("1.科目表 8 个一级科目", r.status_code == 200 and r.json()["total"] == 8,
+    check("1.科目表 9 个一级科目（含本年利润 3131）", r.status_code == 200 and r.json()["total"] == 9,
           f"{r.status_code} total={r.json().get('total')}")
 
     # 2. 采购发票确认 → 自动分录 SUPPLIER_INVOICE_CONFIRMED
@@ -281,6 +281,21 @@ def _run() -> int:
     check("16.发票单号过滤", hit.get("total") == 1
           and hit["items"][0]["invoice_number"] == "INV-20251231-0001",
           f"total={hit.get('total')}")
+
+    # 17-19. 月结流程：预览 → 结账（含损益结转分录）→ 反结账
+    preview = client.get("/api/finance/month-end/preview",
+                         params={"period_code": current}).json()
+    check("17.月结预览试算平衡", preview["balanced"] is True
+          and preview["period_status"] == "OPEN", str(preview)[:150])
+    closed = client.post(f"/api/finance/periods/{current}/close", headers=H)
+    tb3 = client.get("/api/finance/trial-balance").json()
+    check("18.月结 CLOSED+结转后试算平衡",
+          closed.status_code == 200 and closed.json().get("period_status") == "CLOSED"
+          and tb3["balanced"] is True,
+          f"{closed.status_code} {str(closed.json())[:120]}")
+    reopened = client.post(f"/api/finance/periods/{current}/reopen", headers=H)
+    check("19.反结账恢复 OPEN", reopened.status_code == 200
+          and reopened.json().get("status") == "OPEN", f"{reopened.status_code} {reopened.text[:150]}")
 
     return 0
 
