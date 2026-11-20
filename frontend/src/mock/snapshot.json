@@ -1,5 +1,5 @@
 {
-  "version": 18,
+  "version": 19,
   "generatedAt": "2026-11-17T23:49:35",
   "salesDeliveries": [
     {
@@ -8298,6 +8298,7 @@
       "source_planned_order": null,
       "requested_by": "jihuayuan",
       "converted_po_number": null,
+      "converted_po_numbers": null,
       "remarks": "N3+ 采购申请演示：草稿待下达（RM-FR4-150 ×100 / RM-PP1080 ×200）",
       "created_by": "system",
       "created_at": "2026-11-19T09:00:00",
@@ -8316,6 +8317,7 @@
       "source_planned_order": null,
       "requested_by": "jihuayuan",
       "converted_po_number": null,
+      "converted_po_numbers": null,
       "remarks": "N3+ 采购申请演示：已下达待转换（RM-CU-FOIL ×50）",
       "created_by": "system",
       "created_at": "2026-11-19T09:00:00",
@@ -8333,6 +8335,7 @@
       "unit_price": 38.5,
       "expected_date": "2026-11-29T00:00:00",
       "status": "OPEN",
+      "converted_quantity": 0,
       "remarks": null,
       "created_by": "system",
       "created_at": "2026-11-19T09:00:00",
@@ -8348,6 +8351,7 @@
       "unit_price": 12.0,
       "expected_date": "2026-11-29T00:00:00",
       "status": "OPEN",
+      "converted_quantity": 0,
       "remarks": null,
       "created_by": "system",
       "created_at": "2026-11-19T09:00:00",
@@ -8363,6 +8367,7 @@
       "unit_price": 86.0,
       "expected_date": "2026-11-26T00:00:00",
       "status": "OPEN",
+      "converted_quantity": 0,
       "remarks": null,
       "created_by": "system",
       "created_at": "2026-11-19T09:00:00",

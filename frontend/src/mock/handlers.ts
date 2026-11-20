@@ -5574,8 +5574,12 @@ function purchaseRequestDict(db: any, pr: any) {
   const lines = listOf(db, 'purchaseRequestLines')
     .filter((l) => !l.is_deleted && l.purchase_request_number === pr.purchase_request_number)
     .sort((a, b) => a.line_number - b.line_number)
-    .map((l) => ({ ...clone(l) }))
-  return { ...clone(pr), lines }
+    .map((l) => ({
+      ...clone(l),
+      converted_quantity: toNumber(l.converted_quantity),
+      remaining_quantity: round(toNumber(l.quantity) - toNumber(l.converted_quantity), 2),
+    }))
+  return { ...clone(pr), converted_po_numbers: pr.converted_po_numbers ?? null, lines }
 }
 
 function loadMockPr(db: any, number: string) {
@@ -5729,12 +5733,86 @@ route('POST', '/purchase/purchase-requests/:number/convert', (ctx, params) => {
       is_deleted: false,
     })
     line.status = 'CONVERTED'
+    line.converted_quantity = line.quantity
   }
   pr.status = 'CONVERTED'
   pr.converted_po_number = poNumber
+  pr.converted_po_numbers = poNumber
   pr.updated_at = nowIso()
   saveDb()
   return ok(purchaseRequestDict(db, pr))
+})
+
+route('POST', '/purchase/purchase-requests/:number/convert-lines', (ctx, params) => {
+  const db = getDb()
+  const pr = loadMockPr(db, safeDecode(params.number))
+  if (!['RELEASED', 'PARTIALLY_CONVERTED'].includes(pr.status)) {
+    fail(400, `采购申请状态为 ${pr.status}，仅已下达/部分转换的申请可转采购单`)
+  }
+  const selected: any[] = Array.isArray(ctx.body?.lines) ? ctx.body.lines : []
+  if (selected.length === 0) fail(400, '至少选择一行进行转换')
+  const allLines = listOf(db, 'purchaseRequestLines').filter(
+    (l) => !l.is_deleted && l.purchase_request_number === pr.purchase_request_number
+  )
+  const seen = new Set<number>()
+  const planned: Array<[any, number]> = []
+  for (const item of selected) {
+    const line = allLines.find((l) => toNumber(l.line_number) === toNumber(item.line_number))
+    if (!line) fail(404, `采购申请行不存在: ${item.line_number}`)
+    if (seen.has(toNumber(item.line_number))) fail(400, `重复选择采购申请行: ${item.line_number}`)
+    seen.add(toNumber(item.line_number))
+    if (line.status === 'CONVERTED') fail(400, `行 ${item.line_number} 已全部转换`)
+    const remaining = round(toNumber(line.quantity) - toNumber(line.converted_quantity), 2)
+    const wanted = item.quantity === undefined || item.quantity === null ? remaining : toNumber(item.quantity)
+    if (wanted <= 0 || wanted > remaining + 0.000001) {
+      fail(400, `行 ${item.line_number} 可转余量 ${remaining}，请求 ${wanted}`)
+    }
+    planned.push([line, wanted])
+  }
+  const orders = listOf(db, 'purchaseOrders')
+  const poNumber = nextNumber(orders, 'purchase_order_number', 'PUR')
+  orders.unshift({
+    id: nextId(orders),
+    purchase_order_number: poNumber,
+    supplier_id: pr.supplier_id,
+    supplier_name: pr.supplier_name,
+    status: 'RELEASED',
+    order_date: nowIso(),
+    expected_date: pr.expected_date,
+    currency: pr.currency || 'CNY',
+    total_amount: round(planned.reduce((s, [l, q]) => s + q * toNumber(l.unit_price), 0), 2),
+    source_planned_order: pr.source_planned_order,
+    remarks: `来源采购申请(部分转换): ${pr.purchase_request_number}`,
+    created_by: ctx.user?.username ?? null,
+    created_at: nowIso(),
+    is_deleted: false,
+  })
+  for (const [line, qty] of planned) {
+    listOf(db, 'purchaseOrderLines').unshift({
+      id: nextId(listOf(db, 'purchaseOrderLines')),
+      purchase_order_number: poNumber,
+      line_number: line.line_number,
+      material_code: line.material_code,
+      quantity: qty,
+      received_quantity: 0,
+      unit: line.unit,
+      unit_price: line.unit_price,
+      expected_date: line.expected_date || pr.expected_date,
+      status: 'OPEN',
+      created_by: ctx.user?.username ?? null,
+      created_at: nowIso(),
+      is_deleted: false,
+    })
+    line.converted_quantity = round(toNumber(line.converted_quantity) + qty, 2)
+    if (line.converted_quantity >= toNumber(line.quantity) - 0.000001) line.status = 'CONVERTED'
+  }
+  const existing = (pr.converted_po_numbers || '').split(',').filter(Boolean)
+  pr.converted_po_numbers = [...existing, poNumber].join(',')
+  if (!pr.converted_po_number) pr.converted_po_number = poNumber
+  pr.status = allLines.some((l) => l.status !== 'CONVERTED') ? 'PARTIALLY_CONVERTED' : 'CONVERTED'
+  pr.updated_at = nowIso()
+  saveDb()
+  return ok({ ...purchaseRequestDict(db, pr), new_po_number: poNumber })
 })
 
 /* ------------------------------- 退货 / 索赔 ------------------------------- */

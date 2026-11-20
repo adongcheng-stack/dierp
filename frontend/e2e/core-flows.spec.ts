@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { execSync } from 'node:child_process'
 
 /** 登录：清本地状态 → 滑块验证 → 账号密码 → 进主界面 */
 async function login(page: Page) {
@@ -76,5 +77,19 @@ test.describe('核心链路 E2E', () => {
     await openMenu(page, '财务管理', '期间与月结')
     await expect(page).toHaveURL(/\/finance\/periods/)
     await expect(page.getByText('月结预览')).toBeVisible()
+  })
+
+  test('5. PR 行级部分转换界面', async ({ page }) => {
+    // 该用例会真实生成采购单，先复位演示库保证种子 PR 可转
+    execSync('python ../backend/scripts/reset_demo.py', { stdio: 'ignore' })
+    await login(page)
+    await openMenu(page, '采购管理', '采购申请')
+    await expect(page).toHaveURL(/\/mm\/purchase-requests/)
+    const row = page.locator('tbody tr').filter({ hasText: 'PRQ-' }).first()
+    await row.getByRole('button', { name: '部分转换' }).click()
+    const modal = page.locator('.ant-modal').filter({ hasText: '部分转换' })
+    await expect(modal).toBeVisible()
+    await modal.getByRole('button', { name: '生成采购单' }).click()
+    await expect(page.getByText(/已生成采购单/)).toBeVisible()
   })
 })

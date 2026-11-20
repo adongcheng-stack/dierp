@@ -8,6 +8,7 @@ import { PageHeader } from '../../components/layout/PageHeader'
 const PR_STATUS: Record<string, { label: string; color: string }> = {
   DRAFT: { label: '草稿', color: 'default' },
   RELEASED: { label: '已下达', color: 'processing' },
+  PARTIALLY_CONVERTED: { label: '部分转换', color: 'orange' },
   CONVERTED: { label: '已转采购单', color: 'success' },
   CANCELLED: { label: '已作废', color: 'error' },
 }
@@ -24,6 +25,8 @@ interface PrLine {
   unit: string
   unit_price: number
   status: string
+  converted_quantity: number
+  remaining_quantity: number
 }
 
 interface PurchaseRequest {
@@ -37,6 +40,7 @@ interface PurchaseRequest {
   total_amount: number
   requested_by: string | null
   converted_po_number: string | null
+  converted_po_numbers: string | null
   remarks: string | null
   lines: PrLine[]
 }
@@ -53,6 +57,9 @@ const PurchaseRequestList: React.FC = () => {
   const [suppliers, setSuppliers] = useState<{ supplier_code: string; supplier_name: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [partialOpen, setPartialOpen] = useState<PurchaseRequest | null>(null)
+  const [selectedLineKeys, setSelectedLineKeys] = useState<number[]>([])
+  const [lineQtyOverrides, setLineQtyOverrides] = useState<Record<number, number>>({})
   const [busy, setBusy] = useState(false)
   const [form] = Form.useForm()
   const navigate = useNavigate()
@@ -120,6 +127,40 @@ const PurchaseRequestList: React.FC = () => {
     }
   }
 
+  const openPartial = (row: PurchaseRequest) => {
+    setPartialOpen(row)
+    const openLines = row.lines.filter((l) => l.status !== 'CONVERTED')
+    setSelectedLineKeys(openLines.length === 1 ? [openLines[0].line_number] : [])
+    setLineQtyOverrides({})
+  }
+
+  const submitPartial = async () => {
+    if (!partialOpen || selectedLineKeys.length === 0) {
+      message.warning('请至少选择一行进行转换')
+      return
+    }
+    const lines = partialOpen.lines
+      .filter((l) => selectedLineKeys.includes(l.line_number))
+      .map((l) => ({
+        line_number: l.line_number,
+        quantity: lineQtyOverrides[l.line_number] ?? l.remaining_quantity,
+      }))
+    setBusy(true)
+    try {
+      const response = await api.post(
+        `/purchase/purchase-requests/${partialOpen.purchase_request_number}/convert-lines`,
+        { lines },
+      )
+      message.success(`已生成采购单 ${response.data.new_po_number}`)
+      setPartialOpen(null)
+      fetchData()
+    } catch (error) {
+      message.error(getErrorMessage(error) || '部分转换失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const columns = [
     { title: '申请单号', dataIndex: 'purchase_request_number', key: 'n', width: 175 },
     { title: '供应商', dataIndex: 'supplier_name', key: 'sup', width: 150, render: (v: string | null) => v || '-' },
@@ -135,13 +176,17 @@ const PurchaseRequestList: React.FC = () => {
     },
     { title: '申请人', dataIndex: 'requested_by', key: 'by', width: 90, render: (v: string | null) => v || '-' },
     {
-      title: '转出采购单', dataIndex: 'converted_po_number', key: 'po', width: 165,
-      render: (v: string | null) =>
-        v ? (
-          <Button type="link" size="small" onClick={() => navigate('/mm/purchase-orders')}>
-            {v}
-          </Button>
-        ) : ('-'),
+      title: '转出采购单', dataIndex: 'converted_po_numbers', key: 'po', width: 200,
+      render: (v: string | null, row: PurchaseRequest) => {
+        const numbers = (v || row.converted_po_number || '').split(',').filter(Boolean)
+        return numbers.length ? (
+          <Space size={0} wrap>
+            {numbers.map((n) => (
+              <Button key={n} type="link" size="small" onClick={() => navigate('/mm/purchase-orders')}>{n}</Button>
+            ))}
+          </Space>
+        ) : ('-')
+      },
     },
     { title: '备注', dataIndex: 'remarks', key: 'r', ellipsis: true },
     {
@@ -157,7 +202,12 @@ const PurchaseRequestList: React.FC = () => {
           {row.status === 'RELEASED' && (
             <Button size="small" type="primary" icon={<FileDoneOutlined />}
               onClick={() => act(`/purchase/purchase-requests/${row.purchase_request_number}/convert`, '已转采购单')}>
-              转采购单
+              整单转换
+            </Button>
+          )}
+          {['RELEASED', 'PARTIALLY_CONVERTED'].includes(row.status) && (
+            <Button size="small" icon={<FileDoneOutlined />} onClick={() => openPartial(row)}>
+              部分转换
             </Button>
           )}
           {['DRAFT', 'RELEASED'].includes(row.status) && (
@@ -192,7 +242,7 @@ const PurchaseRequestList: React.FC = () => {
     <div>
       <PageHeader
         title="采购申请"
-        description="需求方提出采购申请：下达后整单转换为采购订单（供应商/期望日期/计划来源一并继承），转换后可到货收货"
+        description="需求方提出采购申请：下达后可整单或按行部分转采购单（支持部分数量、多次转换），转换后可到货收货"
         actions={
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>刷新</Button>
         }
@@ -271,6 +321,53 @@ const PurchaseRequestList: React.FC = () => {
             )}
           </Form.List>
         </Form>
+      </Modal>
+
+      <Modal
+        title={`部分转换 · ${partialOpen?.purchase_request_number ?? ''}`}
+        open={Boolean(partialOpen)}
+        onOk={submitPartial}
+        confirmLoading={busy}
+        onCancel={() => setPartialOpen(null)}
+        okText="生成采购单"
+        width={720}
+      >
+        <div className="mb-3 text-sm text-ink-soft">
+          勾选要转换的行，可调整本次转换数量（默认转剩余全部）；可多次转换直到全部转完。
+        </div>
+        <Table
+          rowKey="line_number"
+          size="small"
+          pagination={false}
+          dataSource={(partialOpen?.lines ?? []).filter((l) => l.status !== 'CONVERTED')}
+          rowSelection={{
+            selectedRowKeys: selectedLineKeys,
+            onChange: (keys) => setSelectedLineKeys(keys as number[]),
+          }}
+          columns={[
+            { title: '行', dataIndex: 'line_number', width: 50 },
+            { title: '物料', dataIndex: 'material_code' },
+            { title: '申请数量', dataIndex: 'quantity', width: 100, align: 'right' as const },
+            { title: '可转余量', dataIndex: 'remaining_quantity', width: 100, align: 'right' as const },
+            {
+              title: '本次转换数量',
+              key: 'convert_qty',
+              width: 150,
+              render: (_: unknown, line: PrLine) => (
+                <InputNumber
+                  min={0.01}
+                  max={line.remaining_quantity}
+                  value={lineQtyOverrides[line.line_number] ?? line.remaining_quantity}
+                  onChange={(value) => setLineQtyOverrides((prev) => ({
+                    ...prev,
+                    [line.line_number]: Number(value ?? line.remaining_quantity),
+                  }))}
+                  style={{ width: '100%' }}
+                />
+              ),
+            },
+          ]}
+        />
       </Modal>
     </div>
   )

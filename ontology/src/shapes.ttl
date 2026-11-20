@@ -309,7 +309,7 @@
     ] ;
     sh:property [
         sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
-        sh:in ( "DRAFT" "RELEASED" "CONVERTED" "CANCELLED" ) ;
+        sh:in ( "DRAFT" "RELEASED" "PARTIALLY_CONVERTED" "CONVERTED" "CANCELLED" ) ;
         sh:message "S11b 采购申请状态必须来自 PurchaseRequestStatus 枚举"
     ] .
 
