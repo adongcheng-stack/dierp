@@ -3,10 +3,11 @@
 （空）
 
 ## Pending Tasks
-- [ ] 长期债剩余：token 静默续期（已用 8h TTL 缓解）/ 依赖审计
+- [ ] 长期债剩余：token 静默续期（已用 8h TTL 缓解；可与 ecdsa→PyJWT 迁移合并）
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T1001 依赖审计（18:10 完成）— 证据：npm 生产漏洞 6→2 moderate（高危清零）；pip ERP 依赖 38 漏洞中已修 python-multipart 0.0.31 / python-jose 3.4.0；requirements.txt 对齐已验证版本；审计报告 docs/依赖审计报告-20261120.md；全门禁 33 项绿
 - [x] T903 PR 部分转换前端+mock v19（17:30 完成）— 证据：PR 页面部分转换弹窗（勾选行+数量）+5 条 E2E（含部分转换界面）；mock convert-lines+probe 6/6；全门禁 33 项绿。注：SHACL PurchaseRequestStatus sh:in 需同步 PARTIALLY_CONVERTED；E2E 用例跑前 reset 保证种子可转
 - [x] T902 convert-lines 端点（17:00 完成）— 证据：probe_pr_partial 12/12（部分数量/多次转换/状态联动/重复行/超余量/已转满/整单兼容）；pytest+smoke_purchase+parity 全绿
 - [x] T901 PR 部分转换本体（16:45 完成）— 证据：+PARTIALLY_CONVERTED 枚举、+converted_quantity/converted_po_numbers 列；空库 upgrade+check 绿（revision 13289641368f）；开发库真实 ALTER 升级到 head；alembic check/tsc/pytest 全绿
@@ -54,7 +55,7 @@
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 17:30 收尾：主线 31 + 补强 3 + 长期债 3 + 移动加权 5 + PR 部分转换 3 共 45 任务完成，全门禁 33 项绿。交接摘要 v6。
+2026-11-20 18:10 收尾：主线 31 + 补强 3 + 长期债 3 + 移动加权 5 + PR 部分转换 3 共 46 任务完成，全门禁 33 项绿。交接摘要 v7。
 
 ## 交接摘要（2026-11-20 09:00，v3）
 - **完成**：P0 三线打通（订单/资金/库存出库）；P1 应付/核销双闭环 + AP 新口径；P2 总账引擎+前端+mock GL；P3 库存补强（盘点/调拨/仓库 11 端点+3 页）+ 批次效期视图 + 看板资金 4 卡。四批次全部「本体→生成→alembic→端点→前端→mock→smoke」节奏闭合。

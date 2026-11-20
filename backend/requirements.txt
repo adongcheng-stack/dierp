@@ -1,15 +1,16 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+# DIERP 后端依赖（2026-11-20 依赖审计后对齐到已验证运行环境版本）
+# 门禁：pytest 28 / 11 冒烟 / 12 探针全绿；安全升级：python-multipart 0.0.6→0.0.31、python-jose 3.3.0→3.4.0
+fastapi==0.135.1
+uvicorn[standard]==0.41.0
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
-pydantic==2.5.0
+pydantic==2.12.5
 pydantic-settings==2.1.0
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
+python-multipart==0.0.31
 alembic==1.12.1
 redis==5.0.1
 celery==5.3.4
-python-dotenv==1.0.0
-email-validator>=2.1.1
-
+python-dotenv==1.2.2
+email-validator==2.1.0
