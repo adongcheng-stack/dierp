@@ -27,10 +27,14 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
-    // 401未授权，跳转登录
+    // 401 未授权：清鉴权状态，由 React 路由守卫跳转登录页。
+    // 注意：登录接口自身的 401（账号/密码错误）不能触发整页跳转，
+    // 否则登录表单的错误提示会被刷新冲掉，表现为「闪一下又回到登录页」。
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
+      const isLoginRequest = String(error.config?.url ?? '').includes('/auth/login')
+      if (!isLoginRequest) {
+        useAuthStore.getState().logout()
+      }
       return Promise.reject(error)
     }
     

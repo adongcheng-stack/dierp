@@ -17,7 +17,7 @@ router = APIRouter()
 # 安全配置
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # demo 演示口径：8h，避免长时间演示被反复踢登录
 
 # 使用pbkdf2_sha256作为密码哈希方案（更稳定，不依赖bcrypt版本）
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
