@@ -211,6 +211,23 @@ class PeriodStatus(str, Enum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
+class ValuationDirection(str, Enum):
+    """ValuationDirection"""
+    IN = "IN"
+    OUT = "OUT"
+
+class CostSourceType(str, Enum):
+    """CostSourceType"""
+    PURCHASE_RECEIPT = "PURCHASE_RECEIPT"
+    PURCHASE_RETURN = "PURCHASE_RETURN"
+    PRODUCTION_COMPLETE = "PRODUCTION_COMPLETE"
+    MATERIAL_ISSUE = "MATERIAL_ISSUE"
+    SALES_ISSUE = "SALES_ISSUE"
+    SALES_RETURN = "SALES_RETURN"
+    STOCKTAKE = "STOCKTAKE"
+    OPENING = "OPENING"
+    TRANSFER = "TRANSFER"
+
 class GlSourceType(str, Enum):
     """GlSourceType"""
     SALES_INVOICE_ISSUED = "SALES_INVOICE_ISSUED"
@@ -1658,6 +1675,50 @@ class FiscalPeriod(BaseModel):
     end_date = Column(DateTime, nullable=False, comment="截止日")
 
     status = Column(SQLEnum(PeriodStatus), index=True, default=PeriodStatus.OPEN, comment="期间状态(OPEN/CLOSED)")
+
+
+
+class InventoryValuation(BaseModel):
+    """库存估值"""
+    __tablename__ = "inventory_valuations"
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, unique=True, index=True, comment="物料编码(一物料一行)")
+
+    qty = Column(Numeric(15, 2), default=0, comment="结存数量(与 current_stock 对齐)")
+
+    amount = Column(Numeric(18, 4), default=0, comment="结存金额(不得为负)")
+
+    avg_cost = Column(Numeric(18, 6), default=0, comment="移动加权单价(amount/qty)")
+
+    last_cost = Column(Numeric(18, 6), default=0, comment="最近入库单价(qty=0 时计价回退)")
+
+
+
+class ValuationMove(BaseModel):
+    """估值流水"""
+    __tablename__ = "valuation_moves"
+
+    move_number = Column(String(50), nullable=False, unique=True, index=True, comment="估值流水号(VM 前缀)")
+
+    material_code = Column(String(50), ForeignKey("materials.material_code"), nullable=False, index=True, comment="物料编码")
+
+    direction = Column(SQLEnum(ValuationDirection), nullable=False, index=True, comment="方向(IN/OUT)")
+
+    qty = Column(Numeric(15, 2), nullable=False, comment="本次数量")
+
+    unit_cost = Column(Numeric(18, 6), nullable=False, comment="本次单价(成本快照)")
+
+    amount = Column(Numeric(18, 4), nullable=False, comment="本次金额")
+
+    balance_qty = Column(Numeric(15, 2), default=0, comment="变动后数量余额")
+
+    balance_amount = Column(Numeric(18, 4), default=0, comment="变动后金额余额")
+
+    source_type = Column(SQLEnum(CostSourceType), nullable=False, index=True, comment="业务事件来源")
+
+    source_ref = Column(String(50), nullable=False, index=True, comment="来源单据号")
+
+    reversal_of = Column(String(50), index=True, comment="红冲指向的原流水号(可空)")
 
 
 

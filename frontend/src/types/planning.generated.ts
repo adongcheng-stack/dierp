@@ -41,6 +41,8 @@ import type {
   AccountType,
   JournalStatus,
   PeriodStatus,
+  ValuationDirection,
+  CostSourceType,
   GlSourceType,
   StocktakeStatus,
   StockTransferStatus,
@@ -98,6 +100,8 @@ export type {
   AccountType,
   JournalStatus,
   PeriodStatus,
+  ValuationDirection,
+  CostSourceType,
   GlSourceType,
   StocktakeStatus,
   StockTransferStatus,
@@ -960,6 +964,36 @@ export interface FiscalPeriod {
   start_date: string
   end_date: string
   status?: PeriodStatus
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 库存估值 */
+export interface InventoryValuation {
+  material_code: string
+  qty?: number
+  amount?: number
+  avg_cost?: number
+  last_cost?: number
+  id?: number
+  created_at?: string
+  updated_at?: string
+}
+
+/** 估值流水 */
+export interface ValuationMove {
+  move_number: string
+  material_code: string
+  direction: ValuationDirection
+  qty: number
+  unit_cost: number
+  amount: number
+  balance_qty?: number
+  balance_amount?: number
+  source_type: CostSourceType
+  source_ref: string
+  reversal_of?: string
   id?: number
   created_at?: string
   updated_at?: string

@@ -857,6 +857,36 @@ entities:
       end_date: {type: datetime, required: true, comment: 截止日}
       status: {type: enum, enum: PeriodStatus, default: OPEN, index: true, comment: 期间状态(OPEN/CLOSED)}
 
+  InventoryValuation:
+    table: inventory_valuations
+    label: 库存估值
+    ontology_class: InventoryValuation
+    top_category: EventRecord
+    fields:
+      material_code: {type: string, length: 50, required: true, unique: true, index: true, fk: "materials.material_code", comment: 物料编码(一物料一行)}
+      qty: {type: decimal, precision: 15, scale: 2, default: 0, comment: 结存数量(与 current_stock 对齐)}
+      amount: {type: decimal, precision: 18, scale: 4, default: 0, comment: 结存金额(不得为负)}
+      avg_cost: {type: decimal, precision: 18, scale: 6, default: 0, comment: 移动加权单价(amount/qty)}
+      last_cost: {type: decimal, precision: 18, scale: 6, default: 0, comment: 最近入库单价(qty=0 时计价回退)}
+
+  ValuationMove:
+    table: valuation_moves
+    label: 估值流水
+    ontology_class: ValuationMove
+    top_category: EventRecord
+    fields:
+      move_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 估值流水号(VM 前缀)}
+      material_code: {type: string, length: 50, required: true, index: true, fk: "materials.material_code", comment: 物料编码}
+      direction: {type: enum, enum: ValuationDirection, required: true, index: true, comment: 方向(IN/OUT)}
+      qty: {type: decimal, precision: 15, scale: 2, required: true, comment: 本次数量}
+      unit_cost: {type: decimal, precision: 18, scale: 6, required: true, comment: 本次单价(成本快照)}
+      amount: {type: decimal, precision: 18, scale: 4, required: true, comment: 本次金额}
+      balance_qty: {type: decimal, precision: 15, scale: 2, default: 0, comment: 变动后数量余额}
+      balance_amount: {type: decimal, precision: 18, scale: 4, default: 0, comment: 变动后金额余额}
+      source_type: {type: enum, enum: CostSourceType, required: true, index: true, comment: 业务事件来源}
+      source_ref: {type: string, length: 50, required: true, index: true, comment: 来源单据号}
+      reversal_of: {type: string, length: 50, index: true, comment: 红冲指向的原流水号(可空)}
+
   Warehouse:
     table: warehouses
     label: 仓库

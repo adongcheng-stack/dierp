@@ -3,10 +3,15 @@
 （空）
 
 ## Pending Tasks
+- [ ] T802 估值服务+期初种子+7 处写入口收口
+- [ ] T803 GL 口径切换+差异科目
+- [ ] T804 前端估值视图+mock v18
+- [ ] T805 smoke_valuation+全门禁
 - [ ] 长期债剩余：实际成本移动加权（2-3h，重新设计）/ token 静默续期（已用 8h TTL 缓解）/ PR 行级部分转换 / 依赖审计
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T801 移动加权本体（13:50 完成）— 证据：generate_models 53 实体；枚举 56；空库 upgrade head + check 绿（增量 revision 0a76753d37bf）；开发库 stamp head；本体双校验/tsc/pytest 全绿
 - [x] T703 全门禁终验（13:10 完成）— 证据：29 项全绿（本体×2/alembic/pytest/九冒烟/parity×2/前端×5 含 E2E 4/4/九探针）；E2E 已纳入门禁
 - [x] T701 Alembic 收养迁移（12:55 完成）— 证据：空库 hserp_mvp_adopt_test 从零 upgrade head + alembic check「No new upgrade operations detected」；开发库 stamp e43a92f00037 (head)；pytest 28；四冒烟+parity EXIT=0。注：e43a92f00037 由空库 autogenerate（2375 行），手工补 use_alter 自引用 FK fk_work_center_parent；4 张 MVP 遗留表仍排除
 - [x] T603 P3 月结流程（10:40 完成）— 证据：smoke_gl_loop 20/20（预览/结账/反结账+结转后试算平衡）；probe-mock-gl 9/9；全门禁 28 项全绿。注：GlSourceType +PERIOD_CLOSE（PG ALTER TYPE 扩展）；GL_ACCOUNTS 9 科目（+3131 本年利润）；损益结转四行分录（6001/5001/6401/3131）；引擎金额统一量化到分（修浮点不平衡）
