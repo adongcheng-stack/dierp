@@ -11,6 +11,7 @@ from backend.common.database.base import get_db
 from backend.common.models.user import User
 from backend.api.routers.auth import get_current_user
 from backend.common.models.mm import Material, MaterialIssue, MaterialTransaction
+from backend.common.models import planning
 from backend.common.models.planning import (
     Stocktake,
     StocktakeStatus,

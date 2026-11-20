@@ -3,11 +3,11 @@
 （空）
 
 ## Pending Tasks
-- [ ] T805 smoke_valuation+全门禁
-- [ ] 长期债剩余：实际成本移动加权（2-3h，重新设计）/ token 静默续期（已用 8h TTL 缓解）/ PR 行级部分转换 / 依赖审计
+- [ ] 长期债剩余：token 静默续期（已用 8h TTL 缓解）/ PR 行级部分转换 / 依赖审计
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T805 移动加权全链路终验（16:10 完成）— 证据：smoke_valuation 14/14（收货/发货/红冲/领料/盘点/完工/余额恒等式/数量同步/差异科目/reset）；全门禁 31 项全绿（十冒烟+十探针+E2E 4/4）；设计 §七「实际成本移动加权」长期债偿还
 - [x] T804 前端估值视图+mock v18（15:30 完成）— 证据：库存台账+移动均价/金额列、新估值流水页+菜单路由；后端 GET /mm/valuation-moves 与台账估值字段；mock v18（5 估值种子+7 钩子+同构端点）；tsc EXIT=0、E2E 4/4、九冒烟/parity/probe_valuation 全绿。注：后端 8000 需重启加载新枚举（旧进程 500）
 - [x] T803 GL 口径切换（14:55 完成）— 证据：smoke_gl_loop 22/22（出库分录金额=估值快照对账、期初分录借1405/贷4001、reset 后仅留期初）；probe_valuation 9/9；mock-gl 探针/pytest/tsc 全绿。注：GlSourceType +OPENING/COST_VARIANCE（PG ALTER TYPE）；科目 6402 存货差异（共 10）；4 处出库分录改用 ValuationMove.amount；期初/负金额差异分录自动过账
 - [x] T802 估值服务+期初/7 处收口（14:30 完成）— 证据：grep current_stock 写入仅剩 service 1 处；probe_valuation 9/9（加权/快照红冲/幂等/负金额/除零回退）；九冒烟+pytest 全绿。注：期初种子早于演示发货；收口含 mm/pp/purchase/sd 7 处+演示种子 1 处；采购端点无 current_user 用 system
@@ -51,10 +51,10 @@
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 13:10 收尾：主线 31 + 补强 3 + 长期债 T701-T703 共 37 任务完成，全门禁 29 项绿（E2E 纳入）。交接摘要 v4。
+2026-11-20 16:10 收尾：主线 31 + 补强 3 + 长期债 3 + 移动加权 5 共 42 任务完成，全门禁 31 项绿。交接摘要 v5。
 
 ## 交接摘要（2026-11-20 09:00，v3）
 - **完成**：P0 三线打通（订单/资金/库存出库）；P1 应付/核销双闭环 + AP 新口径；P2 总账引擎+前端+mock GL；P3 库存补强（盘点/调拨/仓库 11 端点+3 页）+ 批次效期视图 + 看板资金 4 卡。四批次全部「本体→生成→alembic→端点→前端→mock→smoke」节奏闭合。
-- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic 基线绿；本体 mappings v1.5.0（54 枚举）；planning.yaml 51 实体；mock snapshot v17。
+- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic head 0a76753d37bf；本体 mappings v1.8.0（56 枚举）；planning.yaml 53 实体；mock snapshot v18。
 - **未完成/移交（长期债 §七）**：实际成本移动加权 / 月结流程（期间 CLOSE+差异结转）/ 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换。另：发票红字冲回、期初 opening entry（demo 口径未做）。
 - **建议下一步**：主线四批已收官。建议下一夜班从长期债挑「月结流程」（期间 CLOSE+差异结转+收入成本匹配，与总账引擎衔接最紧）或「遗留表收养迁移」（一次性技术债，风险中等）。
