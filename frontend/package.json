@@ -21,6 +21,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
@@ -41,6 +42,7 @@
     "dev:mock": "vite --mode mock --port 3100",
     "build:mock": "tsc && vite build --mode mock",
     "preview:mock": "vite preview --mode mock --port 4173",
-    "check:mock-rbac": "node scripts/check-mock-rbac.mjs"
+    "check:mock-rbac": "node scripts/check-mock-rbac.mjs",
+    "test:e2e": "playwright test"
   }
 }
