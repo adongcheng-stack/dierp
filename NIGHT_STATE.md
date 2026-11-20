@@ -6,6 +6,7 @@
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T701 Alembic 收养迁移（12:55 完成）— 证据：空库 hserp_mvp_adopt_test 从零 upgrade head + alembic check「No new upgrade operations detected」；开发库 stamp e43a92f00037 (head)；pytest 28；四冒烟+parity EXIT=0。注：e43a92f00037 由空库 autogenerate（2375 行），手工补 use_alter 自引用 FK fk_work_center_parent；4 张 MVP 遗留表仍排除
 - [x] T603 P3 月结流程（10:40 完成）— 证据：smoke_gl_loop 20/20（预览/结账/反结账+结转后试算平衡）；probe-mock-gl 9/9；全门禁 28 项全绿。注：GlSourceType +PERIOD_CLOSE（PG ALTER TYPE 扩展）；GL_ACCOUNTS 9 科目（+3131 本年利润）；损益结转四行分录（6001/5001/6401/3131）；引擎金额统一量化到分（修浮点不平衡）
 - [x] T602 凭证溯源+账龄统一（10:10 完成）— 证据：smoke_gl_loop 17/17（source_ref 过滤/单号过滤）；账龄分桶改按 invoice_date（设计 §4.2）；凭证 source_ref 可点击跳来源单据（8 事件映射）；5 单据页 URL 参数预填单号；四 mock 探针 EXIT=0；tsc EXIT=0；pytest 28 passed。注：批量脚本多次静默丢编辑，改用 edit 工具逐处补齐
 - [x] T601 P2 GL 三事件钩子补齐（09:30 完成）— 证据：smoke_gl_loop 15/15（领料/盘点/完工分录+试算平衡）；四 mock 探针回归 EXIT=0；tsc EXIT=0；pytest 28 passed；parity EXIT=0。注：盘盈反向借贷 custom lines；GL 失败记日志不阻断业务

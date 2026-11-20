@@ -32,3 +32,16 @@
    ```
 5. 演示库回滚：`reset_demo.py` 只重置数据，不动结构；结构回滚用
    `python -m alembic downgrade -1`（慎用，先确认迁移可逆）。
+
+## 6. 遗留表收养（2026-11-20，revision e43a92f00037）
+
+- 背景：P0–P3 期间新增表（销售/资金/总账/库存补强等）由 `create_all` 建库，未纳入版本脚本；导致全新库 `upgrade head` 只能得到基线表。
+- 处理：`e43a92f00037_adopt_generated_tables.py` 由**空库 autogenerate** 生成，覆盖全部受管表的 `create_table` 与索引，并手工补上 `use_alter` 自引用 FK `fk_work_center_parent`（autogenerate 只会在 create_table 内联声明，不会生成独立 ALTER）。
+- 验收方式（空库）：
+  ```bash
+  # 用独立空库（如 hserp_mvp_adopt_test）设 DATABASE_URL
+  python -m alembic upgrade head
+  python -m alembic check   # No new upgrade operations detected.
+  ```
+- 已存在的开发库（表已由 create_all 建好）只需 `python -m alembic stamp head`，不要重复 upgrade。
+- 4 张 MVP 遗留表（factory_product_mappings / lot_card_instructions / lot_cards / mi_instructions）仍由 `LEGACY_UNMANAGED_TABLES` 排除，未纳入收养。
