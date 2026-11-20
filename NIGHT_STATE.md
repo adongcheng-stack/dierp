@@ -3,9 +3,11 @@
 （空）
 
 ## Pending Tasks
+- [ ] 长期债剩余：实际成本移动加权（2-3h，重新设计）/ token 静默续期（已用 8h TTL 缓解）/ PR 行级部分转换 / 依赖审计
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T703 全门禁终验（13:10 完成）— 证据：29 项全绿（本体×2/alembic/pytest/九冒烟/parity×2/前端×5 含 E2E 4/4/九探针）；E2E 已纳入门禁
 - [x] T701 Alembic 收养迁移（12:55 完成）— 证据：空库 hserp_mvp_adopt_test 从零 upgrade head + alembic check「No new upgrade operations detected」；开发库 stamp e43a92f00037 (head)；pytest 28；四冒烟+parity EXIT=0。注：e43a92f00037 由空库 autogenerate（2375 行），手工补 use_alter 自引用 FK fk_work_center_parent；4 张 MVP 遗留表仍排除
 - [x] T603 P3 月结流程（10:40 完成）— 证据：smoke_gl_loop 20/20（预览/结账/反结账+结转后试算平衡）；probe-mock-gl 9/9；全门禁 28 项全绿。注：GlSourceType +PERIOD_CLOSE（PG ALTER TYPE 扩展）；GL_ACCOUNTS 9 科目（+3131 本年利润）；损益结转四行分录（6001/5001/6401/3131）；引擎金额统一量化到分（修浮点不平衡）
 - [x] T602 凭证溯源+账龄统一（10:10 完成）— 证据：smoke_gl_loop 17/17（source_ref 过滤/单号过滤）；账龄分桶改按 invoice_date（设计 §4.2）；凭证 source_ref 可点击跳来源单据（8 事件映射）；5 单据页 URL 参数预填单号；四 mock 探针 EXIT=0；tsc EXIT=0；pytest 28 passed。注：批量脚本多次静默丢编辑，改用 edit 工具逐处补齐
@@ -44,7 +46,7 @@
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 10:40 收尾：P0–P3 主线 31 任务 + 补强 T601-T603 共 34 任务完成，全门禁 28 项绿。月结长期债已偿还。
+2026-11-20 13:10 收尾：主线 31 + 补强 3 + 长期债 T701-T703 共 37 任务完成，全门禁 29 项绿（E2E 纳入）。交接摘要 v4。
 
 ## 交接摘要（2026-11-20 09:00，v3）
 - **完成**：P0 三线打通（订单/资金/库存出库）；P1 应付/核销双闭环 + AP 新口径；P2 总账引擎+前端+mock GL；P3 库存补强（盘点/调拨/仓库 11 端点+3 页）+ 批次效期视图 + 看板资金 4 卡。四批次全部「本体→生成→alembic→端点→前端→mock→smoke」节奏闭合。
