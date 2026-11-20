@@ -618,6 +618,16 @@ input[type='number']::-webkit-inner-spin-button {
   padding: 20px;
 }
 
+/* confirm 型弹窗：上面内容区 padding:0 会把确认框文字/按钮顶到边，这里单独补回留白 */
+.ant-modal.ant-modal-confirm .ant-modal-content {
+  padding: 26px 28px 22px;
+}
+
+.ant-modal.ant-modal-confirm .ant-modal-confirm-btns {
+  margin-top: 26px;
+  margin-bottom: 0;
+}
+
 .ant-modal .ant-modal-footer {
   margin: 0;
   padding: 12px 20px;
