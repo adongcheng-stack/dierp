@@ -3,9 +3,10 @@
 （空）
 
 ## Pending Tasks
-- [ ] T507 P3 smoke_inventory_loop+全门禁+提交
+- [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T507 P3 smoke_inventory_loop+全门禁（09:00 完成）— 证据：smoke_inventory_loop 13/13 EXIT=0（仓库/盘点快照/盘盈/负库存并发 400/状态机/调拨双流水/重复确认/批次效期/KPI 勾稽/复位）；全门禁 31 项全绿（本体×2/alembic/pytest/九冒烟/parity×2/前端×4/九探针）
 - [x] T506 P3 mock v17 同构（08:15 完成）— 证据：probe-mock-stock 8/8 EXIT=0 双跑稳定（仓库/盘点快照+diff/盘盈+流水/负库存 400/from=to 400/调拨双流水总量不变/重复确认 400/finance-kpi）；四探针回归 EXIT=0；mock-rbac EXIT=0；parity 集合 +3 EXIT=0；tsc EXIT=0；pytest 28 passed。注：snapshot v17 +warehouses(2 种子)/stocktakes/stockTransfers；finance-kpi mock 聚合同源；踩坑：mock materials 响应为裸数组（探针取数需兼容）
 - [x] T505 P3 前端 3 页+看板 KPI 卡（07:55 完成）— 证据：npx tsc --noEmit EXIT=0。注：StocktakeList/StockTransferList/BatchTracking（预警行+估算标注）；经营看板新增资金维度 4 卡（应收/应付/回款率/现金）；菜单 mm 组 +3；路由 ×3。踩坑：看板 Row 插入时孤立了交期风险卡（JSX 单父元素），Dashboard.tsx 修正归位
 - [x] T504 P3 批次效期视图+看板 KPI（07:35 完成）— 证据：/mm/batch-tracking 200（ACTIVE 批聚合+estimate_pending/warning 口径）；/dashboard/finance-kpi 200 且应收 5300 与 receivables 台账勾稽、现金 0 与 trial-balance 一致；pytest 28 passed。注：LotCard 无效期字段→completed_at+shelf_life_days 估算（偏差记录）；在制批不告警只标 estimate_pending
@@ -39,10 +40,10 @@
 ## Blocked Tasks
 （空）
 ## Last Checkpoint
-2026-11-20 06:45 收尾：P0+P1+P2（含前端补齐与 mock GL）全部 24 任务完成（22:03 起 8h42m/9h）。提交链 23348ad…ba6ba79+本提交，全门禁 28 项绿。
+2026-11-20 09:00 收尾：P0+P1+P2+P3 全部 31 任务完成（22:03 起，含用户授权顺延）。提交链 23348ad…(本提交) 共 31 个 night commit，全门禁 31 项绿。
 
-## 交接摘要（2026-11-20 06:45，v2）
-- **完成**：P0 发货/销售发票/应收三线打通（后端 11 端点+前端 3 页+mock v14）；P1 应付/核销双闭环（采购发票三单匹配、付款/收款核销 13 端点、AP 新口径、前端 3 页、mock v15）；P2 总账（4 实体、8 科目种子、GlEngine 幂等/平衡、5 业务钩子、/finance 6 端点、前端 3 页、mock GL v16、smoke_gl 11 断言）。全门禁 28 项绿。
-- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic 基线绿；本体 mappings v1.4.0（52 枚举）；planning.yaml 48 实体；mock snapshot v16。
-- **未完成/移交**：① P3 库存补强+看板资金维度（设计 §六未拆原子任务，建议 4 任务：盘点、调拨、批次效期视图、看板 KPI——后两者纯读最轻）② 发票红字冲回流程（P1 设计明确未含）③ 期初 opening entry（demo 口径，增量入账）④ 长期债见设计 §七（月结/移动加权/遗留表收养等）。
-- **建议下一步**：下一夜班拆 P3 任务清单并执行（盘点单+调拨单走「本体→生成→alembic→端点→前端→mock→smoke」既有节奏；看板 KPI 纯读可并列）。
+## 交接摘要（2026-11-20 09:00，v3）
+- **完成**：P0 三线打通（订单/资金/库存出库）；P1 应付/核销双闭环 + AP 新口径；P2 总账引擎+前端+mock GL；P3 库存补强（盘点/调拨/仓库 11 端点+3 页）+ 批次效期视图 + 看板资金 4 卡。四批次全部「本体→生成→alembic→端点→前端→mock→smoke」节奏闭合。
+- **代码状态**：master 干净（仅 DIERP-demo.html 用户未提交改动，全程未触碰）；alembic 基线绿；本体 mappings v1.5.0（54 枚举）；planning.yaml 51 实体；mock snapshot v17。
+- **未完成/移交（长期债 §七）**：实际成本移动加权 / 月结流程（期间 CLOSE+差异结转）/ 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换。另：发票红字冲回、期初 opening entry（demo 口径未做）。
+- **建议下一步**：主线四批已收官。建议下一夜班从长期债挑「月结流程」（期间 CLOSE+差异结转+收入成本匹配，与总账引擎衔接最紧）或「遗留表收养迁移」（一次性技术债，风险中等）。

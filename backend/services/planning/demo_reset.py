@@ -35,6 +35,8 @@ from backend.common.models.planning import (
     ReceiptAllocation,
     SalesDelivery,
     SalesInvoice,
+    StockTransfer,
+    Stocktake,
     SupplierInvoice,
     SupplierPayment,
     Warehouse,
@@ -114,6 +116,9 @@ def _clear(db: Session) -> dict[str, int]:
         # 总账凭证运行时表（P2：科目/期间为种子保留，仅清凭证+分录行）
         ("gl_journal_lines", JournalLine),
         ("gl_journal_entries", JournalEntry),
+        # 库存补强运行时表（P3：仓库为主数据保留，仅清盘点/调拨）
+        ("stock_transfers", StockTransfer),
+        ("stocktakes", Stocktake),
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
         ("suppliers", Supplier),
