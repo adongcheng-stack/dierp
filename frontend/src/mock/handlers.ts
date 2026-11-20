@@ -1043,6 +1043,12 @@ route('GET', '/mm/inventory', (ctx) => {
         allocated_qty: allocatedQty,
         available_qty: round(current + onOrderQty - allocatedQty, 2),
         stock_status: current >= safety ? '充足' : '不足',
+        valuation_qty: toNumber(listOf(db, 'inventoryValuations').find(
+          (v: any) => !v.is_deleted && v.material_code === m.material_code)?.qty),
+        valuation_amount: toNumber(listOf(db, 'inventoryValuations').find(
+          (v: any) => !v.is_deleted && v.material_code === m.material_code)?.amount),
+        avg_cost: toNumber(listOf(db, 'inventoryValuations').find(
+          (v: any) => !v.is_deleted && v.material_code === m.material_code)?.avg_cost),
       }
     })
   )
@@ -1150,6 +1156,7 @@ route('POST', '/mm/material-issues', (ctx) => {
     user
   )
   issues.unshift(item)
+  postMockValuation(db, material.material_code, -quantity, 'MATERIAL_ISSUE', item.issue_number)
   // 库存流水账本：领料即记 ISSUE 出库
   appendTransaction(db, {
     material_code: material.material_code,
@@ -1765,6 +1772,7 @@ function transitionProductionOrder(
     if (material) {
       material.current_stock = toNumber(material.current_stock) + receiptQty
     }
+    postMockValuation(db, order.material_code, receiptQty, 'PRODUCTION_COMPLETE', order.order_number)
     postMockGlStandard(db, 'PRODUCTION_COMPLETE', order.order_number, order.material_code, receiptQty, ctx)
   }
   syncSalesOrderStatus(db, order.sales_order_number)
@@ -5202,6 +5210,8 @@ route('POST', '/purchase/purchase-orders/:purchaseOrderNumber/receive', (ctx, pa
     )
     if (material) {
       material.current_stock = toNumber(material.current_stock) + quantity
+      postMockValuation(db, material.material_code, quantity, 'PURCHASE_RECEIPT',
+        po.purchase_order_number + '#' + line.line_number, line.unit_price)
     }
     // 库存流水账本：到货即记 RECEIPT 入库
     appendTransaction(db, {
@@ -5875,6 +5885,8 @@ route('POST', '/purchase/purchase-returns/:number/approve', (ctx, params) => {
       if (material) {
         material.current_stock = round(toNumber(material.current_stock) - toNumber(line.quantity), 3)
         material.updated_at = nowIso()
+        postMockValuation(db, material.material_code, -toNumber(line.quantity), 'PURCHASE_RETURN',
+          ret.return_number + '#' + line.line_number)
       }
       // 库存流水账本：退货出库记 RETURN
       appendTransaction(db, {
@@ -6068,6 +6080,7 @@ route('POST', '/sd/deliveries/:number/ship', (ctx, params) => {
     fail(400, `库存不足：当前 ${toNumber(material.current_stock)}，需 ${qty}`)
   }
   material.current_stock = round(toNumber(material.current_stock) - qty, 3)
+  const valuationMove = postMockValuation(db, d.material_code, -qty, 'SALES_ISSUE', d.delivery_number)
   appendTransaction(db, {
     material_code: d.material_code,
     transaction_type: 'SALES_ISSUE',
@@ -6083,14 +6096,11 @@ route('POST', '/sd/deliveries/:number/ship', (ctx, params) => {
   d.updated_at = nowIso()
   syncOrderStatus(db, d.sales_order_number)
   saveDb()
-  // 自动分录：发货出库 = 数量 × 物料标准成本（无成本物料跳过，与后端同构）
-  const stdCost = listOf(db, 'standardCosts')
-    .filter((s: any) => !s.is_deleted && s.material_code === d.material_code)
-    .sort((a: any, b: any) => toNumber(b.id) - toNumber(a.id))[0]
-  if (stdCost && toNumber(stdCost.material_cost) > 0) {
+  // 分录金额取移动加权估值快照（与后端同构）
+  if (valuationMove && toNumber(valuationMove.amount) > 0) {
     try {
       postMockGl(db, 'SALES_DELIVERY_SHIPPED', d.delivery_number,
-        toNumber(d.quantity) * toNumber(stdCost.material_cost),
+        toNumber(valuationMove.amount),
         `发货出库 ${d.delivery_number}`, ctx.user?.username ?? null)
     } catch { /* GL 失败不阻断业务 */ }
   }
@@ -6119,6 +6129,7 @@ route('POST', '/sd/deliveries/:number/cancel', (ctx, params) => {
     const material = findItem(listOf(db, 'materials'), 'material_code', d.material_code)
     if (material) {
       material.current_stock = round(toNumber(material.current_stock) + toNumber(d.quantity), 3)
+      postMockValuation(db, d.material_code, toNumber(d.quantity), 'SALES_ISSUE', d.delivery_number + '-REVERSE')
     }
     appendTransaction(db, {
       material_code: d.material_code,
@@ -7112,6 +7123,7 @@ route('POST', '/mm/stocktakes/:number/approve', (ctx, params) => {
   }
   if (Math.abs(diff) > 1e-9) {
     material.current_stock = round(toNumber(material.current_stock) + diff, 3)
+    postMockValuation(db, s.material_code, diff, 'STOCKTAKE', s.stocktake_number)
     appendTransaction(db, {
       material_code: s.material_code,
       transaction_type: 'ADJUSTMENT',
@@ -7319,6 +7331,70 @@ route('GET', '/dashboard/finance-kpi', () => {
     supplier_confirmed_total: confirmedTotal,
     supplier_paid_total: paidTotal,
   })
+})
+
+// ── 移动加权估值（P4）：mock 侧与后端同构的轻量记账 ──
+function postMockValuation(
+  db: MockDb,
+  materialCode: string,
+  qtyDelta: number,
+  sourceType: string,
+  sourceRef: string,
+  unitCost?: number
+) {
+  if (!qtyDelta) return null
+  const vals = listOf(db, 'inventoryValuations')
+  let val = vals.find((v: any) => !v.is_deleted && v.material_code === materialCode)
+  if (!val) {
+    val = stampNew({ id: nextId(vals), material_code: materialCode, qty: 0, amount: 0,
+      avg_cost: 0, last_cost: 0, created_at: nowIso(), is_deleted: false }, null)
+    vals.unshift(val)
+  }
+  const qtyBefore = toNumber(val.qty)
+  const amountBefore = toNumber(val.amount)
+  const isIn = qtyDelta > 0
+  let cost = toNumber(unitCost)
+  if (!cost) cost = toNumber(val.avg_cost) || toNumber(val.last_cost)
+  if (!cost) return null
+  let qtyAfter = isIn ? qtyBefore + Math.abs(qtyDelta) : qtyBefore - Math.abs(qtyDelta)
+  let amountAfter = isIn
+    ? amountBefore + Math.abs(qtyDelta) * cost
+    : amountBefore - Math.abs(qtyDelta) * cost
+  if (amountAfter < 0) {
+    console.log('[VALUATION-MOCK] 负金额钳制', materialCode, sourceRef)
+    amountAfter = 0
+  }
+  val.qty = round(qtyAfter, 2)
+  val.amount = round(amountAfter, 4)
+  val.avg_cost = qtyAfter > 0 ? round(amountAfter / qtyAfter, 6) : 0
+  if (isIn) val.last_cost = round(cost, 6)
+  const moves = listOf(db, 'valuationMoves')
+  const move = stampNew({
+    id: nextId(moves),
+    move_number: nextNumber(moves, 'move_number', 'VM'),
+    material_code: materialCode,
+    direction: isIn ? 'IN' : 'OUT',
+    qty: round(Math.abs(qtyDelta), 2),
+    unit_cost: round(cost, 6),
+    amount: round(Math.abs(qtyDelta) * cost, 4),
+    balance_qty: round(qtyAfter, 2),
+    balance_amount: round(amountAfter, 4),
+    source_type: sourceType,
+    source_ref: sourceRef,
+    reversal_of: null,
+    created_at: nowIso(),
+    is_deleted: false,
+  }, null)
+  moves.unshift(move)
+  return move
+}
+
+route('GET', '/mm/valuation-moves', (ctx) => {
+  const db = getDb()
+  let rows = listOf(db, 'valuationMoves').filter((m: any) => !m.is_deleted)
+  if (ctx.query.material_code) rows = rows.filter((m: any) => m.material_code === ctx.query.material_code)
+  if (ctx.query.source_type) rows = rows.filter((m: any) => m.source_type === ctx.query.source_type)
+  return ok({ total: rows.length, items: clone(rows) })
 })
 
 // ── 月结（P3）：试算门禁 + 损益结转 + 期间 CLOSE/REOPEN（与后端同构） ──

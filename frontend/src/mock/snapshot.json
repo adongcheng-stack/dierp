@@ -1,5 +1,5 @@
 {
-  "version": 17,
+  "version": 18,
   "generatedAt": "2026-11-17T23:49:35",
   "salesDeliveries": [
     {
@@ -103,6 +103,14 @@
   ],
   "stocktakes": [],
   "stockTransfers": [],
+  "inventoryValuations": [
+    { "id": 960001, "material_code": "RM-FR4-150", "qty": 20, "amount": 770, "avg_cost": 38.5, "last_cost": 38.5, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
+    { "id": 960002, "material_code": "RM-PP1080", "qty": 15, "amount": 252, "avg_cost": 16.8, "last_cost": 16.8, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
+    { "id": 960003, "material_code": "RM-CU-FOIL", "qty": 30, "amount": 1266, "avg_cost": 42.2, "last_cost": 42.2, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
+    { "id": 960004, "material_code": "HF1004ENIGAB02", "qty": 100, "amount": 11514, "avg_cost": 115.14, "last_cost": 115.14, "created_at": "2026-11-01T00:00:00", "is_deleted": false },
+    { "id": 960005, "material_code": "HF1004ENIGAB01", "qty": 95, "amount": 10938.3, "avg_cost": 115.14, "last_cost": 115.14, "created_at": "2026-11-01T00:00:00", "is_deleted": false }
+  ],
+  "valuationMoves": [],
   "customers": [
     {
       "id": 12,

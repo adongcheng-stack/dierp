@@ -15,6 +15,9 @@ interface InventoryRow {
   allocated_qty: number
   available_qty: number
   stock_status: string
+  valuation_qty: number
+  valuation_amount: number
+  avg_cost: number
 }
 
 /** 库存充足度 Tag 配色（与后端 get_inventory 的 stock_status 语义对应） */
@@ -56,6 +59,22 @@ const InventoryLedger: React.FC = () => {
       key: 'current_stock',
       width: 110,
       align: 'right' as const,
+    },
+    {
+      title: '移动均价',
+      dataIndex: 'avg_cost',
+      key: 'avg_cost',
+      width: 110,
+      align: 'right' as const,
+      render: (v: number) => (v ? v.toFixed(4) : '-'),
+    },
+    {
+      title: '库存金额',
+      dataIndex: 'valuation_amount',
+      key: 'valuation_amount',
+      width: 120,
+      align: 'right' as const,
+      render: (v: number) => (v ? `¥${v.toFixed(2)}` : '-'),
     },
     {
       title: '在途',

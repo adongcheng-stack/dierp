@@ -33,6 +33,7 @@ const PeriodClose = lazy(() => import('./pages/finance/PeriodClose'))
 const StocktakeList = lazy(() => import('./pages/mm/StocktakeList'))
 const StockTransferList = lazy(() => import('./pages/mm/StockTransferList'))
 const BatchTracking = lazy(() => import('./pages/mm/BatchTracking'))
+const ValuationMoveList = lazy(() => import('./pages/mm/ValuationMoveList'))
 const MaterialList = lazy(() => import('./pages/mm/MaterialList'))
 const MaterialForm = lazy(() => import('./pages/mm/MaterialForm'))
 const MaterialIssueList = lazy(() => import('./pages/mm/MaterialIssueList'))
@@ -157,6 +158,7 @@ function App() {
                       <Route path="/mm/stocktakes" element={<StocktakeList />} />
                       <Route path="/mm/stock-transfers" element={<StockTransferList />} />
                       <Route path="/mm/batch-tracking" element={<BatchTracking />} />
+                      <Route path="/mm/valuation-moves" element={<ValuationMoveList />} />
                       <Route path="/mm/materials" element={<MaterialList />} />
                       <Route path="/mm/materials/new" element={<MaterialForm />} />
                       <Route path="/mm/materials/:code/edit" element={<MaterialForm />} />

@@ -128,6 +128,7 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/mm/stocktakes', label: '库存盘点', icon: Calculator, path: '/mm/stocktakes' },
       { key: '/mm/stock-transfers', label: '库存调拨', icon: ArrowLeftRight, path: '/mm/stock-transfers' },
       { key: '/mm/batch-tracking', label: '批次效期', icon: CalendarClock, path: '/mm/batch-tracking' },
+      { key: '/mm/valuation-moves', label: '估值流水', icon: Wallet, path: '/mm/valuation-moves' },
     ],
   },
   {

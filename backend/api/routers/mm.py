@@ -626,6 +626,10 @@ async def get_inventory(
             net = max(required - already_issued, 0.0)
             allocated_map[code] = allocated_map.get(code, 0.0) + net
 
+    valuations = {
+        v.material_code: v
+        for v in db.query(planning.InventoryValuation).all()
+    }
     return [
         {
             "material_code": m.material_code,
@@ -641,10 +645,51 @@ async def get_inventory(
                 - allocated_map.get(m.material_code, 0.0),
                 2,
             ),
-            "stock_status": "充足" if m.current_stock >= m.safety_stock else "不足"
+            "stock_status": "充足" if m.current_stock >= m.safety_stock else "不足",
+            "valuation_qty": float(valuations[m.material_code].qty) if m.material_code in valuations else 0.0,
+            "valuation_amount": float(valuations[m.material_code].amount) if m.material_code in valuations else 0.0,
+            "avg_cost": float(valuations[m.material_code].avg_cost) if m.material_code in valuations else 0.0,
         }
         for m in materials
     ]
+
+
+# 移动加权估值流水
+@router.get("/valuation-moves")
+async def list_valuation_moves(
+    material_code: Optional[str] = None,
+    source_type: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    query = db.query(planning.ValuationMove).filter(planning.ValuationMove.is_deleted.is_(False))
+    if material_code:
+        query = query.filter(planning.ValuationMove.material_code == material_code)
+    if source_type:
+        query = query.filter(planning.ValuationMove.source_type == source_type)
+    total = query.count()
+    rows = query.order_by(planning.ValuationMove.id.desc()).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {
+                "move_number": r.move_number,
+                "material_code": r.material_code,
+                "direction": r.direction.value if hasattr(r.direction, "value") else str(r.direction),
+                "qty": float(r.qty or 0),
+                "unit_cost": float(r.unit_cost or 0),
+                "amount": float(r.amount or 0),
+                "balance_qty": float(r.balance_qty or 0),
+                "balance_amount": float(r.balance_amount or 0),
+                "source_type": r.source_type.value if hasattr(r.source_type, "value") else str(r.source_type),
+                "source_ref": r.source_ref,
+                "reversal_of": r.reversal_of,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in rows
+        ],
+    }
 
 
 # 库存事务流水
