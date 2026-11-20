@@ -30,6 +30,7 @@ from backend.common.models.planning import (
     JournalEntry,
     JournalLine,
     PaymentAllocation,
+    InventoryValuation,
     ReceivableEntry,
     Receipt,
     ReceiptAllocation,
@@ -39,6 +40,7 @@ from backend.common.models.planning import (
     Stocktake,
     SupplierInvoice,
     SupplierPayment,
+    ValuationMove,
     Warehouse,
     PurchaseOrder,
     PurchaseOrderLine,
@@ -119,6 +121,9 @@ def _clear(db: Session) -> dict[str, int]:
         # 库存补强运行时表（P3：仓库为主数据保留，仅清盘点/调拨）
         ("stock_transfers", StockTransfer),
         ("stocktakes", Stocktake),
+        # 移动加权估值账（reset 后由 seed_inventory_opening 重建期初）
+        ("valuation_moves", ValuationMove),
+        ("inventory_valuations", InventoryValuation),
         ("purchase_order_lines", PurchaseOrderLine),
         ("purchase_orders", PurchaseOrder),
         ("suppliers", Supplier),
@@ -237,6 +242,7 @@ def _rebuild_master_seed(db: Session) -> None:
         seed_purchase_requests,
         seed_qms_demo_data,
         seed_gl_accounts,
+        seed_inventory_opening,
         seed_sales_delivery_demo,
         seed_suppliers,
     )
@@ -249,6 +255,7 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_purchase_requests(db)
     seed_suppliers(db)
     seed_material_transactions(db)
+    seed_inventory_opening(db)
     seed_sales_delivery_demo(db)
     seed_gl_accounts(db)
 

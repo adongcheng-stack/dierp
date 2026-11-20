@@ -988,7 +988,24 @@ async def complete_production_order(
             .first()
         )
         if material is not None:
-            material.current_stock = float(material.current_stock or 0) + receipt_qty
+            from backend.common.models.planning import ProductionCost, StandardCost
+            from backend.services.inventory.valuation import InventoryValuationService, get_cost
+            pc = db.query(ProductionCost).filter(
+                ProductionCost.production_order_number == order_number
+            ).first()
+            unit_cost = 0.0
+            if pc and float(pc.total_actual or 0) > 0 and receipt_qty > 0:
+                unit_cost = float(pc.total_actual) / receipt_qty
+            if unit_cost <= 0:
+                std = db.query(StandardCost).filter(
+                    StandardCost.material_code == order.material_code
+                ).order_by(StandardCost.id.desc()).first()
+                unit_cost = float(std.material_cost or 0) if std else float(get_cost(db, order.material_code))
+            InventoryValuationService.post(
+                db, material_code=order.material_code, qty_delta=receipt_qty,
+                unit_cost=unit_cost, source_type="PRODUCTION_COMPLETE",
+                source_ref=order_number, operator=current_user.username,
+            )
 
     db.commit()
 

@@ -3413,7 +3413,12 @@ def ship_delivery(
             status_code=400,
             detail=f"库存不足：当前 {float(material.current_stock or 0)}，需 {float(d.quantity)}",
         )
-    material.current_stock = float(material.current_stock or 0) - float(d.quantity or 0)
+    from backend.services.inventory.valuation import InventoryValuationService
+    InventoryValuationService.post(
+        db, material_code=d.material_code, qty_delta=-float(d.quantity or 0),
+        source_type="SALES_ISSUE", source_ref=d.delivery_number,
+        operator=current_user.username,
+    )
     db.add(MaterialTransaction(
         transaction_number=NumberGenerator.generate_document_number(
             db, MaterialTransaction, "transaction_number", "TXN", 6),
@@ -3487,10 +3492,19 @@ def cancel_delivery(
     if d.status == DeliveryStatus.DELIVERED:
         raise HTTPException(status_code=400, detail="已签收的发货单不允许作废，请走退货流程")
     if d.status == DeliveryStatus.SHIPPED:
-        # 红字冲回：库存回补 + 正向流水
-        material = db.query(Material).filter(Material.material_code == d.material_code).first()
-        if material:
-            material.current_stock = float(material.current_stock or 0) + float(d.quantity or 0)
+        # 红字冲回：库存回补 + 正向流水（按原发货成本快照，不用当前均价）
+        from backend.common.models.planning import ValuationMove
+        from backend.services.inventory.valuation import InventoryValuationService
+        original = db.query(ValuationMove).filter(
+            ValuationMove.source_type == "SALES_ISSUE",
+            ValuationMove.source_ref == d.delivery_number,
+        ).first()
+        InventoryValuationService.post(
+            db, material_code=d.material_code, qty_delta=float(d.quantity or 0),
+            source_type="SALES_ISSUE", source_ref=f"{d.delivery_number}-REVERSE",
+            reversal_of=original.move_number if original else None,
+            operator=current_user.username,
+        )
         db.add(MaterialTransaction(
             transaction_number=NumberGenerator.generate_document_number(
                 db, MaterialTransaction, "transaction_number", "TXN", 6),

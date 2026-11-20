@@ -1233,8 +1233,11 @@ def seed_sales_delivery_demo(db: Session) -> int:
         remarks="销售发货演示：已发货（SHIPPED，种子已扣库存）",
         created_by="system",
     ))
-    if material is not None:
-        material.current_stock = float(material.current_stock or 0) - 20
+    from backend.services.inventory.valuation import InventoryValuationService
+    InventoryValuationService.post(
+        db, material_code=order.material_code, qty_delta=-20,
+        source_type="SALES_ISSUE", source_ref="DK-20251231-0002", operator="system",
+    )
     db.add(MaterialTransaction(
         transaction_number="TXN-SD-SEED-0001",
         material_code=order.material_code,
@@ -1281,6 +1284,43 @@ def seed_sales_delivery_demo(db: Session) -> int:
         created_by="system",
     ))
     created += 1
+    db.commit()
+    return created
+
+
+def seed_inventory_opening(db: Session) -> int:
+    """移动加权期初建账：按基线数量×标准成本建估值行和 OPENING 流水（幂等）。
+
+    口径（用户确认按方案默认）：期初科目 4001、发票额不含税、标准成本作期初单价。
+    """
+    from backend.common.models.mm import Material
+    from backend.common.models.planning import InventoryValuation, StandardCost, ValuationMove
+    from backend.services.inventory.valuation import InventoryValuationService
+    from backend.services.planning.demo_reset import MATERIAL_STOCK_BASELINE
+
+    created = 0
+    for code, qty in MATERIAL_STOCK_BASELINE.items():
+        if db.query(InventoryValuation).filter(InventoryValuation.material_code == code).first():
+            continue
+        std = (
+            db.query(StandardCost)
+            .filter(StandardCost.material_code == code)
+            .order_by(StandardCost.id.desc())
+            .first()
+        )
+        material = db.query(Material).filter(Material.material_code == code).first()
+        cost = float(std.material_cost or 0) if std else float(material.standard_price or 0) if material else 0.0
+        if cost <= 0:
+            continue
+        try:
+            InventoryValuationService.post(
+                db, material_code=code, qty_delta=qty, unit_cost=cost,
+                source_type="OPENING", source_ref=f"OPENING-{datetime.now().strftime('%Y-%m')}",
+                operator="system",
+            )
+            created += 1
+        except Exception as exc:
+            print(f"[VALUATION] 期初建账跳过 {code}: {exc}")
     db.commit()
     return created
 
@@ -1586,6 +1626,7 @@ def main() -> None:
         print(f"[OK] 采购申请演示新增 {seed_purchase_requests(db)} 张")
         print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
         print(f"[OK] 库存流水基线新增 {seed_material_transactions(db)} 条")
+        print(f"[OK] 库存估值期初新增 {seed_inventory_opening(db)} 条")
         print(f"[OK] 销售发货演示新增 {seed_sales_delivery_demo(db)} 张")
         print(f"[OK] 总账科目/期间新增 {seed_gl_accounts(db)} 条")
         db.commit()

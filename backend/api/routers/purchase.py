@@ -252,7 +252,13 @@ def receive_purchase_order(
             .first()
         )
         if material is not None:
-            material.current_stock = _f(material.current_stock) + quantity
+            from backend.services.inventory.valuation import InventoryValuationService
+            InventoryValuationService.post(
+                db, material_code=line.material_code, qty_delta=quantity,
+                unit_cost=_f(line.unit_price), source_type="PURCHASE_RECEIPT",
+                source_ref=f"{purchase_order_number}#{line.line_number}",
+                operator="system",
+            )
 
         # 库存流水账本：到货即记 RECEIPT 入库（供应商绩效的及时率也依赖此账本）
         db.add(
@@ -1327,8 +1333,13 @@ def approve_purchase_return(return_number: str, db: Session = Depends(get_db)):
         for line in lines:
             material = stock_map[line.material_code]
             if material is not None:
-                material.current_stock = _f(material.current_stock) - _f(line.quantity)
-                material.updated_at = datetime.now()
+                from backend.services.inventory.valuation import InventoryValuationService
+                InventoryValuationService.post(
+                    db, material_code=line.material_code, qty_delta=-_f(line.quantity),
+                    source_type="PURCHASE_RETURN",
+                    source_ref=f"{ret.return_number}#{line.line_number}",
+                    operator="system",
+                )
             transaction_number = NumberGenerator.generate_document_number(
                 db, MaterialTransaction, "transaction_number", "TR", 4
             )

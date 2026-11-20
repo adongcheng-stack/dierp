@@ -415,9 +415,13 @@ async def create_material_issue(
         )
         db.add(db_issue)
         
-        # 扣减库存（确保类型一致，使用 Decimal）
-        material.current_stock -= issue_quantity_decimal
-        material.updated_by = current_user.username
+        # 移动加权：唯一库存写入口（数量+金额+成本快照）
+        from backend.services.inventory.valuation import InventoryValuationService
+        InventoryValuationService.post(
+            db, material_code=issue.material_code, qty_delta=-issue_quantity_decimal,
+            source_type="MATERIAL_ISSUE", source_ref=issue_number,
+            operator=current_user.username,
+        )
         
         # 记录库存事务
         transaction_number_base = f"TR-{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -880,7 +884,13 @@ def approve_stocktake(
             detail=f"调整后库存为负：当前 {float(material.current_stock or 0)}，差异 {diff}",
         )
     if abs(diff) > 1e-9:
-        material.current_stock = float(material.current_stock or 0) + diff
+        from backend.services.inventory.valuation import InventoryValuationService, get_cost
+        InventoryValuationService.post(
+            db, material_code=s.material_code, qty_delta=diff,
+            unit_cost=get_cost(db, s.material_code),
+            source_type="STOCKTAKE", source_ref=s.stocktake_number,
+            operator=current_user.username,
+        )
         db.add(MaterialTransaction(
             transaction_number=NumberGenerator.generate_document_number(
                 db, MaterialTransaction, "transaction_number", "TXN", 6),
