@@ -387,6 +387,7 @@ export interface PurchaseRequest {
   source_planned_order?: string
   requested_by?: string
   converted_po_number?: string
+  converted_po_numbers?: string
   remarks?: string
   id?: number
   created_at?: string
@@ -403,6 +404,7 @@ export interface PurchaseRequestLine {
   unit_price?: number
   expected_date?: string
   status?: string
+  converted_quantity?: number
   remarks?: string
   id?: number
   created_at?: string

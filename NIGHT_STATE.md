@@ -3,10 +3,13 @@
 （空）
 
 ## Pending Tasks
+- [ ] T902 convert-lines 端点+探针
+- [ ] T903 前端部分转换界面+mock v19+全门禁
 - [ ] 长期债剩余：token 静默续期（已用 8h TTL 缓解）/ PR 行级部分转换 / 依赖审计
 - [ ] 长期债（设计 §七，不阻塞主线）：实际成本移动加权 / 月结流程 / 遗留表收养迁移 / 前端组件测试 / 依赖审计 / token 静默续期 / PR 行级部分转换
 
 ## Completed Tasks
+- [x] T901 PR 部分转换本体（16:45 完成）— 证据：+PARTIALLY_CONVERTED 枚举、+converted_quantity/converted_po_numbers 列；空库 upgrade+check 绿（revision 13289641368f）；开发库真实 ALTER 升级到 head；alembic check/tsc/pytest 全绿
 - [x] T805 移动加权全链路终验（16:10 完成）— 证据：smoke_valuation 14/14（收货/发货/红冲/领料/盘点/完工/余额恒等式/数量同步/差异科目/reset）；全门禁 31 项全绿（十冒烟+十探针+E2E 4/4）；设计 §七「实际成本移动加权」长期债偿还
 - [x] T804 前端估值视图+mock v18（15:30 完成）— 证据：库存台账+移动均价/金额列、新估值流水页+菜单路由；后端 GET /mm/valuation-moves 与台账估值字段；mock v18（5 估值种子+7 钩子+同构端点）；tsc EXIT=0、E2E 4/4、九冒烟/parity/probe_valuation 全绿。注：后端 8000 需重启加载新枚举（旧进程 500）
 - [x] T803 GL 口径切换（14:55 完成）— 证据：smoke_gl_loop 22/22（出库分录金额=估值快照对账、期初分录借1405/贷4001、reset 后仅留期初）；probe_valuation 9/9；mock-gl 探针/pytest/tsc 全绿。注：GlSourceType +OPENING/COST_VARIANCE（PG ALTER TYPE）；科目 6402 存货差异（共 10）；4 处出库分录改用 ValuationMove.amount；期初/负金额差异分录自动过账

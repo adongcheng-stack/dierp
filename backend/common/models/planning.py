@@ -145,6 +145,7 @@ class PurchaseRequestStatus(str, Enum):
     """PurchaseRequestStatus"""
     DRAFT = "DRAFT"
     RELEASED = "RELEASED"
+    PARTIALLY_CONVERTED = "PARTIALLY_CONVERTED"
     CONVERTED = "CONVERTED"
     CANCELLED = "CANCELLED"
 
@@ -798,7 +799,9 @@ class PurchaseRequest(BaseModel):
 
     requested_by = Column(String(50), comment="申请人")
 
-    converted_po_number = Column(String(50), comment="转换生成的采购单号")
+    converted_po_number = Column(String(50), comment="首张转换采购单号(兼容旧字段)")
+
+    converted_po_numbers = Column(String(500), comment="全部转换采购单号(逗号分隔)")
 
     remarks = Column(Text)
 
@@ -823,6 +826,8 @@ class PurchaseRequestLine(BaseModel):
     expected_date = Column(DateTime, comment="期望到货日期")
 
     status = Column(String(20), default="OPEN", comment="行状态(OPEN/CONVERTED)")
+
+    converted_quantity = Column(Numeric(15, 2), default=0, comment="已转采购数量(支持行级部分转换)")
 
     remarks = Column(Text)
 

@@ -48,7 +48,7 @@ export type CostStatus = 'OPEN' | 'COLLECTED' | 'SETTLED';
 
 export type PurchaseOrderStatus = 'DRAFT' | 'RELEASED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CLOSED' | 'CANCELLED';
 
-export type PurchaseRequestStatus = 'DRAFT' | 'RELEASED' | 'CONVERTED' | 'CANCELLED';
+export type PurchaseRequestStatus = 'DRAFT' | 'RELEASED' | 'PARTIALLY_CONVERTED' | 'CONVERTED' | 'CANCELLED';
 
 export type ReturnType = 'RETURN' | 'CLAIM';
 

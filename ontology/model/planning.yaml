@@ -274,7 +274,8 @@ entities:
       total_amount: {type: decimal, precision: 15, scale: 2, default: 0, comment: 预估总金额}
       source_planned_order: {type: string, length: 50, comment: 来源计划订单}
       requested_by: {type: string, length: 50, comment: 申请人}
-      converted_po_number: {type: string, length: 50, comment: 转换生成的采购单号}
+      converted_po_number: {type: string, length: 50, comment: 首张转换采购单号(兼容旧字段)}
+      converted_po_numbers: {type: string, length: 500, comment: 全部转换采购单号(逗号分隔)}
       remarks: {type: text}
 
   PurchaseRequestLine:
@@ -291,6 +292,7 @@ entities:
       unit_price: {type: decimal, precision: 15, scale: 4, default: 0, comment: 预估单价}
       expected_date: {type: datetime, comment: 期望到货日期}
       status: {type: string, length: 20, default: OPEN, comment: 行状态(OPEN/CONVERTED)}
+      converted_quantity: {type: decimal, precision: 15, scale: 2, default: 0, comment: 已转采购数量(支持行级部分转换)}
       remarks: {type: text}
 
   PurchaseReturn:
