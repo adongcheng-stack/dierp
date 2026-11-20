@@ -13,7 +13,7 @@ import { cn } from '../../lib/utils'
 
 const HANDLE_WIDTH = 42
 const TRACK_PADDING = 4
-const VERIFY_THRESHOLD = 2
+const VERIFY_THRESHOLD = 12
 
 interface SliderCaptchaProps {
   disabled?: boolean
