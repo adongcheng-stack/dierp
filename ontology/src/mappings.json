@@ -31,7 +31,7 @@
     "SupplierStatus": ["ACTIVE", "INACTIVE"],
     "DeliveryStatus": ["DRAFT", "SHIPPED", "DELIVERED", "CANCELLED"],
     "InvoiceStatus": ["DRAFT", "ISSUED", "PARTIALLY_PAID", "PAID", "CANCELLED"],
-    "ReceivableEntryType": ["INVOICE", "RECEIPT", "ADJUST"],
+    "ReceivableEntryType": ["INVOICE", "RECEIPT", "ADJUST", "RECEIPT_REVERSE", "INVOICE_REVERSE"],
     "SupplierInvoiceStatus": ["DRAFT", "CONFIRMED", "CANCELLED"],
     "PaymentMethod": ["TRANSFER", "CASH", "BILL"],
     "AccountType": ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"],
@@ -39,7 +39,7 @@
     "PeriodStatus": ["OPEN", "CLOSED"],
     "ValuationDirection": ["IN", "OUT"],
     "CostSourceType": ["PURCHASE_RECEIPT", "PURCHASE_RETURN", "PRODUCTION_COMPLETE", "MATERIAL_ISSUE", "SALES_ISSUE", "SALES_RETURN", "STOCKTAKE", "OPENING", "TRANSFER"],
-    "GlSourceType": ["SALES_INVOICE_ISSUED", "SALES_DELIVERY_SHIPPED", "SUPPLIER_INVOICE_CONFIRMED", "SUPPLIER_PAYMENT_PAID", "RECEIPT_PAID", "MATERIAL_ISSUE", "STOCK_ADJUST", "PRODUCTION_COMPLETE", "PERIOD_CLOSE", "OPENING", "COST_VARIANCE"],
+    "GlSourceType": ["SALES_INVOICE_ISSUED", "SALES_INVOICE_REVERSED", "SALES_DELIVERY_SHIPPED", "SUPPLIER_INVOICE_CONFIRMED", "SUPPLIER_PAYMENT_PAID", "RECEIPT_PAID", "RECEIPT_PAID_REVERSE", "MATERIAL_ISSUE", "STOCK_ADJUST", "PRODUCTION_COMPLETE", "PERIOD_CLOSE", "OPENING", "COST_VARIANCE"],
     "StocktakeStatus": ["DRAFT", "APPROVED", "CANCELLED"],
     "StockTransferStatus": ["DRAFT", "CONFIRMED", "CANCELLED"],
     "ResourceStatus": ["ACTIVE", "MAINTENANCE", "DOWN"],
@@ -58,6 +58,15 @@
     "NcrSourceType": ["INSPECTION", "REPORT", "LOT_CARD", "MANUAL"],
     "NcrSeverity": ["MINOR", "MAJOR", "CRITICAL"],
     "NcrDisposition": ["REWORK", "SCRAP", "USE_AS_IS", "RETURN", "REVIEW"],
-    "NcrStatus": ["OPEN", "UNDER_REVIEW", "DISPOSITIONED", "CLOSED"]
+    "NcrStatus": ["OPEN", "UNDER_REVIEW", "DISPOSITIONED", "CLOSED"],
+    "UserRole": ["SALES", "SALES_MANAGER", "ENGINEER", "PLANNER", "PRODUCTION", "WAREHOUSE", "FINANCE", "GENERAL_MANAGER", "ADMIN"],
+    "AccessDomain": ["sd", "eng", "pp", "mm", "planning", "qms", "purchase", "finance", "users", "admin", "system", "auth", "dashboard", "traceability"],
+    "HttpWriteMethod": ["POST", "PUT", "PATCH", "DELETE"],
+    "DepartmentStatus": ["ACTIVE", "INACTIVE"],
+    "DepartmentType": ["COMPANY", "DIVISION", "DEPARTMENT", "TEAM", "WORKSHOP"],
+    "MenuType": ["DIRECTORY", "MENU", "BUTTON"],
+    "MenuStatus": ["ACTIVE", "INACTIVE"],
+    "ParamType": ["STRING", "INT", "BOOLEAN", "JSON"],
+    "LoginStatus": ["SUCCESS", "FAIL"]
   }
 }

@@ -150,9 +150,36 @@ class BOMValidator:
             if material_code == parent_material_code:
                 errors.append(f"不能将父物料 {parent_material_code} 作为子物料，避免循环引用")
         
-        # TODO: 实现更深层的循环引用检查（需要递归查询子物料的BOM）
-        # 这需要查询每个子物料的BOM，检查是否包含父物料
-        
+        # 深层循环引用：递归检查每个子物料的下级 BOM 是否会回到父物料
+        def descendants_of(material_code: str, visited: set) -> bool:
+            """从 material_code 出发，其任意下级 BOM 是否包含 parent_material_code。"""
+            if material_code in visited:
+                return False
+            next_visited = visited | {material_code}
+            boms = db.query(BOM).filter(
+                BOM.parent_material_code == material_code
+            ).all()
+            for bom in boms:
+                for item in bom.items:
+                    child_code = item.material_code
+                    if not child_code:
+                        continue
+                    if child_code == parent_material_code:
+                        return True
+                    if descendants_of(child_code, next_visited):
+                        return True
+            return False
+
+        for item in items:
+            material_code = item.get("material_code")
+            if not material_code or material_code == parent_material_code:
+                continue
+            if descendants_of(material_code, {parent_material_code}):
+                errors.append(
+                    f"检测到循环引用：{parent_material_code} → {material_code} → … → {parent_material_code}"
+                )
+                break
+
         return ValidationResult(
             is_valid=len(errors) == 0,
             errors=errors,

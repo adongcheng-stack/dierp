@@ -67,7 +67,6 @@ const InspectionList: React.FC = () => {
       purchase_order_number: purchaseOrder || undefined,
     })
     setCreateOpen(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const openCreate = () => {

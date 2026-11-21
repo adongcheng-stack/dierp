@@ -61,3 +61,14 @@ workspace/
 
 # 误入项目根的独立仓库
 context-mode/
+
+# 本地随机 JWT 密钥（占位 SECRET_KEY 时自动生成，禁止入库）
+.secret_key
+
+# 聚合门禁构建产物 / Playwright 报告
+frontend/dist-gate/
+test-results/
+playwright-report/
+
+# 演示包历史产物（根目录单文件与归档 zip 由 *.zip 已覆盖）
+DIERP-demo.html

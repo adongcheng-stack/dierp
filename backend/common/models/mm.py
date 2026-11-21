@@ -80,6 +80,8 @@ class MaterialIssue(BaseModel):
     issued_by = Column(String(50), nullable=False)  # 领料人
     issued_at = Column(DateTime, nullable=False)
     warehouse = Column(String(50))  # 仓库
+    batch_number = Column(String(50), index=True, comment="原料批次号（关联采购收货批次）")
+    purchase_order_number = Column(String(50), index=True, comment="来源采购订单号（批次→供应商追溯）")
     remarks = Column(Text)
     
     # 关联（延迟导入避免循环依赖）

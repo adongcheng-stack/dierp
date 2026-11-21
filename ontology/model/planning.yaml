@@ -735,7 +735,7 @@ entities:
       entry_number: {type: string, length: 50, required: true, unique: true, index: true, comment: 流水号(AR 前缀)}
       invoice_number: {type: string, length: 50, required: true, index: true, fk: "sales_invoices.invoice_number", comment: 关联发票}
       customer_id: {type: string, length: 50, index: true, fk: "customers.customer_id", comment: 客户编码}
-      entry_type: {type: enum, enum: ReceivableEntryType, default: INVOICE, index: true, comment: 流水类型(INVOICE/RECEIPT/ADJUST)}
+      entry_type: {type: enum, enum: ReceivableEntryType, default: INVOICE, index: true, comment: 流水类型(INVOICE/RECEIPT/ADJUST/RECEIPT_REVERSE)}
       amount: {type: decimal, precision: 15, scale: 2, required: true, comment: 金额(正开票/负收款)}
       entry_date: {type: datetime, comment: 流水日期}
       reference_number: {type: string, length: 50, index: true, comment: 参考单号(如收款单号)}

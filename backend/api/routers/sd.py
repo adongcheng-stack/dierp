@@ -1820,13 +1820,27 @@ class QuotationDetailCalculationResponse(BaseModel):
     process_details: List[dict]  # 工序明细列表
 
 
-@router.post("/quotations/calculate-details", response_model=QuotationDetailCalculationResponse)
-async def calculate_quotation_details_temp(
+@router.post("/quotations/preview-details", response_model=QuotationDetailCalculationResponse)
+async def preview_quotation_details(
     calculation_data: QuotationDetailCalculationRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """计算报价明细成本（临时计算，不需要报价单编号）"""
+    """报价试算：未保存报价单时按输入参数计算明细，不写库。
+
+    这是报价表单在「新建/草稿」阶段的规范化端点，语义为试算（preview），
+    与下方「已保存报价单的明细重算」端点并列。
+    """
+    return await _calculate_quotation_details_logic(calculation_data, db, None)
+
+
+@router.post("/quotations/calculate-details", response_model=QuotationDetailCalculationResponse)
+async def calculate_quotation_details_legacy_preview(
+    calculation_data: QuotationDetailCalculationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """兼容旧前端：等价于 preview-details，后续将下线。"""
     return await _calculate_quotation_details_logic(calculation_data, db, None)
 
 
@@ -4019,3 +4033,176 @@ def cancel_receipt(
     db.commit()
     return _receipt_dict(r)
 
+
+@router.post("/receipts/{receipt_number}/reverse")
+def reverse_receipt(
+    receipt_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """收款单红字冲回（PAID → REVERSED）。
+
+    冲回已核销金额：发票 received_amount 回退、状态重算，记一笔正向应收流水
+    （RECEIPT_REVERSE），并过账红字凭证（借应收账款 / 贷银行存款）。
+    """
+    r = _load_receipt(db, receipt_number)
+    if r.status != "PAID":
+        raise HTTPException(
+            status_code=400,
+            detail=f"仅已核销(PAID)收款单可红字冲回，当前状态为 {r.status}",
+        )
+
+    reverse_ref = f"{receipt_number}-REVERSE"
+    already = (
+        db.query(ReceivableEntry)
+        .filter(
+            ReceivableEntry.reference_number == reverse_ref,
+            ReceivableEntry.entry_type == ReceivableEntryType.RECEIPT_REVERSE,
+            ReceivableEntry.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if already is not None:
+        raise HTTPException(status_code=400, detail=f"收款单 {receipt_number} 已红字冲回，请勿重复操作")
+
+    allocations = _receipt_allocations(db, receipt_number)
+    reversed_total = 0.0
+    for alloc in allocations:
+        invoice = (
+            db.query(SalesInvoice)
+            .filter(SalesInvoice.invoice_number == alloc.invoice_number)
+            .first()
+        )
+        if invoice is None:
+            continue
+        amount = float(alloc.allocated_amount or 0)
+        remaining = max(0.0, float(invoice.received_amount or 0) - amount)
+        invoice.received_amount = remaining
+        if remaining >= float(invoice.amount or 0) - 1e-6:
+            invoice.status = InvoiceStatus.PAID
+        elif remaining > 1e-6:
+            invoice.status = InvoiceStatus.PARTIALLY_PAID
+        else:
+            invoice.status = InvoiceStatus.ISSUED
+        invoice.updated_by = current_user.username
+        invoice.updated_at = datetime.now()
+        reversed_total += amount
+
+        db.add(ReceivableEntry(
+            entry_number=NumberGenerator.generate_document_number(
+                db, ReceivableEntry, "entry_number", "AR", 4),
+            invoice_number=invoice.invoice_number,
+            customer_id=r.customer_id,
+            entry_type=ReceivableEntryType.RECEIPT_REVERSE,
+            amount=amount,
+            entry_date=datetime.now(),
+            reference_number=reverse_ref,
+            remarks=f"红字冲回收款 {receipt_number}",
+            created_by=current_user.username,
+        ))
+        db.flush()  # 坑2：流水号生成前先落库
+
+    r.status = "REVERSED"
+    r.updated_by = current_user.username
+    r.updated_at = datetime.now()
+    db.commit()
+
+    if reversed_total > 0:
+        try:
+            gl_post(
+                db, "RECEIPT_PAID_REVERSE", reverse_ref,
+                amount=reversed_total,
+                summary=f"红字冲回收款 {receipt_number}",
+                operator=current_user.username,
+            )
+            db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 收款红冲分录入账失败 {receipt_number}: {exc}")
+
+    result = _receipt_dict(r, _receipt_allocations(db, receipt_number))
+    result["reversed_amount"] = reversed_total
+    return result
+
+
+
+@router.post("/invoices/{invoice_number}/reverse")
+def reverse_invoice(
+    invoice_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """销售发票红字冲回（ISSUED/PARTIALLY_PAID → CANCELLED）。
+
+    仅允许尚未收款（received_amount ≈ 0）的发票；已有收款须先红冲收款单。
+    幂等：以 ``{invoice}-INV-REVERSE`` 为冲回引用，重复调用返回 400。
+    冲回记一笔负向应收流水（INVOICE_REVERSE）与红字凭证（借收入 / 贷应收）。
+    """
+    invoice = (
+        db.query(SalesInvoice)
+        .filter(SalesInvoice.invoice_number == invoice_number)
+        .first()
+    )
+    if invoice is None:
+        raise HTTPException(status_code=404, detail=f"发票不存在: {invoice_number}")
+    if invoice.status not in (InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID):
+        raise HTTPException(
+            status_code=400,
+            detail=f"仅未收款发票可红字冲回，当前状态为 {invoice.status}",
+        )
+    if float(invoice.received_amount or 0) > 1e-6:
+        raise HTTPException(
+            status_code=400,
+            detail="发票已有收款，请先红冲对应收款单再冲回发票",
+        )
+
+    reverse_ref = f"{invoice_number}-INV-REVERSE"
+    already = (
+        db.query(ReceivableEntry)
+        .filter(
+            ReceivableEntry.reference_number == reverse_ref,
+            ReceivableEntry.entry_type == ReceivableEntryType.INVOICE_REVERSE,
+            ReceivableEntry.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if already is not None:
+        raise HTTPException(status_code=400, detail=f"发票 {invoice_number} 已红字冲回，请勿重复操作")
+
+    amount = float(invoice.amount or 0)
+    db.add(ReceivableEntry(
+        entry_number=NumberGenerator.generate_document_number(
+            db, ReceivableEntry, "entry_number", "AR", 4),
+        invoice_number=invoice.invoice_number,
+        customer_id=invoice.customer_id,
+        entry_type=ReceivableEntryType.INVOICE_REVERSE,
+        amount=-amount,
+        entry_date=datetime.now(),
+        reference_number=reverse_ref,
+        remarks=f"红字冲回发票 {invoice_number}",
+        created_by=current_user.username,
+    ))
+    db.flush()
+
+    invoice.status = InvoiceStatus.CANCELLED
+    invoice.updated_by = current_user.username
+    invoice.updated_at = datetime.now()
+    db.commit()
+
+    if amount > 0:
+        try:
+            gl_post(
+                db, "SALES_INVOICE_REVERSED", reverse_ref,
+                amount=amount,
+                summary=f"红字冲回发票 {invoice_number}",
+                operator=current_user.username,
+            )
+            db.commit()
+        except GlEngineError as exc:
+            print(f"[GL] 发票红冲分录入账失败 {invoice_number}: {exc}")
+
+    return {
+        "invoice_number": invoice.invoice_number,
+        "status": invoice.status.value if hasattr(invoice.status, "value") else invoice.status,
+        "reversed_amount": amount,
+        "reference_number": reverse_ref,
+    }

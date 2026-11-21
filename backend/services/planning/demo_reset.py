@@ -236,6 +236,7 @@ def _rebuild_master_seed(db: Session) -> None:
     from backend.upgrade_planning import (
         seed_aps_master_data,
         seed_eam_demo_data,
+        seed_material_batches,
         seed_material_transactions,
         seed_operation_report_routing,
         seed_purchase_demo_data,
@@ -254,10 +255,15 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_purchase_demo_data(db)
     seed_purchase_requests(db)
     seed_suppliers(db)
+    seed_material_batches(db)
     seed_material_transactions(db)
     seed_inventory_opening(db)
     seed_sales_delivery_demo(db)
     seed_gl_accounts(db)
+    # 组织架构与系统管理种子（部门树/菜单/角色授权/系统参数）
+    from backend.services.system.admin_seed import seed_admin_demo
+
+    seed_admin_demo(db)
 
 
 def _build_demo_run(

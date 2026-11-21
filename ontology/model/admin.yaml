@@ -1,0 +1,82 @@
+# ═══════════════════════════════════════════════════════════════
+# DIERP 组织架构与系统管理域 operational model
+# 这是后端 SQLAlchemy 模型与前端类型契约的唯一生成源。
+# 生成命令：python backend/ontology/generate_models.py
+# 语义约束（必填/枚举/范围）以 ontology/src/shapes.ttl 为准。
+# ═══════════════════════════════════════════════════════════════
+version: "1.0.0"
+namespace: "https://dierp.local/ontology/erp/v1#"
+
+entities:
+  Department:
+    table: departments
+    label: 部门（组织架构树节点）
+    ontology_class: Department
+    top_category: Agent
+    fields:
+      code: {type: string, length: 50, required: true, unique: true, index: true, comment: 部门编码}
+      name: {type: string, length: 100, required: true, comment: 部门名称}
+      parent_id: {type: integer, fk: "departments.id", index: true, comment: 上级部门 ID（自引用）}
+      level: {type: integer, default: 1, comment: 层级（根为 1）}
+      department_type: {type: enum, enum: DepartmentType, default: DEPARTMENT, comment: 部门类型}
+      manager: {type: string, length: 100, comment: 部门负责人}
+      contact_phone: {type: string, length: 30, comment: 联系电话}
+      sort_order: {type: integer, default: 0, comment: 排序号}
+      status: {type: enum, enum: DepartmentStatus, default: ACTIVE, index: true, comment: 状态}
+      established_date: {type: date, comment: 成立日期}
+      remark: {type: text}
+
+  Menu:
+    table: menus
+    label: 系统菜单（路由与按钮权限声明）
+    ontology_class: Menu
+    top_category: NormativeRule
+    fields:
+      code: {type: string, length: 80, required: true, unique: true, index: true, comment: 菜单编码}
+      name: {type: string, length: 100, required: true, comment: 菜单名称}
+      parent_id: {type: integer, fk: "menus.id", index: true, comment: 上级菜单 ID（自引用）}
+      path: {type: string, length: 200, comment: 路由地址}
+      component: {type: string, length: 200, comment: 组件路径}
+      icon: {type: string, length: 100, comment: 图标名}
+      menu_type: {type: enum, enum: MenuType, default: MENU, comment: 菜单类型}
+      permission: {type: string, length: 120, comment: 权限标识（如 sd:customer:list）}
+      sort_order: {type: integer, default: 0, comment: 排序号}
+      visible: {type: boolean, default: true, comment: 是否可见}
+      status: {type: enum, enum: MenuStatus, default: ACTIVE, index: true, comment: 状态}
+
+  RoleMenu:
+    table: role_menus
+    label: 角色-菜单授权
+    ontology_class: RoleMenu
+    top_category: NormativeRule
+    fields:
+      role_code: {type: enum, enum: UserRole, required: true, index: true, comment: 角色编码（UserRole 枚举）}
+      menu_id: {type: integer, fk: "menus.id", required: true, index: true, comment: 菜单 ID}
+
+  SystemParameter:
+    table: system_parameters
+    label: 系统参数
+    ontology_class: SystemParameter
+    top_category: NormativeRule
+    fields:
+      param_key: {type: string, length: 100, required: true, unique: true, index: true, comment: 参数键}
+      param_name: {type: string, length: 100, required: true, comment: 参数名称}
+      param_value: {type: text, comment: 参数值}
+      param_type: {type: enum, enum: ParamType, default: STRING, comment: 参数类型}
+      param_desc: {type: string, length: 300, comment: 参数说明}
+      is_system: {type: boolean, default: false, comment: 是否系统内置（内置不可删）}
+      remark: {type: text}
+
+  LoginLog:
+    table: login_logs
+    label: 登录日志
+    ontology_class: LoginLog
+    top_category: EventRecord
+    fields:
+      username: {type: string, length: 50, required: true, index: true, comment: 登录账号}
+      role: {type: string, length: 50, comment: 登录角色}
+      login_status: {type: enum, enum: LoginStatus, required: true, index: true, comment: 登录结果}
+      message: {type: string, length: 300, comment: 结果说明}
+      ip_address: {type: string, length: 64, comment: 来源 IP}
+      user_agent: {type: string, length: 500, comment: 浏览器标识}
+      login_time: {type: datetime, required: true, index: true, comment: 登录时间}

@@ -249,8 +249,8 @@ const MpsList: React.FC = () => {
         expandable={{
           expandedRowRender: (record: any) => (
             <div className="text-sm text-ink-soft">
-              计划员：{record.generated_by ?? '-'}　生成时间：
-              {record.generated_at?.replace('T', ' ').slice(0, 19) ?? '-'}　需求来源：
+              计划员：{record.generated_by ?? '-'} 生成时间：
+              {record.generated_at?.replace('T', ' ').slice(0, 19) ?? '-'} 需求来源：
               {record.demand_source}
             </div>
           ),

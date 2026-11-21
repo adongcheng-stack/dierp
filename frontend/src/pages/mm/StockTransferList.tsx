@@ -47,7 +47,6 @@ const StockTransferList: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter])
 
   const openCreate = () => {

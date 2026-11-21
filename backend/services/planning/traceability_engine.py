@@ -2,7 +2,8 @@
 
 ADR-20261118-01：追溯是「派生视图」而非存储事实——图完全由既有单据链接
 （LOT↔工单↔销售订单↔客户↔领料/报工↔检验↔NCR↔设备故障）推导，因此不新增
-本体实体、不写库。原料批次级追溯（MaterialIssue 增列）列为 P2 后续项。
+本体实体、不写库。原料批次级追溯由 MaterialIssue.batch_number /
+purchase_order_number 两个派生字段提供：领料 → 原料批次 → 采购单 → 供应商。
 
 图结构契约（与 frontend/src/mock/handlers.ts 同构）：
     node = {key, type, title, status, quantity, time, meta}
@@ -87,6 +88,53 @@ def _iso(value: Any) -> Optional[str]:
 
 def _label_of(value: Any) -> Optional[str]:
     return value.value if value is not None else None
+
+
+def _add_batch_source(db: Session, g: _Graph, issue: MaterialIssue, from_key: str) -> None:
+    """把领料单上的原料批次挂到图上：领料 → 原料批次 → 采购单 → 供应商。
+
+    领料单无批次号时静默跳过，保持旧数据可用。
+    """
+    if not issue.batch_number:
+        return
+
+    supplier = None
+    po = None
+    if issue.purchase_order_number:
+        po = (
+            db.query(PurchaseOrder)
+            .filter(
+                PurchaseOrder.purchase_order_number == issue.purchase_order_number,
+                PurchaseOrder.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        if po is not None:
+            supplier = po.supplier_name
+
+    batch_key = g.add_node(
+        "MATERIAL_BATCH",
+        issue.batch_number,
+        f"原料批次 {issue.batch_number}",
+        meta={
+            "batch_number": issue.batch_number,
+            "material_code": issue.material_code,
+            "purchase_order_number": issue.purchase_order_number,
+            "supplier": supplier,
+        },
+    )
+    g.add_edge(from_key, batch_key, "领用批次")
+
+    if po is not None:
+        po_key = g.add_node(
+            "PURCHASE_ORDER",
+            po.purchase_order_number,
+            f"采购单 {po.purchase_order_number}",
+            status=_label_of(po.status),
+            time=_iso(po.order_date),
+            meta={"supplier": po.supplier_name},
+        )
+        g.add_edge(batch_key, po_key, "批次来源")
 
 
 class TraceEngine:
@@ -182,6 +230,7 @@ class TraceEngine:
                 meta={"material_code": issue.material_code, "warehouse": issue.warehouse},
             )
             g.add_edge(issue_key, order_key, "领料")
+            _add_batch_source(db, g, issue, issue_key)
 
         # 生产订单 → 报工（按工单匹配；批次卡上的报工即使登记在别的工单名下也一并纳入）
         report_query = db.query(OperationReport).filter(OperationReport.is_deleted == False)
@@ -402,6 +451,7 @@ class TraceEngine:
                 meta={"production_order_number": issue.production_order_number},
             )
             g.add_edge(issue_key, material_key, "领用")
+            _add_batch_source(db, g, issue, issue_key)
             if issue.production_order_number and issue.production_order_number not in seen_orders:
                 order = (
                     db.query(ProductionOrder)

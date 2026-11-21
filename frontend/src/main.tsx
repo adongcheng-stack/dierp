@@ -4,6 +4,7 @@ import { ConfigProvider, App as AntdApp } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import App from './App'
 import { ConfirmProvider } from './components/common/ConfirmProvider'
+import ErrorBoundary from './components/common/ErrorBoundary'
 import { useThemeStore } from './stores/themeStore'
 import { getAntdTheme } from './theme/antdTheme'
 import { setupMockApi } from './mock'
@@ -29,6 +30,9 @@ function Root() {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Root />
+    {/* 最外层兜底：任意组件渲染异常不再白屏 */}
+    <ErrorBoundary>
+      <Root />
+    </ErrorBoundary>
   </React.StrictMode>
 )

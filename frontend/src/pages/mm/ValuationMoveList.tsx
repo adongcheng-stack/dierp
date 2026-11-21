@@ -56,7 +56,6 @@ const ValuationMoveList: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceFilter])
 
   const columns = [

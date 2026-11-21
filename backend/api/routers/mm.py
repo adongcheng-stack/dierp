@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from backend.common.database.base import get_db
 from backend.common.models.user import User
@@ -142,6 +142,8 @@ class MaterialIssueCreate(BaseModel):
     quantity: float
     unit: str
     warehouse: Optional[str] = None
+    batch_number: Optional[str] = None
+    purchase_order_number: Optional[str] = None
     remarks: Optional[str] = None
 
 
@@ -152,6 +154,8 @@ class MaterialIssueResponse(BaseModel):
     material_code: str
     quantity: float
     issued_by: str
+    batch_number: Optional[str] = None
+    purchase_order_number: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -411,6 +415,8 @@ async def create_material_issue(
             issued_by=current_user.username,
             issued_at=datetime.utcnow(),
             warehouse=issue.warehouse,
+            batch_number=issue.batch_number,
+            purchase_order_number=issue.purchase_order_number,
             remarks=issue.remarks,
             created_by=current_user.username
         )
@@ -1169,7 +1175,7 @@ def batch_tracking(db: Session = Depends(get_db)):
         shelf = row.get("shelf_life_days")
         if shelf and row["last_completed_at"]:
             base = datetime.fromisoformat(row["last_completed_at"])
-            expiry = base + __import__("datetime").timedelta(days=int(shelf))
+            expiry = base + timedelta(days=int(shelf))
             days = (expiry - now).days
             row["estimated_expiry"] = expiry.date().isoformat()
             row["days_to_expiry"] = days

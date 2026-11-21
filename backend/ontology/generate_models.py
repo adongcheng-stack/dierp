@@ -21,10 +21,21 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 ONTOLOGY_DIR = ROOT / "ontology"
-MODEL_FILE = ONTOLOGY_DIR / "model" / "planning.yaml"
 MAPPINGS_FILE = ONTOLOGY_DIR / "src" / "mappings.json"
-BACKEND_OUT = ROOT / "backend" / "common" / "models" / "planning.py"
-FRONTEND_OUT = ROOT / "frontend" / "src" / "types" / "planning.generated.ts"
+
+# 每份运营模型 → 独立生成物。新增领域只需在此追加一条配置。
+MODEL_CONFIGS: list[tuple[str, str, str]] = [
+    (
+        "model/planning.yaml",
+        "backend/common/models/planning.py",
+        "frontend/src/types/planning.generated.ts",
+    ),
+    (
+        "model/admin.yaml",
+        "backend/common/models/admin.py",
+        "frontend/src/types/admin.generated.ts",
+    ),
+]
 
 PY_TYPE_IMPORTS = {
     "string": "String",
@@ -113,7 +124,7 @@ def render_models(model: dict[str, Any], mappings: dict[str, Any]) -> str:
     lines: list[str] = [
         '"""',
         "GENERATED FILE - DO NOT EDIT BY HAND.",
-        f"Source: ontology/model/planning.yaml (version {model.get('version', '1.0.0')})",
+        f"Source: {model.get('_source', 'ontology/model/planning.yaml')} (version {model.get('version', '1.0.0')})",
         f"Ontology: {model.get('namespace', '')}",
         "Regenerate: python backend/ontology/generate_models.py",
         '"""',
@@ -166,7 +177,7 @@ def render_ts(model: dict[str, Any], mappings: dict[str, Any]) -> str:
     lines: list[str] = [
         "/**",
         " * GENERATED FILE - DO NOT EDIT BY HAND.",
-        f" * Source: ontology/model/planning.yaml (version {model.get('version', '1.0.0')})",
+        f" * Source: {model.get('_source', 'ontology/model/planning.yaml')} (version {model.get('version', '1.0.0')})",
         " * Regenerate: python backend/ontology/generate_models.py",
         " */",
         "",
@@ -208,19 +219,23 @@ def render_ts(model: dict[str, Any], mappings: dict[str, Any]) -> str:
 
 
 def main() -> None:
-    model = yaml.safe_load(MODEL_FILE.read_text(encoding="utf-8"))
     mappings = json.loads(MAPPINGS_FILE.read_text(encoding="utf-8"))
+    for model_rel, backend_rel, frontend_rel in MODEL_CONFIGS:
+        model = yaml.safe_load((ONTOLOGY_DIR / model_rel).read_text(encoding="utf-8"))
+        model["_source"] = f"ontology/{model_rel}"
+        backend_out = ROOT / backend_rel
+        frontend_out = ROOT / frontend_rel
 
-    py = render_models(model, mappings)
-    BACKEND_OUT.parent.mkdir(parents=True, exist_ok=True)
-    BACKEND_OUT.write_text(py, encoding="utf-8")
+        py = render_models(model, mappings)
+        backend_out.parent.mkdir(parents=True, exist_ok=True)
+        backend_out.write_text(py, encoding="utf-8")
 
-    ts = render_ts(model, mappings)
-    FRONTEND_OUT.parent.mkdir(parents=True, exist_ok=True)
-    FRONTEND_OUT.write_text(ts, encoding="utf-8")
+        ts = render_ts(model, mappings)
+        frontend_out.parent.mkdir(parents=True, exist_ok=True)
+        frontend_out.write_text(ts, encoding="utf-8")
 
-    print(f"generated {BACKEND_OUT.relative_to(ROOT)} ({len(model['entities'])} entities)")
-    print(f"generated {FRONTEND_OUT.relative_to(ROOT)}")
+        print(f"generated {backend_rel} ({len(model['entities'])} entities)")
+        print(f"generated {frontend_rel}")
 
 
 if __name__ == "__main__":

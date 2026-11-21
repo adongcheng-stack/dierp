@@ -45,7 +45,7 @@ const QuotationForm: React.FC = () => {
           syncFields.single_piece_width = value / 10
         }
         break
-      case 'material_type':
+      case 'material_type': {
         // 板材类型映射到产品类别
         const categoryMap: any = {
           'FR4': 'FR-4',
@@ -55,6 +55,7 @@ const QuotationForm: React.FC = () => {
           syncFields.product_category = categoryMap[value] || value
         }
         break
+      }
       case 'tg_value':
         syncFields.board_material_tg = value
         break
@@ -426,13 +427,12 @@ const QuotationForm: React.FC = () => {
         }
       })
       
-      // 如果有报价单编号，使用带编号的端点；否则使用临时计算端点
+      // 已保存报价单 → 明细重算；未保存（新建/草稿）→ 试算（preview，不写库）
       let response
       if (quotationNumber) {
         response = await api.post(`/sd/quotations/${quotationNumber}/calculate-details`, calculationData)
       } else {
-        // 使用临时计算端点（不需要报价单编号）
-        response = await api.post('/sd/quotations/calculate-details', calculationData)
+        response = await api.post('/sd/quotations/preview-details', calculationData)
       }
       
       setCalculationResult(response.data)

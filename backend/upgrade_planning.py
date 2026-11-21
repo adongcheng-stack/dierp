@@ -52,6 +52,8 @@ from backend.common.models.planning import (  # noqa: E402
     NonConformanceReport,
     PlanningPolicy,
     ProcurementType,
+    PurchaseOrder,
+    PurchaseOrderLine,
     Resource,
     ResourceStatus,
     SkillMatrix,
@@ -1575,6 +1577,62 @@ def seed_purchase_requests(db: Session) -> int:
     return created
 
 
+def seed_material_batches(db: Session) -> int:
+    """原料批次追溯基线（幂等）：回填领料单批次号/来源采购单，并给来料检验挂采购单。
+
+    追溯引擎据此可把「领料批次 → 采购单 → 供应商」串起来；仅补空值，不覆盖用户录入。
+    """
+    from backend.common.models.mm import MaterialIssue
+
+    count = 0
+    first_po = db.query(PurchaseOrder).filter(PurchaseOrder.is_deleted == False).first()  # noqa: E712
+
+    issues = db.query(MaterialIssue).filter(MaterialIssue.is_deleted == False).all()  # noqa: E712
+    for issue in issues:
+        if issue.batch_number:
+            continue
+        day = issue.issued_at.strftime("%Y%m%d") if issue.issued_at else "20261120"
+        issue.batch_number = f"BATCH-{issue.material_code}-{day}"
+        line = (
+            db.query(PurchaseOrderLine)
+            .filter(
+                PurchaseOrderLine.material_code == issue.material_code,
+                PurchaseOrderLine.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        po = line.purchase_order_number if line else (first_po.purchase_order_number if first_po else None)
+        if po:
+            issue.purchase_order_number = po
+        count += 1
+
+    # 来料检验单挂采购单（演示库中原字段恒空）
+    iqc_rows = (
+        db.query(InspectionOrder)
+        .filter(
+            InspectionOrder.inspection_type == InspectionType.INCOMING,
+            InspectionOrder.purchase_order_number.is_(None),
+            InspectionOrder.is_deleted == False,  # noqa: E712
+        )
+        .all()
+    )
+    for row in iqc_rows:
+        line = (
+            db.query(PurchaseOrderLine)
+            .filter(
+                PurchaseOrderLine.material_code == row.material_code,
+                PurchaseOrderLine.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        po = line.purchase_order_number if line else (first_po.purchase_order_number if first_po else None)
+        if po:
+            row.purchase_order_number = po
+            count += 1
+
+    return count
+
+
 def seed_material_transactions(db: Session) -> int:
     """库存流水基线种子（幂等）：按现存领料单补 ISSUE 流水。
 
@@ -1647,6 +1705,7 @@ def main() -> None:
         print(f"[OK] 采购演示单据新增 {seed_purchase_demo_data(db)} 张")
         print(f"[OK] 采购申请演示新增 {seed_purchase_requests(db)} 张")
         print(f"[OK] 供应商主数据新增 {seed_suppliers(db)} 家")
+        print(f"[OK] 原料批次追溯基线新增 {seed_material_batches(db)} 条")
         print(f"[OK] 库存流水基线新增 {seed_material_transactions(db)} 条")
         print(f"[OK] 库存估值期初新增 {seed_inventory_opening(db)} 条")
         print(f"[OK] 销售发货演示新增 {seed_sales_delivery_demo(db)} 张")

@@ -12,6 +12,7 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
   CUSTOMER: { label: '客户', color: 'purple' },
   MATERIAL: { label: '物料', color: 'orange' },
   MATERIAL_ISSUE: { label: '领料', color: 'gold' },
+  MATERIAL_BATCH: { label: '原料批次', color: 'gold' },
   OPERATION_REPORT: { label: '报工', color: 'green' },
   INSPECTION: { label: '检验', color: 'blue' },
   NCR: { label: '不合格品', color: 'red' },

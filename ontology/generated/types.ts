@@ -60,7 +60,7 @@ export type DeliveryStatus = 'DRAFT' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
 
-export type ReceivableEntryType = 'INVOICE' | 'RECEIPT' | 'ADJUST';
+export type ReceivableEntryType = 'INVOICE' | 'RECEIPT' | 'ADJUST' | 'RECEIPT_REVERSE' | 'INVOICE_REVERSE';
 
 export type SupplierInvoiceStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
@@ -76,7 +76,7 @@ export type ValuationDirection = 'IN' | 'OUT';
 
 export type CostSourceType = 'PURCHASE_RECEIPT' | 'PURCHASE_RETURN' | 'PRODUCTION_COMPLETE' | 'MATERIAL_ISSUE' | 'SALES_ISSUE' | 'SALES_RETURN' | 'STOCKTAKE' | 'OPENING' | 'TRANSFER';
 
-export type GlSourceType = 'SALES_INVOICE_ISSUED' | 'SALES_DELIVERY_SHIPPED' | 'SUPPLIER_INVOICE_CONFIRMED' | 'SUPPLIER_PAYMENT_PAID' | 'RECEIPT_PAID' | 'MATERIAL_ISSUE' | 'STOCK_ADJUST' | 'PRODUCTION_COMPLETE' | 'PERIOD_CLOSE' | 'OPENING' | 'COST_VARIANCE';
+export type GlSourceType = 'SALES_INVOICE_ISSUED' | 'SALES_INVOICE_REVERSED' | 'SALES_DELIVERY_SHIPPED' | 'SUPPLIER_INVOICE_CONFIRMED' | 'SUPPLIER_PAYMENT_PAID' | 'RECEIPT_PAID' | 'RECEIPT_PAID_REVERSE' | 'MATERIAL_ISSUE' | 'STOCK_ADJUST' | 'PRODUCTION_COMPLETE' | 'PERIOD_CLOSE' | 'OPENING' | 'COST_VARIANCE';
 
 export type StocktakeStatus = 'DRAFT' | 'APPROVED' | 'CANCELLED';
 
@@ -115,3 +115,21 @@ export type NcrSeverity = 'MINOR' | 'MAJOR' | 'CRITICAL';
 export type NcrDisposition = 'REWORK' | 'SCRAP' | 'USE_AS_IS' | 'RETURN' | 'REVIEW';
 
 export type NcrStatus = 'OPEN' | 'UNDER_REVIEW' | 'DISPOSITIONED' | 'CLOSED';
+
+export type UserRole = 'SALES' | 'SALES_MANAGER' | 'ENGINEER' | 'PLANNER' | 'PRODUCTION' | 'WAREHOUSE' | 'FINANCE' | 'GENERAL_MANAGER' | 'ADMIN';
+
+export type AccessDomain = 'sd' | 'eng' | 'pp' | 'mm' | 'planning' | 'qms' | 'purchase' | 'finance' | 'users' | 'admin' | 'system' | 'auth' | 'dashboard' | 'traceability';
+
+export type HttpWriteMethod = 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export type DepartmentStatus = 'ACTIVE' | 'INACTIVE';
+
+export type DepartmentType = 'COMPANY' | 'DIVISION' | 'DEPARTMENT' | 'TEAM' | 'WORKSHOP';
+
+export type MenuType = 'DIRECTORY' | 'MENU' | 'BUTTON';
+
+export type MenuStatus = 'ACTIVE' | 'INACTIVE';
+
+export type ParamType = 'STRING' | 'INT' | 'BOOLEAN' | 'JSON';
+
+export type LoginStatus = 'SUCCESS' | 'FAIL';

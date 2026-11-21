@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
@@ -167,7 +168,7 @@ class InventoryValuationService:
         valuation.amount = _q(amount_after, Q4)
         valuation.avg_cost = _q(avg_after, Q6)
         valuation.updated_by = operator
-        valuation.updated_at = __import__("datetime").datetime.now()
+        valuation.updated_at = datetime.now()
 
         # 数量账与金额账保持单一真相
         material.current_stock = _q(qty_after, Q2)

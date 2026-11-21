@@ -80,7 +80,6 @@ const JournalEntryList: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceFilter, statusFilter])
 
   const columns = [

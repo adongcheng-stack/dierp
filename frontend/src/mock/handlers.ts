@@ -1,5 +1,12 @@
 import { getDb, saveDb, clone, type MockDb, type MockUser } from './db'
 import { applyEquals, nextId, nextNumber, nowIso, paginate, round, safeDecode, searchText, toNumber } from './utils'
+// 授权策略唯一事实源：ontology/src/security.ttl → 生成物（与后端同构）
+import {
+  READ_OPEN_DOMAINS,
+  READ_ROLE_POLICY,
+  WRITE_METHODS,
+  WRITE_ROLE_POLICY,
+} from '../types/authorization.generated'
 
 export class MockApiError extends Error {
   status: number
@@ -149,7 +156,7 @@ function ensureReview(db: MockDb, order: any) {
       has_workflow: false,
       order_status: order.status,
       workflow_status: {
-        instance_id: `SALES_ORDER_REVIEW-${order.order_number}-${nowIso().replace(/[-:T]/g, '')}`,
+        instance_id: `SALES_ORDER_REVIEW-${order.order_number}-${nowIso().replace(/[\u002d:T]/g, '')}`,
         status: 'PENDING',
         current_node: null,
         nodes: REVIEW_NODES.map((node) => ({
@@ -351,6 +358,151 @@ route('GET', '/roles', () => ok(clone(listOf(getDb(), 'roles'))))
 
 route('GET', '/users/me', (ctx) => ok(clone(requireUser(ctx))))
 
+// 审计日志：演示模式不落库，返回空事实流（真机由 OperationLog 中间件写入）
+route('GET', '/admin/operation-logs', () => ok({ total: 0, items: [] }))
+
+// 数据导出（演示模式直接返回内存快照对应集合）
+const EXPORT_COLLECTIONS: Record<string, string> = {
+  customers: 'customers',
+  materials: 'materials',
+  suppliers: 'suppliers',
+  'sales-orders': 'salesOrders',
+  'production-orders': 'productionOrders',
+  'purchase-orders': 'purchaseOrders',
+}
+route('GET', '/admin/export/:entity', (_ctx, params) => {
+  const db = getDb()
+  const collection = EXPORT_COLLECTIONS[params.entity]
+  const items = collection ? listOf(db, collection).filter((row: any) => !row.is_deleted) : []
+  return ok({ entity: params.entity, total: items.length, items: clone(items) })
+})
+
+// 数据导入（演示模式不落库，返回模拟统计）
+route('POST', '/admin/import/:entity', (ctx, params) => {
+  const rows = Array.isArray(ctx.body?.rows) ? ctx.body.rows : []
+  return ok({ entity: params.entity, created: 0, skipped: rows.length })
+})
+
+/* ── 组织架构与系统管理（与 backend/api/routers/system.py 同构） ── */
+function buildTree(rows: any[]): any[] {
+  const byId = new Map<number, any>()
+  for (const row of rows) byId.set(row.id, { ...clone(row), children: [] })
+  const roots: any[] = []
+  for (const row of rows) {
+    const node = byId.get(row.id)!
+    const parent = row.parent_id ? byId.get(row.parent_id) : null
+    ;(parent ? parent.children : roots).push(node)
+  }
+  return roots
+}
+function activeRows(db: any, key: string): any[] {
+  return listOf(db, key).filter((row: any) => !row.is_deleted)
+}
+
+route('GET', '/system/departments/tree', () => ok(buildTree(activeRows(getDb(), 'departments'))))
+route('GET', '/system/departments', () => {
+  const rows = activeRows(getDb(), 'departments')
+  return ok({ total: rows.length, items: clone(rows) })
+})
+route('POST', '/system/departments', (ctx) => {
+  const db = getDb(); const rows = listOf(db, 'departments')
+  if (rows.some((r: any) => r.code === ctx.body?.code && !r.is_deleted)) fail(400, '部门编码已存在')
+  const row = { ...ctx.body, id: nextId(rows), is_deleted: false,
+    created_at: nowIso(), updated_at: nowIso(), created_by: ctx.user?.username ?? null }
+  rows.push(row); saveDb(); return ok(clone(row), 201)
+})
+route('PUT', '/system/departments/:id', (ctx, params) => {
+  const db = getDb(); const row = requireItem(listOf(db, 'departments'), 'id', params.id, '部门')
+  Object.assign(row, ctx.body, { id: row.id, updated_at: nowIso() }); saveDb(); return ok(clone(row))
+})
+route('DELETE', '/system/departments/:id', (_ctx, params) => {
+  const db = getDb(); const row = requireItem(listOf(db, 'departments'), 'id', params.id, '部门')
+  if (activeRows(db, 'departments').some((r: any) => r.parent_id === row.id)) fail(400, '存在下级部门，无法删除')
+  row.is_deleted = true; saveDb(); return ok({ deleted: row.id })
+})
+
+route('GET', '/system/menus/tree', () => ok(buildTree(activeRows(getDb(), 'menus'))))
+route('GET', '/system/menus', () => {
+  const rows = activeRows(getDb(), 'menus'); return ok({ total: rows.length, items: clone(rows) })
+})
+route('POST', '/system/menus', (ctx) => {
+  const db = getDb(); const rows = listOf(db, 'menus')
+  if (rows.some((r: any) => r.code === ctx.body?.code && !r.is_deleted)) fail(400, '菜单编码已存在')
+  const row = { ...ctx.body, id: nextId(rows), visible: ctx.body?.visible !== false,
+    is_deleted: false, created_at: nowIso(), updated_at: nowIso() }
+  rows.push(row); saveDb(); return ok(clone(row), 201)
+})
+route('PUT', '/system/menus/:id', (ctx, params) => {
+  const db = getDb(); const row = requireItem(listOf(db, 'menus'), 'id', params.id, '菜单')
+  Object.assign(row, ctx.body, { id: row.id, updated_at: nowIso() }); saveDb(); return ok(clone(row))
+})
+route('DELETE', '/system/menus/:id', (_ctx, params) => {
+  const db = getDb(); const row = requireItem(listOf(db, 'menus'), 'id', params.id, '菜单')
+  if (activeRows(db, 'menus').some((r: any) => r.parent_id === row.id)) fail(400, '存在下级菜单，无法删除')
+  row.is_deleted = true
+  listOf(db, 'roleMenus').filter((r: any) => r.menu_id === row.id).forEach((r: any) => { r.is_deleted = true })
+  saveDb(); return ok({ deleted: row.id })
+})
+
+const ROLE_LABELS: Record<string, string> = {
+  SALES: '销售', SALES_MANAGER: '销售经理', ENGINEER: '工程', PLANNER: '计划',
+  PRODUCTION: '生产', WAREHOUSE: '仓库', FINANCE: '财务',
+  GENERAL_MANAGER: '总经理', ADMIN: '系统管理员',
+}
+route('GET', '/system/roles', () => {
+  const db = getDb(); const users = activeRows(db, 'users'); const grants = activeRows(db, 'roleMenus')
+  const items = Object.keys(ROLE_LABELS).map((code) => ({
+    code, name: ROLE_LABELS[code],
+    menu_count: grants.filter((g: any) => g.role_code === code).length,
+    user_count: users.filter((u: any) => u.role === code).length,
+  }))
+  return ok({ total: items.length, items })
+})
+route('GET', '/system/roles/:code/menus', (_ctx, params) => {
+  const grants = activeRows(getDb(), 'roleMenus').filter((g: any) => g.role_code === params.code)
+  return ok({ role: params.code, menu_ids: grants.map((g: any) => g.menu_id) })
+})
+route('POST', '/system/roles/:code/menus', (ctx, params) => {
+  const db = getDb(); const rows = listOf(db, 'roleMenus')
+  rows.filter((r: any) => r.role_code === params.code).forEach((r: any) => { r.is_deleted = true })
+  for (const id of new Set<number>(ctx.body?.menu_ids ?? [])) {
+    rows.push({ id: nextId(rows), role_code: params.code, menu_id: id, is_deleted: false,
+      created_at: nowIso(), created_by: ctx.user?.username ?? null })
+  }
+  saveDb(); return ok({ role: params.code, menu_ids: ctx.body?.menu_ids ?? [] })
+})
+
+route('GET', '/system/parameters', () => {
+  const rows = activeRows(getDb(), 'systemParameters'); return ok({ total: rows.length, items: clone(rows) })
+})
+route('GET', '/system/parameters/key/:key', (_ctx, params) => {
+  const row = activeRows(getDb(), 'systemParameters').find((r: any) => r.param_key === params.key)
+  if (!row) fail(404, '参数不存在')
+  return ok(clone(row))
+})
+route('POST', '/system/parameters', (ctx) => {
+  const db = getDb(); const rows = listOf(db, 'systemParameters')
+  if (rows.some((r: any) => r.param_key === ctx.body?.param_key && !r.is_deleted)) fail(400, '参数键已存在')
+  const row = { ...ctx.body, id: nextId(rows), is_deleted: false, created_at: nowIso(), updated_at: nowIso() }
+  rows.push(row); saveDb(); return ok(clone(row), 201)
+})
+route('PUT', '/system/parameters/:id', (ctx, params) => {
+  const db = getDb(); const row = requireItem(listOf(db, 'systemParameters'), 'id', params.id, '参数')
+  Object.assign(row, ctx.body, { id: row.id, updated_at: nowIso() }); saveDb(); return ok(clone(row))
+})
+route('DELETE', '/system/parameters/:id', (_ctx, params) => {
+  const db = getDb(); const row = requireItem(listOf(db, 'systemParameters'), 'id', params.id, '参数')
+  if (row.is_system) fail(400, '系统内置参数不可删除')
+  row.is_deleted = true; saveDb(); return ok({ deleted: row.id })
+})
+
+route('GET', '/system/login-logs', (ctx) => {
+  let rows = activeRows(getDb(), 'loginLogs')
+  if (ctx.query.username) rows = rows.filter((r: any) => r.username === ctx.query.username)
+  rows = [...rows].reverse().slice(0, 200)
+  return ok({ total: rows.length, items: clone(rows) })
+})
+
 route('GET', '/users', (ctx) => {
   const db = getDb()
   let users = listOf(db, 'users').filter((user) => !user.is_deleted)
@@ -540,6 +692,10 @@ route('GET', '/sd/quotations/pending-approval', () => {
   return ok(clone(pending))
 })
 
+// 报价试算：未保存时按输入参数计算（不写库）；旧路径保留兼容
+route('POST', '/sd/quotations/preview-details', (ctx) =>
+  ok(buildCalculation(ctx.body ?? {}))
+)
 route('POST', '/sd/quotations/calculate-details', (ctx) =>
   ok(buildCalculation(ctx.body ?? {}))
 )
@@ -1151,6 +1307,8 @@ route('POST', '/mm/material-issues', (ctx) => {
       quantity,
       unit: ctx.body?.unit ?? material.unit,
       issued_by: user.username,
+      batch_number: ctx.body?.batch_number ?? null,
+      purchase_order_number: ctx.body?.purchase_order_number ?? null,
       remarks: ctx.body?.remarks ?? null,
     },
     user
@@ -3332,7 +3490,7 @@ route('POST', '/planning/cost/settlement/settle', (ctx) => {
 
 route('GET', '/planning/cost/settlements', (ctx) => {
   const db = getDb()
-  let rows = listOf(db, 'costSettlements').filter((item) => !item.is_deleted)
+  const rows = listOf(db, 'costSettlements').filter((item) => !item.is_deleted)
   rows.sort((a, b) => Number(b.id) - Number(a.id))
   return ok({ total: rows.length, items: clone(paginate(rows, ctx.query)) })
 })
@@ -3534,7 +3692,7 @@ function apsRun(db: MockDb, body: any, user: MockUser) {
     if (!wc.is_deleted) calendars.set(wc.work_center_id, apsCalendarFor(db, wc.work_center_id, start, end))
   }
   let opCount = 0
-  let excCount = 0
+  let _excCount = 0
 
   const addException = (payload: any) => {
     exceptions.push(stampNew({
@@ -3546,7 +3704,7 @@ function apsRun(db: MockDb, body: any, user: MockUser) {
       ...payload,
       is_deleted: false,
     }, user))
-    excCount += 1
+    _excCount += 1
   }
 
   for (const order of orders) {
@@ -3824,7 +3982,7 @@ route('POST', '/planning/aps/simulate', (ctx) => {
 
 route('GET', '/planning/aps/scenarios', (ctx) => {
   const db = getDb()
-  let rows = listOf(db, 'scenarioSimulations').filter((item) => !item.is_deleted)
+  const rows = listOf(db, 'scenarioSimulations').filter((item) => !item.is_deleted)
   rows.sort((a, b) => Number(b.id) - Number(a.id))
   return ok({ total: rows.length, items: clone(paginate(rows, ctx.query)) })
 })
@@ -4557,6 +4715,33 @@ function traceAddEdge(g: ReturnType<typeof traceNewGraph>, from: string, to: str
   }
 }
 
+/** 领料单的原料批次 → 采购单 → 供应商（与后端 _add_batch_source 同构） */
+function traceAddBatchSource(db: any, g: ReturnType<typeof traceNewGraph>, issue: any, fromKey: string): void {
+  if (!issue.batch_number) return
+  const po = issue.purchase_order_number
+    ? listOf(db, 'purchaseOrders').find(
+        (p) => !p.is_deleted && p.purchase_order_number === issue.purchase_order_number
+      )
+    : null
+  const batchKey = traceAddNode(g, 'MATERIAL_BATCH', issue.batch_number, `原料批次 ${issue.batch_number}`, {
+    meta: {
+      batch_number: issue.batch_number,
+      material_code: issue.material_code,
+      purchase_order_number: issue.purchase_order_number || null,
+      supplier: po?.supplier_name ?? null,
+    },
+  })
+  traceAddEdge(g, fromKey, batchKey, '领用批次')
+  if (po) {
+    const poKey = traceAddNode(g, 'PURCHASE_ORDER', po.purchase_order_number, `采购单 ${po.purchase_order_number}`, {
+      status: po.status,
+      time: po.order_date || null,
+      meta: { supplier: po.supplier_name },
+    })
+    traceAddEdge(g, batchKey, poKey, '批次来源')
+  }
+}
+
 function traceExpandOrder(db: any, g: ReturnType<typeof traceNewGraph>, order: any): string {
   const orderKey = traceAddNode(g, 'PRODUCTION_ORDER', order.order_number, `生产订单 ${order.order_number}`, {
     status: order.status,
@@ -4615,6 +4800,7 @@ function traceExpandOrder(db: any, g: ReturnType<typeof traceNewGraph>, order: a
       meta: { material_code: issue.material_code, warehouse: issue.warehouse },
     })
     traceAddEdge(g, issueKey, orderKey, '领料')
+    traceAddBatchSource(db, g, issue, issueKey)
   }
 
   // 生产订单 → 报工（工单匹配 OR 批次匹配，与后端一致）
@@ -4830,6 +5016,7 @@ route('GET', '/traceability/materials/:materialCode', (_ctx, params) => {
       meta: { production_order_number: issue.production_order_number },
     })
     traceAddEdge(g, issueKey, materialKey, '领用')
+    traceAddBatchSource(db, g, issue, issueKey)
     if (issue.production_order_number && !seenOrders.has(issue.production_order_number)) {
       const order = listOf(db, 'productionOrders').find(
         (x) => !x.is_deleted && x.order_number === issue.production_order_number
@@ -5335,7 +5522,7 @@ route('GET', '/purchase/suppliers/performance', () => {
     const sid = po.supplier_id
     receivedAmount[sid] = (receivedAmount[sid] ?? 0) + toNumber(line.received_quantity) * toNumber(line.unit_price)
     if (toNumber(line.received_quantity) > 0) {
-      ;(receivedPos[sid] ??= new Set()).add(po.purchase_order_number)
+      (receivedPos[sid] ??= new Set()).add(po.purchase_order_number)
     }
   }
 
@@ -6007,32 +6194,34 @@ route('POST', '/purchase/purchase-returns/:number/close', (_ctx, params) => {
 
 /* ------------------------------- 路由入口 ------------------------------- */
 
-/* ------------------- 写操作权限门（与 backend/api/routers/auth.py 同构） ------------------- */
+/* ------------------- 权限门（与 backend/api/routers/auth.py 同构） ------------------- */
 
-const WRITE_ROLE_POLICY: Record<string, string[]> = {
-  sd: ['SALES', 'SALES_MANAGER', 'GENERAL_MANAGER', 'ADMIN'],
-  eng: ['ENGINEER', 'GENERAL_MANAGER', 'ADMIN'],
-  pp: ['PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
-  mm: ['WAREHOUSE', 'PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
-  planning: ['PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
-  qms: ['PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
-  purchase: ['WAREHOUSE', 'PRODUCTION', 'PLANNER', 'GENERAL_MANAGER', 'ADMIN'],
-  users: ['ADMIN'],
-}
+const WRITE_METHOD_SET = new Set<string>(WRITE_METHODS)
 
-const WRITE_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH'])
-
-/** 写方法按域校验角色；只读请求（含 CORS 预检）匿名放行。 */
+/** 写方法按本体策略校验角色；未纳入策略的域默认拒绝（fail-closed）。 */
 function enforceWritePermission(ctx: MockContext) {
-  if (!WRITE_METHODS.has(ctx.method)) return
+  if (!WRITE_METHOD_SET.has(ctx.method)) return
   const domain = ctx.path.split('/').filter(Boolean)[0] ?? ''
   const allowed = WRITE_ROLE_POLICY[domain]
-  if (!allowed) return
   const user = requireUser(ctx)
   if (user.role === 'ADMIN') return
+  if (!allowed) {
+    fail(403, `域「${domain}」未纳入写权限策略，默认拒绝`)
+  }
   if (!allowed.includes(user.role)) {
     fail(403, `当前角色(${user.role})无权在「${domain}」域执行写操作`)
   }
+}
+
+/** 只读权限：本体声明匿名可读的域放行；其余域必须登录且命中 :readRole。 */
+function enforceReadPermission(ctx: MockContext) {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(ctx.method)) return
+  const domain = ctx.path.split('/').filter(Boolean)[0] ?? ''
+  if (READ_OPEN_DOMAINS.includes(domain)) return
+  const allowed = READ_ROLE_POLICY[domain]
+  const user = requireUser(ctx)
+  if (user.role === 'ADMIN' || (allowed && allowed.includes(user.role))) return
+  fail(403, `当前角色(${user.role})无权读取「${domain}」域数据`)
 }
 
 // ── 销售域：发货单 / 销售发票 / 应收台账（与后端 sd.py 同构） ─────────
@@ -6355,6 +6544,49 @@ route('POST', '/sd/invoices/:number/issue', (ctx, params) => {
   )
   saveDb()
   return ok(invoiceDict(i))
+})
+
+// 发票红字冲回（与后端 sd.py reverse_invoice 同构）
+route('POST', '/sd/invoices/:number/reverse', (ctx, params) => {
+  const db = getDb()
+  const i = requireItem(listOf(db, 'salesInvoices'), 'invoice_number', params.number, '发票')
+  if (i.status !== 'ISSUED' && i.status !== 'PARTIALLY_PAID') {
+    fail(400, `仅未收款发票可红字冲回，当前状态为 ${i.status}`)
+  }
+  if (toNumber(i.received_amount) > 0) fail(400, '发票已有收款，请先红冲对应收款单')
+  const reverseRef = `${i.invoice_number}-INV-REVERSE`
+  const entries = listOf(db, 'receivableEntries')
+  if (entries.some((e: any) => e.reference_number === reverseRef && e.entry_type === 'INVOICE_REVERSE' && !e.is_deleted)) {
+    fail(400, `发票 ${i.invoice_number} 已红字冲回，请勿重复操作`)
+  }
+  const amount = toNumber(i.amount)
+  entries.unshift(
+    stampNew(
+      {
+        id: nextId(entries),
+        entry_number: nextNumber(entries, 'entry_number', 'AR'),
+        invoice_number: i.invoice_number,
+        customer_id: i.customer_id,
+        entry_type: 'INVOICE_REVERSE',
+        amount: -amount,
+        entry_date: nowIso(),
+        reference_number: reverseRef,
+        remarks: `红字冲回发票 ${i.invoice_number}`,
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      ctx.user
+    )
+  )
+  i.status = 'CANCELLED'
+  i.updated_at = nowIso()
+  try {
+    postMockGl(db, 'SALES_INVOICE_REVERSED', reverseRef, amount,
+      `红字冲回发票 ${i.invoice_number}`, ctx.user?.username ?? null)
+  } catch { /* GL 失败不阻断业务（与后端同构） */ }
+  saveDb()
+  return ok({ invoice_number: i.invoice_number, status: 'CANCELLED', reversed_amount: amount, reference_number: reverseRef })
 })
 
 route('GET', '/sd/receivables', (ctx) => {
@@ -6857,6 +7089,59 @@ route('POST', '/sd/receipts/:number/cancel', (_ctx, params) => {
   return ok(receiptDict(r, receiptAllocations(db, params.number)))
 })
 
+route('POST', '/sd/receipts/:number/reverse', (ctx, params) => {
+  const db = getDb()
+  const r = requireItem(listOf(db, 'receipts'), 'receipt_number', params.number, '收款单')
+  if (r.status !== 'PAID') fail(400, `仅已核销(PAID)收款单可红字冲回，当前状态为 ${r.status}`)
+  const reverseRef = `${r.receipt_number}-REVERSE`
+  const entryRows = listOf(db, 'receivableEntries')
+  if (entryRows.some((e: any) => !e.is_deleted && e.entry_type === 'RECEIPT_REVERSE' && e.reference_number === reverseRef)) {
+    fail(400, `收款单 ${r.receipt_number} 已红字冲回，请勿重复操作`)
+  }
+  let reversedTotal = 0
+  for (const a of receiptAllocations(db, params.number)) {
+    const invoice = findItem(listOf(db, 'salesInvoices'), 'invoice_number', a.invoice_number)
+    if (!invoice || invoice.is_deleted) continue
+    const amount = toNumber(a.allocated_amount)
+    const remaining = Math.max(0, round(toNumber(invoice.received_amount) - amount, 2))
+    invoice.received_amount = remaining
+    invoice.status = remaining >= toNumber(invoice.amount) - 1e-6
+      ? 'PAID'
+      : remaining > 1e-6 ? 'PARTIALLY_PAID' : 'ISSUED'
+    invoice.updated_at = nowIso()
+    entryRows.unshift(stampNew(
+      {
+        id: nextId(entryRows),
+        entry_number: nextNumber(entryRows, 'entry_number', 'AR'),
+        invoice_number: invoice.invoice_number,
+        customer_id: r.customer_id,
+        entry_type: 'RECEIPT_REVERSE',
+        amount,
+        entry_date: nowIso(),
+        reference_number: reverseRef,
+        remarks: `红字冲回收款 ${r.receipt_number}`,
+        created_by: ctx.user?.username ?? null,
+        created_at: nowIso(),
+        is_deleted: false,
+      },
+      ctx.user
+    ))
+    reversedTotal += amount
+  }
+  r.status = 'REVERSED'
+  r.updated_at = nowIso()
+  saveDb()
+  if (reversedTotal > 0) {
+    try {
+      postMockGl(db, 'RECEIPT_PAID_REVERSE', reverseRef, reversedTotal,
+        `红字冲回收款 ${r.receipt_number}`, ctx.user?.username ?? null)
+    } catch { /* GL 失败不阻断业务 */ }
+  }
+  const result: any = receiptDict(r, receiptAllocations(db, params.number))
+  result.reversed_amount = reversedTotal
+  return ok(result)
+})
+
 // ── 总账引擎镜像（P2）：GL_RULES + postMockGl + /finance 只读端点 ──────
 
 const GL_RULES: Record<string, [string, string]> = {
@@ -6865,6 +7150,7 @@ const GL_RULES: Record<string, [string, string]> = {
   SUPPLIER_INVOICE_CONFIRMED: ['1405', '2202'],
   SUPPLIER_PAYMENT_PAID: ['2202', '1002'],
   RECEIPT_PAID: ['1002', '1122'],
+  RECEIPT_PAID_REVERSE: ['1122', '1002'],
   MATERIAL_ISSUE: ['5001', '1405'],
   STOCK_ADJUST: ['5001', '1405'],
   PRODUCTION_COMPLETE: ['1405', '5001'],
@@ -7434,7 +7720,7 @@ function postMockValuation(
   let cost = toNumber(unitCost)
   if (!cost) cost = toNumber(val.avg_cost) || toNumber(val.last_cost)
   if (!cost) return null
-  let qtyAfter = isIn ? qtyBefore + Math.abs(qtyDelta) : qtyBefore - Math.abs(qtyDelta)
+  const qtyAfter = isIn ? qtyBefore + Math.abs(qtyDelta) : qtyBefore - Math.abs(qtyDelta)
   let amountAfter = isIn
     ? amountBefore + Math.abs(qtyDelta) * cost
     : amountBefore - Math.abs(qtyDelta) * cost
@@ -7554,6 +7840,7 @@ route('POST', '/finance/periods/:code/reopen', (_ctx, params) => {
 
 export function handleMockRequest(ctx: MockContext): MockResult {
   enforceWritePermission(ctx)
+  enforceReadPermission(ctx)
 
   const pathSegments = ctx.path.split('/').filter(Boolean)
   for (const candidate of routes) {

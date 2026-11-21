@@ -995,7 +995,7 @@
     ] ;
     sh:property [
         sh:path :entryType ; sh:minCount 1 ; sh:maxCount 1 ;
-        sh:in ( "INVOICE" "RECEIPT" "ADJUST" ) ;
+        sh:in ( "INVOICE" "RECEIPT" "ADJUST" "RECEIPT_REVERSE" "INVOICE_REVERSE" ) ;
         sh:message "S39 流水类型必须来自 ReceivableEntryType 枚举"
     ] .
 
@@ -1148,3 +1148,51 @@
         sh:in ( "DRAFT" "CONFIRMED" "CANCELLED" ) ;
         sh:message "S47 调拨状态必须来自 StockTransferStatus 枚举"
     ] .
+
+# S48 安全/授权本体（security.ttl overlay）
+:RoleShape a sh:NodeShape ;
+    sh:targetClass :Role ;
+    sh:property [ sh:path :roleCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "SALES" "SALES_MANAGER" "ENGINEER" "PLANNER" "PRODUCTION" "WAREHOUSE" "FINANCE" "GENERAL_MANAGER" "ADMIN" ) ;
+        sh:message "S48 角色编码必须来自 UserRole 枚举" ] .
+
+:AccessDomainShape a sh:NodeShape ;
+    sh:targetClass :AccessDomain ;
+    sh:property [ sh:path :domainCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "sd" "eng" "pp" "mm" "planning" "qms" "purchase" "finance" "users" "admin" "system" "auth" "dashboard" "traceability" ) ;
+        sh:message "S48 访问域编码必须来自 AccessDomain 枚举" ] ;
+    sh:property [ sh:path :allowsRole ; sh:minCount 0 ;
+        sh:class :Role ; sh:message "S48 allowsRole 只能指向 Role 个体" ] ;
+    sh:property [ sh:path :anonymousRead ; sh:maxCount 1 ; sh:datatype xsd:boolean ;
+        sh:message "S48 anonymousRead 必须至多一个布尔值" ] .
+
+# S49 组织架构与系统管理枚举
+:DepartmentShape a sh:NodeShape ;
+    sh:targetClass :Department ;
+    sh:property [ sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "ACTIVE" "INACTIVE" ) ;
+        sh:message "S49 部门状态必须来自 DepartmentStatus 枚举" ] ;
+    sh:property [ sh:path :departmentType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "COMPANY" "DIVISION" "DEPARTMENT" "TEAM" "WORKSHOP" ) ;
+        sh:message "S49 部门类型必须来自 DepartmentType 枚举" ] .
+
+:MenuShape a sh:NodeShape ;
+    sh:targetClass :Menu ;
+    sh:property [ sh:path :menuType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DIRECTORY" "MENU" "BUTTON" ) ;
+        sh:message "S49 菜单类型必须来自 MenuType 枚举" ] ;
+    sh:property [ sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "ACTIVE" "INACTIVE" ) ;
+        sh:message "S49 菜单状态必须来自 MenuStatus 枚举" ] .
+
+:SystemParameterShape a sh:NodeShape ;
+    sh:targetClass :SystemParameter ;
+    sh:property [ sh:path :paramType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "STRING" "INT" "BOOLEAN" "JSON" ) ;
+        sh:message "S49 参数类型必须来自 ParamType 枚举" ] .
+
+:LoginLogShape a sh:NodeShape ;
+    sh:targetClass :LoginLog ;
+    sh:property [ sh:path :loginStatus ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "SUCCESS" "FAIL" ) ;
+        sh:message "S49 登录状态必须来自 LoginStatus 枚举" ] .

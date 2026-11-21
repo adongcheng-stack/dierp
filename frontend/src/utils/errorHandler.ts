@@ -50,6 +50,11 @@ export const handleApiError = (error: any, notifier?: MessageNotifier): void => 
  * 获取错误信息
  */
 export const getErrorMessage = (error: any): string => {
+  // 拦截器对 403 打上的统一标记优先展示
+  if (error?.userMessage) {
+    return error.userMessage
+  }
+
   if (error?.response?.data) {
     const errorData: ErrorResponse = error.response.data
 

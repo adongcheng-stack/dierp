@@ -19,7 +19,7 @@ async function login(page: Page) {
   await page.locator('#login_username').fill('admin')
   await page.locator('#login_password').fill('admin123')
   await page.getByRole('button', { name: /登.*录/ }).click()
-  await expect(page).toHaveURL('http://127.0.0.1:3010/')
+  await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText('经营看板', { exact: true }).first()).toBeVisible()
 }
 

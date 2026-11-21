@@ -31,6 +31,8 @@ const MaterialIssueList: React.FC = () => {
     { title: '生产订单号', dataIndex: 'production_order_number', key: 'production_order_number' },
     { title: '物料编码', dataIndex: 'material_code', key: 'material_code' },
     { title: '数量', dataIndex: 'quantity', key: 'quantity' },
+    { title: '原料批次', dataIndex: 'batch_number', key: 'batch_number', render: (v?: string) => v || '-' },
+    { title: '来源采购单', dataIndex: 'purchase_order_number', key: 'purchase_order_number', render: (v?: string) => v || '-' },
     { title: '领料人', dataIndex: 'issued_by', key: 'issued_by' },
   ]
 

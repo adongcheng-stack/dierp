@@ -64,7 +64,6 @@ const PeriodClose: React.FC = () => {
 
   useEffect(() => {
     fetchPreview(selected)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected])
 
   const doAction = (action: 'close' | 'reopen') => {

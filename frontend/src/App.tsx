@@ -91,6 +91,13 @@ const InspectionList = lazy(() => import('./pages/qms/InspectionList'))
 const NcrList = lazy(() => import('./pages/qms/NcrList'))
 const UserList = lazy(() => import('./pages/admin/UserList'))
 const UserForm = lazy(() => import('./pages/admin/UserForm'))
+const OperationLogList = lazy(() => import('./pages/admin/OperationLogList'))
+const DataExchange = lazy(() => import('./pages/admin/DataExchange'))
+const RoleManagement = lazy(() => import('./pages/admin/RoleManagement'))
+const DepartmentManagement = lazy(() => import('./pages/admin/DepartmentManagement'))
+const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'))
+const SystemParameterManagement = lazy(() => import('./pages/admin/SystemParameterManagement'))
+const LoginLogList = lazy(() => import('./pages/admin/LoginLogList'))
 
 /** 演示包通常直接以静态文件打开，使用 hash 路由避免刷新 404 */
 const Router = isMockMode ? HashRouter : BrowserRouter
@@ -227,6 +234,13 @@ function App() {
                       <Route path="/admin/users" element={<UserList />} />
                       <Route path="/admin/users/new" element={<UserForm />} />
                       <Route path="/admin/users/:id/edit" element={<UserForm />} />
+                      <Route path="/admin/operation-logs" element={<OperationLogList />} />
+                      <Route path="/admin/data-exchange" element={<DataExchange />} />
+                      <Route path="/admin/roles" element={<RoleManagement />} />
+                      <Route path="/admin/departments" element={<DepartmentManagement />} />
+                      <Route path="/admin/menus" element={<MenuManagement />} />
+                      <Route path="/admin/parameters" element={<SystemParameterManagement />} />
+                      <Route path="/admin/login-logs" element={<LoginLogList />} />
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </Suspense>

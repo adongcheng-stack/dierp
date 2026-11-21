@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
-import { FileDoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Card, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
+import { FileDoneOutlined, PlusOutlined, ReloadOutlined, RollbackOutlined } from '@ant-design/icons'
 import { useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import api, { getErrorMessage } from '../../services/api'
@@ -81,12 +81,10 @@ const InvoiceList: React.FC = () => {
   useEffect(() => {
     const fromUrl = searchParams.get('customer_id') || ''
     setCustomerFilter(fromUrl)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, customerFilter, numberFilter])
 
   const openCreate = async () => {
@@ -199,6 +197,15 @@ const InvoiceList: React.FC = () => {
               onClick={() => act(`/sd/invoices/${r.invoice_number}/issue`, `发票 ${r.invoice_number} 已开票并生成应收`)}>
               确认开票
             </Button>
+          )}
+          {(r.status === 'ISSUED' || r.status === 'PARTIALLY_PAID') && Number(r.received_amount || 0) === 0 && (
+            <Popconfirm
+              title="红字冲回该发票？"
+              description="生成负向应收流水与红字凭证，发票转为已作废；已有收款须先红冲收款单。"
+              onConfirm={() => act(`/sd/invoices/${r.invoice_number}/reverse`, `发票 ${r.invoice_number} 已红字冲回`)}
+            >
+              <Button size="small" danger icon={<RollbackOutlined />}>红字冲回</Button>
+            </Popconfirm>
           )}
         </Space>
       ),

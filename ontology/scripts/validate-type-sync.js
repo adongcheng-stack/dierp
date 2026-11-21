@@ -32,6 +32,7 @@ const CONFIG = {
   // 全部数据 TTL (相对 ontology/ 根, 顺序即加载顺序)
   DATA_TTLS: [
     'src/shapes.ttl',
+    'src/security.ttl',
     'data/demo.ttl',
   ],
   // N3/SWRL 规则文件
@@ -90,6 +91,16 @@ const CONFIG = {
     // 库存域补强（P3）
     { name: 'StocktakeStatus', prop: 'status', shape: 'StocktakeShape' },
     { name: 'StockTransferStatus', prop: 'status', shape: 'StockTransferShape' },
+    // 安全/授权本体（security.ttl overlay）
+    { name: 'UserRole', prop: 'roleCode', shape: 'RoleShape' },
+    { name: 'AccessDomain', prop: 'domainCode', shape: 'AccessDomainShape' },
+    // 组织架构与系统管理（admin.yaml overlay）
+    { name: 'DepartmentStatus', prop: 'status', shape: 'DepartmentShape' },
+    { name: 'DepartmentType', prop: 'departmentType', shape: 'DepartmentShape' },
+    { name: 'MenuType', prop: 'menuType', shape: 'MenuShape' },
+    { name: 'MenuStatus', prop: 'status', shape: 'MenuShape' },
+    { name: 'ParamType', prop: 'paramType', shape: 'SystemParameterShape' },
+    { name: 'LoginStatus', prop: 'loginStatus', shape: 'LoginLogShape' },
   ],
   // 必须存在的 NodeShape 名 (Check4)
   REQUIRED_SHAPES: [
@@ -110,6 +121,8 @@ const CONFIG = {
     'SupplierInvoiceShape', 'SupplierPaymentShape', 'PaymentAllocationShape',
     'ReceiptShape', 'ReceiptAllocationShape',
     'WarehouseShape', 'StocktakeShape', 'StockTransferShape',
+    'RoleShape', 'AccessDomainShape',
+    'DepartmentShape', 'MenuShape', 'SystemParameterShape', 'LoginLogShape',
   ],
   // 业务数量基线: 类名 -> 期望实例数 (Check8; 0 表示不检查该项可删除)
   BASELINE: {

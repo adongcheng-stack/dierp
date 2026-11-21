@@ -11,6 +11,8 @@ interface MaterialIssueFormData {
   quantity: number
   unit: string
   warehouse?: string
+  batch_number?: string
+  purchase_order_number?: string
   remarks?: string
 }
 
@@ -278,6 +280,27 @@ const MaterialIssueForm: React.FC = () => {
                 label="仓库"
               >
                 <Input placeholder="请输入仓库" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="batch_number"
+                label="原料批次号"
+                tooltip="填写后可在追溯页沿「领料 → 原料批次 → 采购单 → 供应商」反查来源"
+              >
+                <Input placeholder="如 BATCH-RM-FR4-150-20261120" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="purchase_order_number"
+                label="来源采购单号"
+                tooltip="用于把批次关联到供应商；留空则追溯仅展示批次号"
+              >
+                <Input placeholder="如 PUR-20261120-0001" />
               </Form.Item>
             </Col>
           </Row>

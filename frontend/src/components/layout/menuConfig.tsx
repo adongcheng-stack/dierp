@@ -209,7 +209,16 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'admin',
     label: '系统管理',
     icon: ShieldCheck,
-    children: [{ key: '/admin/users', label: '用户管理', icon: UserCog, path: '/admin/users' }],
+    children: [
+      { key: '/admin/users', label: '用户管理', icon: UserCog, path: '/admin/users' },
+      { key: '/admin/roles', label: '角色管理', icon: BadgeCheck, path: '/admin/roles' },
+      { key: '/admin/departments', label: '部门管理', icon: Building2, path: '/admin/departments' },
+      { key: '/admin/menus', label: '菜单管理', icon: Network, path: '/admin/menus' },
+      { key: '/admin/parameters', label: '系统参数', icon: FileCog, path: '/admin/parameters' },
+      { key: '/admin/operation-logs', label: '操作审计日志', icon: FileSearch, path: '/admin/operation-logs' },
+      { key: '/admin/login-logs', label: '登录日志', icon: ClipboardCheck, path: '/admin/login-logs' },
+      { key: '/admin/data-exchange', label: '数据导入导出', icon: FileSpreadsheet, path: '/admin/data-exchange' },
+    ],
   },
 ]
 

@@ -123,6 +123,8 @@
     rdfs:comment "一单多票：付款单对采购发票的核销行。" .
 :ReceiptAllocation a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "收款核销明细" ;
     rdfs:comment "一单多票：收款单对销售发票的核销行（与付款核销分表，口径独立）。" .
+:AuditEntry a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "操作审计记录" ;
+    rdfs:comment "写操作的事实记录（append-only）：对应公理 A19，业务代码禁止修改删除。" .
 :Warehouse a owl:Class ; rdfs:subClassOf :PhysicalObject ; rdfs:label "仓库" ;
     rdfs:comment "仓库主数据（P3 demo：仅主数据+调拨引用，不迁移 mm 域 warehouse 字段）。" .
 :ProductionCost a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "工单实际成本归集" .
@@ -400,3 +402,38 @@
 :hasScheduledOperation a owl:ObjectProperty ; rdfs:range :ScheduledOperation .
 :raisesScheduleException a owl:ObjectProperty ; rdfs:range :ScheduleException .
 :hasScenarioImpact a owl:ObjectProperty ; rdfs:range :ScenarioImpact .
+
+# ─────────────────────────────────────────────────────────────
+# 安全/授权 overlay 属性（security.ttl）
+# ─────────────────────────────────────────────────────────────
+:roleCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:domainCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:topCategory a owl:DatatypeProperty ; rdfs:range xsd:string .
+:allowsRole a owl:ObjectProperty ; rdfs:range :Role .
+:readRole a owl:ObjectProperty ; rdfs:range :Role .
+:anonymousRead a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+:secretKeyEnv a owl:DatatypeProperty ; rdfs:range xsd:string .
+:algorithm a owl:DatatypeProperty ; rdfs:range xsd:string .
+:tokenExpireMinutes a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:refreshThresholdMinutes a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:insecurePlaceholder a owl:DatatypeProperty ; rdfs:range xsd:string .
+
+# ─────────────────────────────────────────────────────────────
+# 组织架构与系统管理 overlay（admin.yaml）
+# ─────────────────────────────────────────────────────────────
+:Department a owl:Class ; rdfs:subClassOf :Agent ; rdfs:label "部门" ;
+    rdfs:comment "组织架构节点，可自引用形成树；归属上层为 :PhysicalObject 之外的行动主体范畴。" .
+:Menu a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "系统菜单" ;
+    rdfs:comment "前端路由与按钮权限的声明，角色通过 RoleMenu 授权。" .
+:RoleMenu a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "角色菜单授权" .
+:SystemParameter a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "系统参数" .
+:LoginLog a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "登录日志" .
+
+:departmentType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:menuType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:paramType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:loginStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:parentDepartment a owl:ObjectProperty ; rdfs:range :Department .
+:parentMenu a owl:ObjectProperty ; rdfs:range :Menu .
+:grantedRole a owl:ObjectProperty ; rdfs:range :Role .
+:grantedMenu a owl:ObjectProperty ; rdfs:range :Menu .

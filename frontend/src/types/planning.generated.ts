@@ -63,6 +63,15 @@ import type {
   NcrSeverity,
   NcrDisposition,
   NcrStatus,
+  UserRole,
+  AccessDomain,
+  HttpWriteMethod,
+  DepartmentStatus,
+  DepartmentType,
+  MenuType,
+  MenuStatus,
+  ParamType,
+  LoginStatus,
 } from '../../../ontology/generated/types'
 
 export type {
@@ -122,6 +131,15 @@ export type {
   NcrSeverity,
   NcrDisposition,
   NcrStatus,
+  UserRole,
+  AccessDomain,
+  HttpWriteMethod,
+  DepartmentStatus,
+  DepartmentType,
+  MenuType,
+  MenuStatus,
+  ParamType,
+  LoginStatus,
 }
 
 /** 物料计划参数策略 */

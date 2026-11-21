@@ -38,6 +38,7 @@ const users = {
   planner: { username: 'jihuayuan', role: 'PLANNER', full_name: '计划员' },
   sales: { username: 'yewuyuan', role: 'SALES', full_name: '销业务' },
   warehouse: { username: 'cangkuyuan', role: 'WAREHOUSE', full_name: '仓库员' },
+  finance: { username: 'caiwuyuan', role: 'FINANCE', full_name: '财务员' },
 }
 
 function call({ method, path: requestPath, user = null, body = null }) {
@@ -65,6 +66,12 @@ const cases = [
   ['WAREHOUSE POST /planning/planned-orders/X/release', { method: 'POST', path: '/planning/planned-orders/X/release', user: users.warehouse }, 403],
   ['SALES POST /sd/customers（放行到业务层）', { method: 'POST', path: '/sd/customers', user: users.sales, body: {} }, 'not-403'],
   ['ADMIN POST /sd/customers（恒通过）', { method: 'POST', path: '/sd/customers', user: users.admin, body: {} }, 'not-403'],
+  // P0 安全：finance 写门 + users 读门
+  ['WAREHOUSE POST /finance/periods/X/close（拒绝）', { method: 'POST', path: '/finance/periods/2026-11/close', user: users.warehouse }, 403],
+  ['FINANCE POST /finance/periods/X/close（放行）', { method: 'POST', path: '/finance/periods/2026-11/close', user: users.finance }, 'not-403'],
+  ['匿名 GET /users（401）', { method: 'GET', path: '/users' }, 401],
+  ['WAREHOUSE GET /users（403）', { method: 'GET', path: '/users', user: users.warehouse }, 403],
+  ['ADMIN GET /users（200）', { method: 'GET', path: '/users', user: users.admin }, 200],
 ]
 
 let failed = 0

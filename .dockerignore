@@ -1,0 +1,16 @@
+.git
+.codegraph
+.playwright-mcp
+node_modules
+dist
+dist-*
+*.zip
+*.log
+.env
+.secret_key
+__pycache__
+*.pyc
+frontend/e2e
+frontend/mock-tests
+context-mode
+workspace

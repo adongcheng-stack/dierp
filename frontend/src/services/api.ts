@@ -24,6 +24,11 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
   (response) => {
+    // 静默续期：后端在 token 即将过期时通过响应头换发新 token，前端无感更新
+    const renewed = response.headers?.['x-new-access-token']
+    if (renewed && typeof renewed === 'string') {
+      useAuthStore.getState().setToken(renewed)
+    }
     return response
   },
   (error) => {
@@ -36,6 +41,11 @@ api.interceptors.response.use(
         useAuthStore.getState().logout()
       }
       return Promise.reject(error)
+    }
+
+    // 403 权限不足：统一标记文案，交由 getErrorMessage 展示；不跳转、不清登录态。
+    if (error.response?.status === 403) {
+      error.userMessage = '权限不足：当前角色无权执行该操作'
     }
     
     // 其他错误使用统一错误处理（但不自动显示消息，由调用方决定）

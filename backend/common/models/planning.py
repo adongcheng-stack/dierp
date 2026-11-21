@@ -181,6 +181,8 @@ class ReceivableEntryType(str, Enum):
     INVOICE = "INVOICE"
     RECEIPT = "RECEIPT"
     ADJUST = "ADJUST"
+    RECEIPT_REVERSE = "RECEIPT_REVERSE"
+    INVOICE_REVERSE = "INVOICE_REVERSE"
 
 class SupplierInvoiceStatus(str, Enum):
     """SupplierInvoiceStatus"""
@@ -232,10 +234,12 @@ class CostSourceType(str, Enum):
 class GlSourceType(str, Enum):
     """GlSourceType"""
     SALES_INVOICE_ISSUED = "SALES_INVOICE_ISSUED"
+    SALES_INVOICE_REVERSED = "SALES_INVOICE_REVERSED"
     SALES_DELIVERY_SHIPPED = "SALES_DELIVERY_SHIPPED"
     SUPPLIER_INVOICE_CONFIRMED = "SUPPLIER_INVOICE_CONFIRMED"
     SUPPLIER_PAYMENT_PAID = "SUPPLIER_PAYMENT_PAID"
     RECEIPT_PAID = "RECEIPT_PAID"
+    RECEIPT_PAID_REVERSE = "RECEIPT_PAID_REVERSE"
     MATERIAL_ISSUE = "MATERIAL_ISSUE"
     STOCK_ADJUST = "STOCK_ADJUST"
     PRODUCTION_COMPLETE = "PRODUCTION_COMPLETE"
@@ -1509,7 +1513,7 @@ class ReceivableEntry(BaseModel):
 
     customer_id = Column(String(50), ForeignKey("customers.customer_id"), index=True, comment="客户编码")
 
-    entry_type = Column(SQLEnum(ReceivableEntryType), index=True, default=ReceivableEntryType.INVOICE, comment="流水类型(INVOICE/RECEIPT/ADJUST)")
+    entry_type = Column(SQLEnum(ReceivableEntryType), index=True, default=ReceivableEntryType.INVOICE, comment="流水类型(INVOICE/RECEIPT/ADJUST/RECEIPT_REVERSE)")
 
     amount = Column(Numeric(15, 2), nullable=False, comment="金额(正开票/负收款)")
 

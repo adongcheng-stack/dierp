@@ -24,14 +24,25 @@ const UserForm: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [roles, setRoles] = useState<any[]>([])
   const [loadingRoles, setLoadingRoles] = useState(false)
+  const [departments, setDepartments] = useState<any[]>([])
   const isEdit = !!id
 
   useEffect(() => {
     fetchRoles()
+    fetchDepartments()
     if (isEdit) {
       fetchUser()
     }
   }, [id])
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.get('/system/departments')
+      setDepartments(response.data?.items || [])
+    } catch (error: any) {
+      console.error('获取部门列表失败:', error)
+    }
+  }
 
   const fetchRoles = async () => {
     setLoadingRoles(true)
@@ -193,7 +204,9 @@ const UserForm: React.FC = () => {
                 name="department"
                 label="部门"
               >
-                <Input placeholder="请输入部门" />
+                <Select placeholder="选择所属部门" allowClear showSearch
+                  optionFilterProp="children"
+                  options={departments.map((dept) => ({ label: dept.name, value: dept.name }))} />
               </Form.Item>
             </Col>
             <Col span={12}>

@@ -17,6 +17,7 @@ interface AuthState {
   login: (username: string, password: string) => Promise<void>
   logout: () => void
   setUser: (user: User) => void
+  setToken: (token: string) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -49,6 +50,10 @@ export const useAuthStore = create<AuthState>()(
         delete api.defaults.headers.common['Authorization']
       },
       setUser: (user: User) => set({ user }),
+      setToken: (token: string) => {
+        set({ token })
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      },
     }),
     {
       name: 'auth-storage',

@@ -24,10 +24,12 @@ GL_ACCOUNTS: list[tuple[str, str, str]] = [
 # 业务事件 → (借方科目, 贷方科目)
 GL_RULES: dict[str, tuple[str, str]] = {
     "SALES_INVOICE_ISSUED": ("1122", "6001"),
+    "SALES_INVOICE_REVERSED": ("6001", "1122"),
     "SALES_DELIVERY_SHIPPED": ("6401", "1405"),
     "SUPPLIER_INVOICE_CONFIRMED": ("1405", "2202"),
     "SUPPLIER_PAYMENT_PAID": ("2202", "1002"),
     "RECEIPT_PAID": ("1002", "1122"),
+    "RECEIPT_PAID_REVERSE": ("1122", "1002"),
     "MATERIAL_ISSUE": ("5001", "1405"),
     "STOCK_ADJUST": ("5001", "1405"),
     "PRODUCTION_COMPLETE": ("1405", "5001"),

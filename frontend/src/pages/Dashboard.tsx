@@ -89,7 +89,6 @@ const Dashboard: React.FC = () => {
 
     setLoading(false)
     // counts 只作为初值，避免把自身放进依赖导致循环刷新
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

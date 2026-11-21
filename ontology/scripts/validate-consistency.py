@@ -36,6 +36,7 @@ ONTOLOGY_TTL = ROOT / "src" / "erp-ontology.ttl"
 SHAPES_TTL = ROOT / "src" / "shapes.ttl"
 SWRL_FILE = ROOT / "src" / "rules.swrl"
 DATA_TTLS = [
+    ROOT / "src" / "security.ttl",
     ROOT / "data" / "demo.ttl",
 ]
 

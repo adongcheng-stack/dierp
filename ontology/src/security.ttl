@@ -1,0 +1,133 @@
+@prefix : <https://dierp.local/ontology/erp/v1#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+<https://dierp.local/ontology/erp/v1/security> a owl:Ontology ;
+    rdfs:label "DIERP 安全与授权本体（overlay）" ;
+    rdfs:comment "把 RBAC 的写权限矩阵、读策略、JWT 配置声明为唯一事实源；后端 security.py 与前端 authorization.generated.ts 均由 generate_security.py 从本文件生成。" ;
+    owl:versionInfo "1.0.0" .
+
+# ─────────────────────────────────────────────────────────────
+# 类
+# ─────────────────────────────────────────────────────────────
+:Role a owl:Class ; rdfs:label "角色" ;
+    rdfs:comment "系统角色，与 UserRole 枚举一一对应。" .
+:AccessDomain a owl:Class ; rdfs:label "访问域" ;
+    rdfs:comment "按 API 路径首段划分的业务域；写操作按域校验角色。" .
+:SecurityPolicy a owl:Class ; rdfs:label "安全策略配置" .
+
+# ─────────────────────────────────────────────────────────────
+# 角色个体（值必须与 mappings.json 的 UserRole 枚举一致）
+# ─────────────────────────────────────────────────────────────
+:ROLE_SALES a :Role, :Agent ; :roleCode "SALES" ; rdfs:label "销售" .
+:ROLE_SALES_MANAGER a :Role, :Agent ; :roleCode "SALES_MANAGER" ; rdfs:label "销售经理" .
+:ROLE_ENGINEER a :Role, :Agent ; :roleCode "ENGINEER" ; rdfs:label "工程" .
+:ROLE_PLANNER a :Role, :Agent ; :roleCode "PLANNER" ; rdfs:label "计划" .
+:ROLE_PRODUCTION a :Role, :Agent ; :roleCode "PRODUCTION" ; rdfs:label "生产" .
+:ROLE_WAREHOUSE a :Role, :Agent ; :roleCode "WAREHOUSE" ; rdfs:label "仓库" .
+:ROLE_FINANCE a :Role, :Agent ; :roleCode "FINANCE" ; rdfs:label "财务" .
+:ROLE_GENERAL_MANAGER a :Role, :Agent ; :roleCode "GENERAL_MANAGER" ; rdfs:label "总经理" .
+:ROLE_ADMIN a :Role, :Agent ; :roleCode "ADMIN" ; rdfs:label "系统管理员" .
+
+# ─────────────────────────────────────────────────────────────
+# 访问域个体
+#   :allowsRole    —— 允许写操作的角色集合（ADMIN 由代码恒通过，无需显式列出）
+#   :anonymousRead —— 只读 GET 是否允许匿名（默认 true）
+#   :readRole      —— anonymousRead=false 时允许读的角色
+# ─────────────────────────────────────────────────────────────
+:DOMAIN_SD a :AccessDomain, :NormativeRule ;
+    :domainCode "sd" ; rdfs:label "销售与分销" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_SALES, :ROLE_SALES_MANAGER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_ENG a :AccessDomain, :NormativeRule ;
+    :domainCode "eng" ; rdfs:label "工程管理" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_ENGINEER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_PP a :AccessDomain, :NormativeRule ;
+    :domainCode "pp" ; rdfs:label "生产计划与控制" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_PRODUCTION, :ROLE_PLANNER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_MM a :AccessDomain, :NormativeRule ;
+    :domainCode "mm" ; rdfs:label "物料管理" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_WAREHOUSE, :ROLE_PRODUCTION, :ROLE_PLANNER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_PLANNING a :AccessDomain, :NormativeRule ;
+    :domainCode "planning" ; rdfs:label "计划与控制" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_PLANNER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_QMS a :AccessDomain, :NormativeRule ;
+    :domainCode "qms" ; rdfs:label "质量管理" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_PRODUCTION, :ROLE_PLANNER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_PURCHASE a :AccessDomain, :NormativeRule ;
+    :domainCode "purchase" ; rdfs:label "采购管理" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_WAREHOUSE, :ROLE_PRODUCTION, :ROLE_PLANNER, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_FINANCE a :AccessDomain, :NormativeRule ;
+    :domainCode "finance" ; rdfs:label "财务管理" ;
+    :topCategory "Document" ;
+    :allowsRole :ROLE_FINANCE, :ROLE_GENERAL_MANAGER, :ROLE_ADMIN ;
+    :anonymousRead true .
+
+:DOMAIN_USERS a :AccessDomain, :NormativeRule ;
+    :domainCode "users" ; rdfs:label "用户与角色管理" ;
+    :topCategory "Agent" ;
+    :allowsRole :ROLE_ADMIN ;
+    :anonymousRead false ; :readRole :ROLE_ADMIN .
+
+:DOMAIN_ADMIN a :AccessDomain, :NormativeRule ;
+    :domainCode "admin" ; rdfs:label "管理/审计" ;
+    :topCategory "EventRecord" ;
+    :allowsRole :ROLE_ADMIN ;
+    :anonymousRead false ; :readRole :ROLE_ADMIN .
+
+:DOMAIN_SYSTEM a :AccessDomain, :NormativeRule ;
+    :domainCode "system" ; rdfs:label "组织架构与系统管理" ;
+    :topCategory "NormativeRule" ;
+    :allowsRole :ROLE_ADMIN ;
+    :anonymousRead false ; :readRole :ROLE_ADMIN .
+
+:DOMAIN_AUTH a :AccessDomain, :NormativeRule ;
+    :domainCode "auth" ; rdfs:label "认证" ;
+    :topCategory "Agent" ;
+    :anonymousRead true .
+
+:DOMAIN_DASHBOARD a :AccessDomain, :NormativeRule ;
+    :domainCode "dashboard" ; rdfs:label "经营看板" ;
+    :topCategory "EventRecord" ;
+    :anonymousRead true .
+
+:DOMAIN_TRACEABILITY a :AccessDomain, :NormativeRule ;
+    :domainCode "traceability" ; rdfs:label "双向追溯" ;
+    :topCategory "EventRecord" ;
+    :anonymousRead true .
+
+# ─────────────────────────────────────────────────────────────
+# JWT 与写方法配置
+# ─────────────────────────────────────────────────────────────
+:JwtConfig a :SecurityPolicy, :NormativeRule ;
+    :secretKeyEnv "SECRET_KEY" ;
+    :algorithm "HS256" ;
+    :tokenExpireMinutes 480 ;
+    :refreshThresholdMinutes 60 ;
+    :insecurePlaceholder "your-secret-key-change-in-production" .
+
+:WriteMethods a :SecurityPolicy, :NormativeRule ;
+    :method "POST" , "PUT" , "PATCH" , "DELETE" .

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, message } from 'antd'
-import { DeleteOutlined, PlusOutlined, ReloadOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
+import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
+import { DeleteOutlined, PlusOutlined, ReloadOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
 
 const STATUS: Record<string, { label: string; color: string }> = {
   DRAFT: { label: '草稿', color: 'default' },
   PAID: { label: '已收款', color: 'success' },
+  REVERSED: { label: '已红冲', color: 'warning' },
   CANCELLED: { label: '已作废', color: 'error' },
 }
 
@@ -82,7 +83,6 @@ const ReceiptList: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, numberFilter])
 
   const openCreate = async () => {
@@ -208,6 +208,15 @@ const ReceiptList: React.FC = () => {
               onClick={() => act(`/sd/receipts/${r.receipt_number}/cancel`, `收款单 ${r.receipt_number} 已作废`)}>
               作废
             </Button>
+          )}
+          {r.status === 'PAID' && (
+            <Popconfirm
+              title="红字冲回该收款单？"
+              description="将回退发票已收金额、生成红字应收流水与红字凭证，操作不可自动撤销。"
+              onConfirm={() => act(`/sd/receipts/${r.receipt_number}/reverse`, `收款单 ${r.receipt_number} 已红字冲回`)}
+            >
+              <Button size="small" danger icon={<RollbackOutlined />}>红字冲回</Button>
+            </Popconfirm>
           )}
         </Space>
       ),
