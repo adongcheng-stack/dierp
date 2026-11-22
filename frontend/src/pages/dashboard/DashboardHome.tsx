@@ -155,9 +155,9 @@ const DashboardHome: React.FC = () => {
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3 xl:grid-cols-5">
               {(data?.workbenches ?? []).map((item: Workbench) => (
                 <button key={item.path} type="button" onClick={() => navigate(item.path)}
-                  className="flex min-w-0 items-baseline justify-between gap-2 border-b border-line pb-2 text-start">
+                  className="flex min-w-0 items-baseline gap-2 border-b border-line pb-2 text-start">
                   <span className="truncate text-md font-medium text-ink">{item.title}</span>
-                  <Tag className="!m-0">{item.domain}</Tag>
+                  <Tag className="!m-0 shrink-0">{item.domain}</Tag>
                 </button>
               ))}
             </div>
