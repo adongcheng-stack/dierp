@@ -159,7 +159,7 @@ const MpsList: React.FC = () => {
       key: 'net_requirement',
       align: 'right' as const,
       render: (value: number) => (
-        <span style={{ color: value > 0 ? '#cf1322' : undefined }}>{fmtQty(value)}</span>
+        <span style={{ color: value > 0 ? 'var(--color-error)' : undefined }}>{fmtQty(value)}</span>
       ),
     },
     {

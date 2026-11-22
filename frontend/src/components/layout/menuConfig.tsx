@@ -51,12 +51,18 @@ export interface NavItem {
 
 /** ERP 导航结构：与 MES 一致的两级菜单（分组 + 页面） */
 export const NAV_ITEMS: NavItem[] = [
-  { key: '/', label: '仪表盘', icon: LayoutDashboard, path: '/' },
+  { key: '/', label: '首页', icon: LayoutDashboard, path: '/' },
   {
     key: 'kpi',
     label: '经营看板',
     icon: Gauge,
-    children: [{ key: '/dashboard/management', label: '管理驾驶舱', icon: Gauge, path: '/dashboard/management' }],
+    children: [
+      { key: '/dashboard/management', label: '管理驾驶舱', icon: Gauge, path: '/dashboard/management' },
+      { key: '/dashboard/production', label: '生产驾驶舱', icon: Factory, path: '/dashboard/production' },
+      { key: '/dashboard/production-progress', label: '生产进度看板', icon: ClipboardCheck, path: '/dashboard/production-progress' },
+      { key: '/dashboard/finance', label: '财务驾驶舱', icon: Wallet, path: '/dashboard/finance' },
+      { key: '/dashboard/sales', label: '销售驾驶舱', icon: ShoppingCart, path: '/dashboard/sales' },
+    ],
   },
   {
     key: 'sd',
@@ -240,7 +246,7 @@ export function resolvePageLabel(pathname: string): string {
   if (PATH_LABEL_MAP[pathname]) return PATH_LABEL_MAP[pathname]
 
   const segments = pathname.split('/').filter(Boolean)
-  if (segments.length === 0) return '仪表盘'
+  if (segments.length === 0) return '首页'
 
   const tail = segments[segments.length - 1]
   const parentPath = '/' + segments.slice(0, -1).join('/')

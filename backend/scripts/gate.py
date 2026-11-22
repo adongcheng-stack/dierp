@@ -25,6 +25,8 @@ ONTOLOGY = ROOT / "ontology"
 HERMETIC: list[tuple[str, list[str], Path]] = [
     ("本体/类型同步", [sys.executable, "scripts/validate-type-sync.js"], ONTOLOGY),
     ("本体/一致性", [sys.executable, "scripts/validate-consistency.py"], ONTOLOGY),
+    ("本体/生成物同步", [sys.executable, "backend/ontology/generate_models.py", "--check"], ROOT),
+    ("本体/枚举类型同步", [sys.executable, "ontology/scripts/generate-types.py", "--check"], ROOT),
     ("本体/安全策略漂移", [sys.executable, "backend/ontology/generate_security.py", "--check"], ROOT),
     ("后端/pytest", [sys.executable, "-m", "pytest", "-q"], BACKEND),
     ("后端/alembic check", [sys.executable, "-m", "alembic", "check"], BACKEND),

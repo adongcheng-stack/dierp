@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Spin } from 'antd'
 import AppLayout from './components/layout/AppLayout'
-import Dashboard from './pages/Dashboard'
 import { useAuthStore } from './stores/authStore'
 import { isMockMode } from './mock'
 
@@ -62,6 +61,11 @@ const OperationReportForm = lazy(() => import('./pages/pp/OperationReportForm'))
 const LotCardList = lazy(() => import('./pages/pp/LotCardList'))
 const TraceabilityExplorer = lazy(() => import('./pages/traceability/TraceabilityExplorer'))
 const ManagementDashboard = lazy(() => import('./pages/dashboard/ManagementDashboard'))
+const DashboardHome = lazy(() => import('./pages/dashboard/DashboardHome'))
+const ProductionDashboard = lazy(() => import('./pages/dashboard/ProductionDashboard'))
+const ProductionProgressBoard = lazy(() => import('./pages/dashboard/ProductionProgressBoard'))
+const FinanceDashboard = lazy(() => import('./pages/dashboard/FinanceDashboard'))
+const SalesDashboard = lazy(() => import('./pages/dashboard/SalesDashboard'))
 const PurchaseOrderList = lazy(() => import('./pages/planning/PurchaseOrderList'))
 const LotCardForm = lazy(() => import('./pages/pp/LotCardForm'))
 const PlanningWorkbench = lazy(() => import('./pages/planning/PlanningWorkbench'))
@@ -141,7 +145,7 @@ function App() {
                 <AppLayout>
                   <Suspense fallback={<PageLoading />}>
                     <Routes>
-                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/" element={<DashboardHome />} />
                       <Route path="/sd/customers" element={<CustomerList />} />
                       <Route path="/sd/customers/new" element={<CustomerForm />} />
                       <Route path="/sd/customers/:id/edit" element={<CustomerForm />} />
@@ -204,7 +208,12 @@ function App() {
                       <Route path="/pp/lot-cards" element={<LotCardList />} />
                       <Route path="/pp/lot-cards/:lotNumber/edit" element={<LotCardForm />} />
                       <Route path="/trace/explorer" element={<TraceabilityExplorer />} />
+                      <Route path="/dashboard" element={<Navigate to="/" replace />} />
                       <Route path="/dashboard/management" element={<ManagementDashboard />} />
+                      <Route path="/dashboard/production" element={<ProductionDashboard />} />
+                      <Route path="/dashboard/production-progress" element={<ProductionProgressBoard />} />
+                      <Route path="/dashboard/finance" element={<FinanceDashboard />} />
+                      <Route path="/dashboard/sales" element={<SalesDashboard />} />
                       <Route path="/mm/purchase-orders" element={<PurchaseOrderList />} />
                       <Route path="/pp/planning" element={<PlanningWorkbench />} />
                       <Route path="/pp/mps" element={<MpsList />} />

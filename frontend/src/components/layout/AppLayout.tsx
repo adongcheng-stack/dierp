@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Sidebar, SIDEBAR_WIDTH } from './Sidebar'
+import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { PageTabs, type TabItem } from './PageTabs'
 import { resolvePageLabel } from './menuConfig'
@@ -10,7 +10,7 @@ interface AppLayoutProps {
   children: React.ReactNode
 }
 
-const HOME_TAB: TabItem = { key: '/', label: '仪表盘', closable: false }
+const HOME_TAB: TabItem = { key: '/', label: '首页', closable: false }
 
 /**
  * 应用外壳：侧边栏 + 顶栏 + 多页签 + 内容区。
@@ -21,6 +21,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const { sidebarCollapsed } = useUIStore()
   const [tabs, setTabs] = useState<TabItem[]>([HOME_TAB])
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const canvasRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    canvasRef.current?.scrollTo(0, 0)
+    setMobileNavOpen(false)
+  }, [location.pathname])
 
   // 路由变化 → 追加页签（已存在则只切换激活态）
   useEffect(() => {
@@ -87,15 +94,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-surface-sunken">
-      <Sidebar />
+    <div className="app-shell bg-surface-sunken" data-collapsed={sidebarCollapsed ? 'true' : 'false'}>
+      <Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
+      <button
+        type="button"
+        aria-label="关闭导航"
+        tabIndex={mobileNavOpen ? 0 : -1}
+        className={`app-sidebar-backdrop${mobileNavOpen ? ' is-open' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+      />
 
-      <div
-        className="flex h-full flex-col transition-[margin] duration-300 ease-in-out"
-        style={{ marginLeft: sidebarCollapsed ? 0 : SIDEBAR_WIDTH }}
-      >
-        <div className="z-30 shrink-0">
-          <Header />
+      <div className="app-main">
+        <div className="shrink-0">
+          <Header onToggleMobileNav={() => setMobileNavOpen((open) => !open)} />
           <PageTabs
             tabs={tabs}
             activeKey={location.pathname}
@@ -108,8 +119,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           />
         </div>
 
-        <main className="min-h-0 flex-1 overflow-auto">
-          <div className="page-content p-4">{children}</div>
+        <main ref={canvasRef} className="app-canvas">
+          <div className="page-content p-4 md:p-6">{children}</div>
         </main>
       </div>
     </div>

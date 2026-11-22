@@ -20,7 +20,7 @@ from sqlalchemy.pool import StaticPool  # noqa: E402
 from backend.common.database.base import Base  # noqa: E402
 
 # 先导入全部模型模块，避免 mapper 关系解析失败（RoutingOperation 等）
-from backend.common.models import eng, mm, pp, sd, planning, audit, admin  # noqa: E402,F401
+from backend.common.models import eng, mm, pp, sd, planning, audit, admin, dashboard  # noqa: E402,F401
 
 
 @pytest.fixture()

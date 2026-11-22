@@ -1,9 +1,10 @@
-import { Table, Button, Tag } from 'antd'
+import { Table, Button, Tag, Select, Space } from 'antd'
 import { PlusOutlined, EditOutlined } from '@ant-design/icons'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
+import { ErrorState, SkeletonRows } from '../../components/common/DataStates'
 
 const BOM_STATUS: { [key: string]: { color: string; text: string } } = {
   NEW: { color: 'default', text: '新建' },
@@ -16,26 +17,31 @@ const BOM_STATUS: { [key: string]: { color: string; text: string } } = {
 const BOMList: React.FC = () => {
   const [boms, setBoms] = useState([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusFilter = searchParams.get('status') ?? ''
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchBOMs()
-  }, [])
+  }, [statusFilter])
 
   const fetchBOMs = async () => {
     setLoading(true)
+    setError('')
     try {
-      const response = await api.get('/eng/boms')
+      const response = await api.get('/eng/boms', { params: statusFilter ? { status: statusFilter } : {} })
       setBoms(response.data)
-    } catch (error) {
-      console.error('获取BOM列表失败:', error)
+    } catch (err) {
+      console.error('获取BOM列表失败:', err)
+      setError('获取BOM列表失败')
     } finally {
       setLoading(false)
     }
   }
 
   const columns = [
-    { title: 'BOM编号', dataIndex: 'bom_number', key: 'bom_number' },
+    { title: 'BOM编号', dataIndex: 'bom_number', key: 'bom_number', fixed: 'left' as const },
     { title: '版本', dataIndex: 'version', key: 'version' },
     { title: '父项物料', dataIndex: 'parent_material_code', key: 'parent_material_code' },
     {
@@ -50,6 +56,7 @@ const BOMList: React.FC = () => {
     {
       title: '操作',
       key: 'action',
+      fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Button
           type="link"
@@ -68,21 +75,45 @@ const BOMList: React.FC = () => {
         title="BOM管理"
         description="维护产品物料清单，作为生产版本与领料核算的依据"
         actions={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/eng/boms/new')}
-          >
-            新建BOM
-          </Button>
+          <Space wrap>
+            <Select
+              value={statusFilter || undefined}
+              placeholder="状态"
+              allowClear
+              options={Object.entries(BOM_STATUS).map(([value, info]) => ({ value, label: info.text }))}
+              onChange={(value) => {
+                const next = new URLSearchParams(searchParams)
+                if (value) next.set('status', value)
+                else next.delete('status')
+                setSearchParams(next)
+              }}
+              className="w-40"
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/eng/boms/new')}
+            >
+              新建BOM
+            </Button>
+          </Space>
         }
       />
-      <Table
-        columns={columns}
-        dataSource={boms}
-        loading={loading}
-        rowKey="id"
-      />
+      {error && !boms.length ? (
+        <ErrorState text={error} onRetry={() => void fetchBOMs()} />
+      ) : loading && !boms.length ? (
+        <SkeletonRows rows={4} />
+      ) : (
+        <div className="table-scroll">
+          <Table
+            columns={columns}
+            dataSource={boms}
+            loading={loading}
+            rowKey="id"
+            scroll={{ x: 760 }}
+          />
+        </div>
+      )}
     </div>
   )
 }

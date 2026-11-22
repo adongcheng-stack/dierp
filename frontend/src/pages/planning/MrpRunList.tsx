@@ -159,7 +159,7 @@ const MrpRunList: React.FC = () => {
       align: 'right' as const,
       width: 70,
       render: (value: number) => (
-        <span style={{ color: value ? '#cf1322' : undefined }}>{value}</span>
+        <span style={{ color: value ? 'var(--color-error)' : undefined }}>{value}</span>
       ),
     },
     {
@@ -206,7 +206,7 @@ const MrpRunList: React.FC = () => {
       key: 'shortage_qty',
       align: 'right' as const,
       render: (value: number) => (
-        <span style={{ color: value > 0 ? '#cf1322' : undefined }}>{fmtQty(value)}</span>
+        <span style={{ color: value > 0 ? 'var(--color-error)' : undefined }}>{fmtQty(value)}</span>
       ),
     },
     {
@@ -388,7 +388,7 @@ const MrpRunList: React.FC = () => {
               <Statistic
                 title="异常"
                 value={detail.exception_count}
-                valueStyle={{ color: detail.exception_count ? '#cf1322' : undefined }}
+                valueStyle={{ color: detail.exception_count ? 'var(--color-error)' : undefined }}
               />
             </div>
             <Tabs

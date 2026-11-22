@@ -234,7 +234,7 @@ const MaterialIssueForm: React.FC = () => {
                   {selectedMaterial.current_stock !== undefined && selectedMaterial.safety_stock !== undefined && 
                    selectedMaterial.current_stock < selectedMaterial.safety_stock && (
                     <div style={{ marginTop: 8, color: 'hsl(var(--destructive))', fontSize: '12px' }}>
-                      ⚠️ 当前库存低于安全库存
+                      当前库存低于安全库存
                     </div>
                   )}
                 </div>

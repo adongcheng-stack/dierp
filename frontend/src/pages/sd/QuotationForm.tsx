@@ -2036,9 +2036,9 @@ const QuotationForm: React.FC = () => {
                                                   form.getFieldValue('solder_mask_color_detail') === '蓝色' ? 'hsl(var(--brand))' :
                                                   form.getFieldValue('solder_mask_color_detail') === '红色' ? 'hsl(var(--destructive))' :
                                                   form.getFieldValue('solder_mask_color_detail') === '黄色' ? 'hsl(var(--chart-warning))' :
-                                                  form.getFieldValue('solder_mask_color_detail') === '黑色' ? '#000' :
-                                                  form.getFieldValue('solder_mask_color_detail') === '哑黑' ? '#262626' :
-                                                  form.getFieldValue('solder_mask_color_detail') === '白色' ? '#fff' : 'hsl(var(--chart-success))',
+                                                  form.getFieldValue('solder_mask_color_detail') === '黑色' ? 'var(--color-swatch-black)' :
+                                                  form.getFieldValue('solder_mask_color_detail') === '哑黑' ? 'var(--color-swatch-charcoal)' :
+                                                  form.getFieldValue('solder_mask_color_detail') === '白色' ? 'var(--color-paper)' : 'hsl(var(--chart-success))',
                                   border: '1px solid hsl(var(--line-strong))',
                                   marginRight: '4px',
                                   verticalAlign: 'middle'

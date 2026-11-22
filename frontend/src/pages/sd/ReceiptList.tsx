@@ -292,7 +292,7 @@ const ReceiptList: React.FC = () => {
         onCancel={() => setPayOpen(null)}
         width={640}
       >
-        <div style={{ marginBottom: 8, color: '#888' }}>
+        <div style={{ marginBottom: 8, color: 'var(--color-muted)' }}>
           核销合计：<strong>{payTotal.toFixed(2)}</strong> / {payOpen?.amount.toFixed(2) ?? '-'}
           （核销对象=该客户已开票/部分核销发票，后端校验不超未收余额）
         </div>

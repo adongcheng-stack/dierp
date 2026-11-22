@@ -113,7 +113,7 @@ const StocktakeList: React.FC = () => {
       width: 100,
       align: 'right' as const,
       render: (v: number) => (
-        <span style={{ color: v > 0 ? '#389e0d' : v < 0 ? '#cf1322' : undefined }}>{v?.toFixed(2)}</span>
+        <span style={{ color: v > 0 ? 'var(--color-success)' : v < 0 ? 'var(--color-error)' : undefined }}>{v?.toFixed(2)}</span>
       ),
     },
     {
@@ -194,7 +194,7 @@ const StocktakeList: React.FC = () => {
             />
           </Form.Item>
           {materialOption && (
-            <div style={{ marginBottom: 12, color: '#888' }}>
+            <div style={{ marginBottom: 12, color: 'var(--color-muted)' }}>
               当前账面数量：<strong>{materialOption.current_stock}</strong>
             </div>
           )}

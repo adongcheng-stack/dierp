@@ -103,7 +103,7 @@ const EquipmentFailureList: React.FC = () => {
       key: 'downtime_hours',
       width: 90,
       align: 'right' as const,
-      render: (value: number) => (value > 0 ? <span style={{ color: '#cf1322' }}>{value}</span> : value),
+      render: (value: number) => (value > 0 ? <span style={{ color: 'var(--color-error)' }}>{value}</span> : value),
     },
     { title: '发生时间', dataIndex: 'occurred_at', key: 'occurred_at', width: 160, render: fmtDateTime },
     { title: '解决时间', dataIndex: 'resolved_at', key: 'resolved_at', width: 160, render: fmtDateTime },

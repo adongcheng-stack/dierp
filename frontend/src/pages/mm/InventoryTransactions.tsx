@@ -86,7 +86,7 @@ const InventoryTransactions: React.FC = () => {
       width: 100,
       align: 'right' as const,
       render: (v: number) => (
-        <span style={{ color: v < 0 ? '#cf1322' : '#3f8600', fontWeight: 600 }}>
+        <span style={{ color: v < 0 ? 'var(--color-error)' : 'var(--color-success)', fontWeight: 600 }}>
           {v > 0 ? `+${v}` : v}
         </span>
       ),

@@ -102,7 +102,7 @@ const KittingList: React.FC = () => {
       align: 'right' as const,
       width: 90,
       render: (value: number) => (
-        <span style={{ color: value > 0 ? '#cf1322' : undefined, fontWeight: value > 0 ? 600 : 400 }}>
+        <span style={{ color: value > 0 ? 'var(--color-error)' : undefined, fontWeight: value > 0 ? 600 : 400 }}>
           {fmtQty(value)}
         </span>
       ),
@@ -157,7 +157,7 @@ const KittingList: React.FC = () => {
       align: 'right' as const,
       width: 100,
       render: (value: number) => (
-        <span style={{ color: value > 0 ? '#cf1322' : undefined }}>{fmtQty(value)}</span>
+        <span style={{ color: value > 0 ? 'var(--color-error)' : undefined }}>{fmtQty(value)}</span>
       ),
     },
     {
@@ -205,17 +205,17 @@ const KittingList: React.FC = () => {
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="齐套" value={summary.full} suffix="单" valueStyle={{ color: '#389e0d' }} />
+            <Statistic title="齐套" value={summary.full} suffix="单" valueStyle={{ color: 'var(--color-success)' }} />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="部分缺料" value={summary.partial} suffix="单" valueStyle={{ color: '#d46b08' }} />
+            <Statistic title="部分缺料" value={summary.partial} suffix="单" valueStyle={{ color: 'var(--color-warning)' }} />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="缺料" value={summary.short} suffix="单" valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="缺料" value={summary.short} suffix="单" valueStyle={{ color: 'var(--color-error)' }} />
           </Card>
         </Col>
       </Row>
@@ -281,7 +281,7 @@ const KittingList: React.FC = () => {
                     pagination={false}
                   />
                 ) : (
-                  <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  <div className="rounded-md bg-status-success/10 px-3 py-2 text-sm text-status-success">
                     该单据 BOM 组件全部齐套，无需补料。
                   </div>
                 )}

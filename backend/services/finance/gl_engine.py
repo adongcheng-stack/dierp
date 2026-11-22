@@ -58,10 +58,12 @@ def post(
     lines: Optional[list[tuple[str, Decimal, Decimal, str]]] = None,
     summary: str = "",
     operator: str = "system",
+    entry_date: Optional[datetime] = None,
 ) -> JournalEntry:
     """按业务事件入账：lines 为 (科目, 借, 贷, 摘要)；不传 lines 时按 GL_RULES 单行借贷。
 
     幂等：同一 (source_type, source_ref) 重复调用直接返回既有凭证（不重复入账）。
+    entry_date：演示种子可指定业务日期，使凭证归入对应会计期间；默认当前时间。
     """
     existing = (
         db.query(JournalEntry)
@@ -103,7 +105,7 @@ def post(
             f"分录借贷不平衡：Σ借 {total_debit} != Σ贷 {total_credit}（{source_type} {source_ref}）"
         )
 
-    now = datetime.now()
+    now = entry_date or datetime.now()
     period_code = _ensure_period(db, now)
     entry = JournalEntry(
         entry_number=NumberGenerator.generate_document_number(db, JournalEntry, "entry_number", "JE", 4),

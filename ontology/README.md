@@ -2,7 +2,7 @@
 
 本目录承载 DIERP 制造 ERP 的**语义层**，用于把“业务概念、枚举、约束、派生规则”从代码里抽出来，作为后端模型、前端类型和数据库脚本的共同上游。
 
-当前覆盖：**P0 计划域（MPS / MRP / 计划订单 / 需求追溯 / 异常 / 齐套 / 计划参数）**，并已为后续 APS、QMS、EAM、成本与业财预留本体分类。
+当前覆盖：**P0 计划域（MPS / MRP / 计划订单 / 需求追溯 / 异常 / 齐套 / 计划参数）**，以及**业财闭环（总账/会计期间）、库存估值（移动加权）、采购与质量、组织权限、驾驶舱预警**；三类运营模型共 59 个实体，均已在 OWL 本体中声明对应类（4 个单据行项目按约定走父单据形状校验）。
 
 ---
 
@@ -60,22 +60,26 @@ ontology/
 cd ontology
 python scripts/generate-types.py
 
-# 2) 双栈一致性校验
+# 2) 双栈一致性校验（含 YAML 实体 → 本体类/顶层范畴/形状覆盖）
 npm run check:node
 python scripts/validate-consistency.py
 
-# 3) 由 planning.yaml 重新生成后端模型与前端类型
+# 3) 生成物漂移检查（CI 门禁项，只读不写；回到仓库根目录）
 cd ..
+python backend/ontology/generate_models.py --check
+python ontology/scripts/generate-types.py --check
+
+# 4) 由 model/*.yaml 重新生成后端模型与前端类型
 python backend/ontology/generate_models.py
 
-# 4) 增量创建计划/成本表并写入种子数据
+# 5) 增量创建计划/成本表并写入种子数据
 python backend/upgrade_planning.py
 
-# 5) 后端计划冒烟
+# 6) 后端计划冒烟
 python backend/scripts/smoke_planning.py
 python backend/scripts/smoke_planning_api.py
 
-# 6) 重建演示数据并导出前端 mock 快照
+# 7) 重建演示数据并导出前端 mock 快照
 python backend/scripts/refresh_planning_demo.py
 ```
 
@@ -83,17 +87,17 @@ python backend/scripts/refresh_planning_demo.py
 
 ---
 
-## 4. 当前计划域模型（18 个实体）
+## 4. 当前运营模型（59 个实体 / 3 份 YAML）
 
-| 分类 | 实体 |
-|---|---|
-| 计划参数 | `PlanningPolicy` |
-| 需求输入 | `Forecast`、`MpsPlan`、`MpsEntry` |
-| MRP 运算 | `MrpRun`、`MrpRequirement`、`PlannedOrder`、`PeggingLink`、`MrpException` |
-| 执行闭环 | `KittingResult`、`PurchaseOrder`、`PurchaseOrderLine` |
-| 日历/成本预留 | `WorkCalendar`、`CostRate`、`StandardCost`、`ProductionCost`、`CostVariance`、`CostSettlement` |
+| 模型文件 | 实体数 | 主要域 |
+|---|---|---|
+| `model/planning.yaml`（53） | 53 | 计划参数、需求预测/MPS、MRP 运算与追溯、采购闭环、齐套、成本与业财闭环（总账/期间）、库存估值、仓储、排程、质量、设备、销售/资金应收应付 |
+| `model/admin.yaml`（5） | 5 | 部门、菜单、角色菜单授权、系统参数、登录日志 |
+| `model/dashboard.yaml`（1） | 1 | 驾驶舱预警规则 `DashboardRule` |
 
-枚举覆盖：`ProcurementType`、`MrpType`、`MpsPlanStatus`、`MrpRunType/Status`、`PlannedOrderType/Status`、`LotSizingRule`、`PlannerAction`、`MrpExceptionType`、`ExceptionSeverity`、`ResolutionStatus`、`DemandType`、`SupplyType`、`KitStatus`、`CostRateType`、`VarianceType`、`CostStatus`、`PurchaseOrderStatus` 等。
+其中业财闭环新增实体：`Account`、`JournalEntry`、`JournalLine`、`FiscalPeriod`、`InventoryValuation`、`ValuationMove`（均已在 `erp-ontology.ttl` / `shapes.ttl` 中声明，S51-S52）。
+
+枚举共 69 个，唯一事实源为 `src/mappings.json`；每个实体字段引用的枚举都必须有定义，关键枚举须在 `validate-type-sync.js` 的 `KEY_ENUMS` 中与 SHACL `sh:in` 对齐。
 
 ---
 

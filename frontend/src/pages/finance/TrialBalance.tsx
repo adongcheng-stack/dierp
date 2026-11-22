@@ -83,7 +83,7 @@ const TrialBalance: React.FC = () => {
       width: 140,
       align: 'right' as const,
       render: (v: number) => (
-        <strong style={{ color: v >= 0 ? '#cf1322' : '#389e0d' }}>{money(v)}</strong>
+        <strong style={{ color: v >= 0 ? 'var(--color-error)' : 'var(--color-success)' }}>{money(v)}</strong>
       ),
     },
   ]

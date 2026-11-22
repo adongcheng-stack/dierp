@@ -67,6 +67,10 @@
     "MenuType": ["DIRECTORY", "MENU", "BUTTON"],
     "MenuStatus": ["ACTIVE", "INACTIVE"],
     "ParamType": ["STRING", "INT", "BOOLEAN", "JSON"],
-    "LoginStatus": ["SUCCESS", "FAIL"]
+    "LoginStatus": ["SUCCESS", "FAIL"],
+    "DashboardScope": ["HOME", "MANAGEMENT", "PRODUCTION", "PROGRESS", "FINANCE", "SALES"],
+    "AlertOperator": ["LT", "LTE", "GT", "GTE"],
+    "AlertLevel": ["INFO", "WARNING", "CRITICAL"],
+    "TimeWindow": ["ALL", "LAST30", "LAST90", "LAST365"]
   }
 }

@@ -73,14 +73,17 @@ const Login: React.FC = () => {
             {/* 左侧：系统信息（实心深色面，不做装饰渐变） */}
             <div className="flex flex-col bg-[hsl(var(--n-950))] p-8 md:w-[42%] md:p-10">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-[#2662c9]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface text-brand-ink">
                   <Factory className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
                   <h1 className="truncate text-2xl font-semibold leading-none tracking-tight text-white">
                     DIERP
                   </h1>
-                  <p className="mt-1.5 truncate text-xs text-white/55">ERP 管理系统 · Demo</p>
+                  <p className="mt-1.5 flex items-center gap-2 text-sm text-white/80">
+                    <span>ERP 管理系统</span>
+                    <span className="border-s border-white/30 ps-2">Demo</span>
+                  </p>
                 </div>
               </div>
 
@@ -90,7 +93,11 @@ const Login: React.FC = () => {
                     <Icon className="mt-0.5 h-4 w-4 shrink-0 text-white/55" aria-hidden="true" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-white/90">{title}</p>
-                      <p className="mt-0.5 truncate text-xs text-white/55">{desc}</p>
+                      <p className="mt-0.5 flex flex-wrap gap-x-2 text-sm text-white/80">
+                        {desc.split(' · ').map((part, index) => (
+                          <span key={part} className={index ? 'border-s border-white/30 ps-2' : ''}>{part}</span>
+                        ))}
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -197,16 +204,18 @@ const Login: React.FC = () => {
                 </Button>
               </Form>
 
-              <p className="mt-6 text-xs text-ink-faint">
+              <p className="mt-6 text-sm text-ink-soft">
                 {isMockMode ? (
                   <>
-                    演示模式 · 登录任意已建账号，密码统一为{' '}
-                    <span className="font-medium text-ink-soft">admin123</span>；所有操作仅保存在当前浏览器，可随时在右上角菜单「重置演示数据」。
+                    <span>演示模式</span>
+                    <span className="ms-2 border-s border-line ps-2">登录任意已建账号，密码统一为{' '}
+                      <span className="font-medium text-ink">admin123</span></span>
+                    <span className="mt-1 block">所有操作仅保存在当前浏览器，可随时在右上角菜单「重置演示数据」。</span>
                   </>
                 ) : (
                   <>
-                    默认账号 <span className="font-medium text-ink-soft">admin</span> /{' '}
-                    <span className="font-medium text-ink-soft">admin123</span>，生产环境请立即修改。
+                    默认账号 <span className="font-medium text-ink">admin</span> /{' '}
+                    <span className="font-medium text-ink">admin123</span>，生产环境请立即修改。
                   </>
                 )}
               </p>
@@ -214,8 +223,16 @@ const Login: React.FC = () => {
           </div>
         </div>
 
-        <p className="mt-4 text-center text-xs text-ink-faint">
-          DIERP ERP 管理系统 · Demo · 销售报价 → 工程数据 → 生产执行 → 物料管理
+        <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-ink-soft">
+          <span>DIERP ERP 管理系统</span>
+          <span className="border-s border-line ps-3">Demo</span>
+          <span className="border-s border-line ps-3">销售报价</span>
+          <span aria-hidden="true">→</span>
+          <span>工程数据</span>
+          <span aria-hidden="true">→</span>
+          <span>生产执行</span>
+          <span aria-hidden="true">→</span>
+          <span>物料管理</span>
         </p>
       </div>
     </div>

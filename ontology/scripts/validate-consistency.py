@@ -53,6 +53,14 @@ LEAK_GUARDS = [
 ]
 # 泄漏守卫报错文案模板 (fail 时展示)
 LEAK_HINT = "被推理成 :PurchaseOrder/:ProductionOrder (某共享属性仍带 rdfs:domain, 需去 domain 改用 SHACL 约束)"
+
+# 运营模型（YAML）→ 本体的覆盖守卫 (Check5)
+MODEL_FILES = ["model/planning.yaml", "model/admin.yaml", "model/dashboard.yaml"]
+# 行项目作为父单据的嵌套对象校验（hasRequirement / hasPurchaseLine 等），不单独建 NodeShape。
+# 若要改为独立校验，请移除对应豁免并在 shapes.ttl 补形状。
+SHAPE_EXEMPT = {
+    "MrpRequirement", "PurchaseOrderLine", "PurchaseRequestLine", "PurchaseReturnLine",
+}
 # ═══════════════ CONFIG 结束 ═══════════════
 
 failures = 0
@@ -184,6 +192,48 @@ if failures == 0:
             )
     else:
         ok("no owl:equivalentClass on derived classes")
+
+    # ─── Check 5: 运营模型 (model/*.yaml) → 本体覆盖 ──────────────────────
+    # 前述 4 段只校验 TTL/SHACL/SWRL 自身，无法发现"YAML 有实体、本体没类"。
+    print("\n[5] Operational model ↔ ontology coverage (model/*.yaml)")
+    try:
+        import yaml
+    except ImportError:
+        fail("PyYAML not installed; cannot validate model/*.yaml coverage")
+    else:
+        SH = rdflib.Namespace("http://www.w3.org/ns/shacl#")
+        declared_classes = set(data.subjects(rdflib.RDF.type, rdflib.OWL.Class))
+        shape_targets = {
+            str(t)
+            for s in data.subjects(rdflib.RDF.type, SH.NodeShape)
+            for t in data.objects(s, SH.targetClass)
+        }
+        before = failures
+        total = 0
+        for rel in MODEL_FILES:
+            path = ROOT / rel
+            if not path.exists():
+                fail(f"{rel}: file not found")
+                continue
+            try:
+                model = yaml.safe_load(path.read_text(encoding="utf-8"))
+            except Exception as e:
+                fail(f"{rel}: {type(e).__name__}: {str(e).splitlines()[0]}")
+                continue
+            for name, entity in (model.get("entities") or {}).items():
+                total += 1
+                cls = entity.get("ontology_class") or name
+                top = entity.get("top_category")
+                uri = rdflib.URIRef(NS + cls)
+                if uri not in declared_classes:
+                    fail(f"{rel}:{name} -> :{cls} 未声明为 owl:Class (本体与运营模型不一致)")
+                    continue
+                if top and (uri, rdflib.RDFS.subClassOf, rdflib.URIRef(NS + top)) not in data:
+                    fail(f"{rel}:{name} -> :{cls} 未声明 rdfs:subClassOf :{top}")
+                if cls not in SHAPE_EXEMPT and str(uri) not in shape_targets:
+                    fail(f"{rel}:{name} -> :{cls} 缺少 SHACL NodeShape (或显式加入 SHAPE_EXEMPT)")
+        if failures == before:
+            ok(f"所有 {total} 个 YAML 实体的本体类 / 顶层范畴 / 形状标注一致 ({len(SHAPE_EXEMPT)} 项显式豁免)")
 
 print("\n" + "━" * 40)
 if failures:

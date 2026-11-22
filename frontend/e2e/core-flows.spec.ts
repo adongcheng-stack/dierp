@@ -33,7 +33,7 @@ async function openMenu(page: Page, group: string, item: string) {
 test.describe('核心链路 E2E', () => {
   test('1. 登录（滑块 + 账号密码）', async ({ page }) => {
     await login(page)
-    await expect(page.getByText('仪表盘', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('首页', { exact: true }).first()).toBeVisible()
   })
 
   test('2. 页签右键菜单：关闭其他', async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe('核心链路 E2E', () => {
   test('4. 菜单按业务价值链排序 + 期间月结可达', async ({ page }) => {
     await login(page)
     const labels = await page.locator('nav button').allTextContents()
-    const expected = ['仪表盘', '经营看板', '销售管理', '生产计划', '采购管理', '库存管理', '财务管理']
+    const expected = ['首页', '经营看板', '销售管理', '生产计划', '采购管理', '库存管理', '财务管理']
     const positions = expected.map((label) => labels.indexOf(label)).filter((i) => i >= 0)
     expect(positions.length).toBe(expected.length)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))

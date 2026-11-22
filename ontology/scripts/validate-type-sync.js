@@ -101,6 +101,27 @@ const CONFIG = {
     { name: 'MenuStatus', prop: 'status', shape: 'MenuShape' },
     { name: 'ParamType', prop: 'paramType', shape: 'SystemParameterShape' },
     { name: 'LoginStatus', prop: 'loginStatus', shape: 'LoginLogShape' },
+    // 驾驶舱 overlay（dashboard.yaml）
+    { name: 'DashboardScope', prop: 'scope', shape: 'DashboardRuleShape' },
+    { name: 'AlertOperator', prop: 'operator', shape: 'DashboardRuleShape' },
+    { name: 'AlertLevel', prop: 'level', shape: 'DashboardRuleShape' },
+    { name: 'TimeWindow', prop: 'defaultWindow', shape: 'DashboardRuleShape' },
+    // 计划/成本/采购主链既有枚举（补齐此前未纳入 KEY_ENUMS 的项）
+    { name: 'MrpType', prop: 'mrpType', shape: 'PlanningPolicyShape' },
+    { name: 'MpsPlanStatus', prop: 'status', shape: 'MpsPlanShape' },
+    { name: 'MrpRunStatus', prop: 'status', shape: 'MrpRunShape' },
+    { name: 'PlannedOrderStatus', prop: 'status', shape: 'PlannedOrderShape' },
+    { name: 'PurchaseOrderStatus', prop: 'status', shape: 'PurchaseOrderShape' },
+    { name: 'SalesOrderStatus', prop: 'status', shape: 'SalesOrderShape' },
+    { name: 'CostStatus', prop: 'settlementStatus', shape: 'CostSettlementShape' },
+    // DocumentStatus / HttpWriteMethod 只在代码与安全策略中使用，shapes.ttl 无 sh:in，故不在此检查。
+    // 业财 / 库存估值闭环（planning.yaml S51-S52）
+    { name: 'AccountType', prop: 'accountType', shape: 'AccountShape' },
+    { name: 'JournalStatus', prop: 'journalStatus', shape: 'JournalEntryShape' },
+    { name: 'GlSourceType', prop: 'glSourceType', shape: 'JournalEntryShape' },
+    { name: 'PeriodStatus', prop: 'periodStatus', shape: 'FiscalPeriodShape' },
+    { name: 'ValuationDirection', prop: 'direction', shape: 'ValuationMoveShape' },
+    { name: 'CostSourceType', prop: 'costSourceType', shape: 'ValuationMoveShape' },
   ],
   // 必须存在的 NodeShape 名 (Check4)
   REQUIRED_SHAPES: [
@@ -123,6 +144,10 @@ const CONFIG = {
     'WarehouseShape', 'StocktakeShape', 'StockTransferShape',
     'RoleShape', 'AccessDomainShape',
     'DepartmentShape', 'MenuShape', 'SystemParameterShape', 'LoginLogShape',
+    'RoleMenuShape',
+    'DashboardRuleShape',
+    'AccountShape', 'JournalEntryShape', 'JournalLineShape', 'FiscalPeriodShape',
+    'InventoryValuationShape', 'ValuationMoveShape',
   ],
   // 业务数量基线: 类名 -> 期望实例数 (Check8; 0 表示不检查该项可删除)
   BASELINE: {

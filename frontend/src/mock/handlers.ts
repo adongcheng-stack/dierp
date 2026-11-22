@@ -503,6 +503,197 @@ route('GET', '/system/login-logs', (ctx) => {
   return ok({ total: rows.length, items: clone(rows) })
 })
 
+/* ── 驾驶舱（与 backend/api/routers/dashboard.py 同构） ── */
+const COCKPITS = [
+  { key: 'management', title: '管理驾驶舱', path: '/dashboard/management', description: '六域 KPI + 资金四卡 + 自动点评' },
+  { key: 'production', title: '生产驾驶舱', path: '/dashboard/production', description: '工单 / OEE / 不良 / 交期风险' },
+  { key: 'progress', title: '生产进度看板', path: '/dashboard/production-progress', description: '工序级进度甘特与异常' },
+  { key: 'finance', title: '财务驾驶舱', path: '/dashboard/finance', description: '应收应付 / 回款率 / 现金流 / 月结' },
+  { key: 'sales', title: '销售驾驶舱', path: '/dashboard/sales', description: '订单额 / 未交 / 报价转化 / 账龄' },
+]
+const WORKBENCHES = [
+  { title: '计划工作台', path: '/pp/planning', domain: '计划与控制' },
+  { title: 'APS 工作台', path: '/aps/workbench', domain: '高级排程' },
+  { title: '成本工作台', path: '/cost/workbench', domain: '成本管理' },
+  { title: '质量工作台', path: '/qms/workbench', domain: '质量管理' },
+  { title: '设备工作台', path: '/eam/workbench', domain: '设备管理' },
+]
+function mockResolve(data: any, path: string): number | null {
+  let value: any = data
+  for (const part of path.split('.')) {
+    if (!value || !(part in value)) return null
+    value = value[part]
+  }
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+function mockAlerts(db: any, scope: string, data: any): any[] {
+  const rules = activeRows(db, 'dashboardRules')
+  const out: any[] = []
+  const seen = new Set<string>()
+  for (const rule of rules) {
+    if (rule.scope !== scope && rule.scope !== 'HOME') continue
+    if (rule.enabled === false || seen.has(rule.code)) continue
+    const actual = mockResolve(data, rule.metric)
+    if (actual === null) continue
+    const threshold = toNumber(rule.threshold)
+    const hit =
+      rule.operator === 'LT' ? actual < threshold :
+      rule.operator === 'LTE' ? actual <= threshold :
+      rule.operator === 'GT' ? actual > threshold : actual >= threshold
+    if (!hit) continue
+    seen.add(rule.code)
+    let message = String(rule.message ?? rule.name)
+    try { message = message.replace(/\{value(?::[^}]*)?\}/g, String(actual)).replace(/\{threshold(?::[^}]*)?\}/g, String(threshold)) } catch { /* ignore */ }
+    out.push({ code: rule.code, name: rule.name, level: rule.level, scope: rule.scope,
+      metric: rule.metric, actual, threshold, message })
+  }
+  const weight: Record<string, number> = { INFO: 0, WARNING: 1, CRITICAL: 2 }
+  return out.sort((a, b) => (weight[b.level] ?? 0) - (weight[a.level] ?? 0))
+}
+function mockSalesKpi(db: any) {
+  const orders = activeRows(db, 'salesOrders')
+  const open = orders.filter((s: any) => ['PENDING_APPROVAL', 'APPROVED', 'IN_PRODUCTION', 'PARTIALLY_SHIPPED'].includes(String(s.status)))
+  return {
+    orders: orders.length, open_orders: open.length,
+    amount_total: round(orders.reduce((s: number, o: any) => s + toNumber(o.total_amount), 0), 2),
+    amount_open: round(open.reduce((s: number, o: any) => s + toNumber(o.total_amount), 0), 2),
+  }
+}
+function mockProductionKpi(db: any) {
+  const orders = activeRows(db, 'productionOrders')
+  const done = orders.filter((o: any) => ['COMPLETED', 'CLOSED'].includes(String(o.status)))
+  const open = orders.filter((o: any) => ['PLANNED', 'RELEASED', 'IN_PRODUCTION'].includes(String(o.status)))
+  return {
+    orders: orders.length, open_orders: open.length,
+    completion_rate: orders.length ? round(done.length / orders.length, 4) : 0,
+    delayed_orders: open.filter((o: any) => o.planned_finish_date && new Date(o.planned_finish_date) < new Date()).length,
+    by_status: {},
+  }
+}
+function mockFinanceKpi(db: any) {
+  const invoices = activeRows(db, 'salesInvoices').filter((i: any) => i.status !== 'CANCELLED')
+  const invoiced = round(invoices.filter((i: any) => i.status !== 'DRAFT').reduce((s: number, i: any) => s + toNumber(i.amount), 0), 2)
+  const collected = round(activeRows(db, 'receiptAllocations').reduce((s: number, a: any) => s + toNumber(a.allocated_amount), 0), 2)
+  const confirmed = round(activeRows(db, 'supplierInvoices').filter((i: any) => i.status === 'CONFIRMED').reduce((s: number, i: any) => s + toNumber(i.amount), 0), 2)
+  const paid = round(activeRows(db, 'paymentAllocations').reduce((s: number, a: any) => s + toNumber(a.allocated_amount), 0), 2)
+  // 现金流水与后端 _finance_kpi 同构：仅已过账凭证的 1002 科目借贷差额
+  let cash = 0
+  const postedNumbers = new Set(
+    activeRows(db, 'glJournalEntries').filter((e: any) => e.status === 'POSTED').map((e: any) => e.entry_number)
+  )
+  for (const line of activeRows(db, 'glJournalLines')) {
+    if (!postedNumbers.has(line.entry_number) || line.account_code !== '1002') continue
+    cash += toNumber(line.debit) - toNumber(line.credit)
+  }
+  return {
+    receivable_outstanding: round(invoices.reduce((s: number, i: any) => s + toNumber(i.amount) - toNumber(i.received_amount), 0), 2),
+    payable_open: round(confirmed - paid, 2),
+    collection_rate: invoiced > 0 ? round(collected / invoiced, 4) : 0,
+    cash_balance: round(cash, 2), invoiced_total: invoiced, collected_total: collected,
+    supplier_confirmed_total: confirmed, supplier_paid_total: paid,
+  }
+}
+function mockProgressRows(db: any, order: string): any[] {
+  const ops = db.productionOrderOperations ?? {}
+  const rows: any[] = []
+  for (const [orderNo, list] of Object.entries(ops)) {
+    if (order && orderNo !== order) continue
+    ;(list as any[]).forEach((op: any, index: number) => {
+      const base = new Date('2026-11-01T08:00:00').getTime() + index * 86400000
+      rows.push({
+        production_order_number: orderNo,
+        operation_no: op.operation_no,
+        operation_name: op.operation_name,
+        work_center_id: op.work_center_id,
+        planned_quantity: 100, completed_quantity: index % 3 === 0 ? 100 : 40,
+        completion_rate: index % 3 === 0 ? 1 : 0.4,
+        status: index % 3 === 0 ? 'COMPLETED' : 'IN_PROGRESS',
+        planned_start_time: new Date(base).toISOString(),
+        planned_finish_time: new Date(base + 43200000).toISOString(),
+        actual_start_time: null, actual_finish_time: null,
+      })
+    })
+  }
+  return rows
+}
+
+route('GET', '/dashboard/home', () => {
+  const db = getDb()
+  const sales = mockSalesKpi(db)
+  const production = mockProductionKpi(db)
+  const finance = mockFinanceKpi(db)
+  const data = { sales, production, equipment: { oee: 0.68 }, quality: { first_pass_rate: 0.92 }, finance }
+  return ok({
+    cockpits: COCKPITS, workbenches: WORKBENCHES,
+    summary: {
+      sales_amount: sales.amount_total, production_completion: production.completion_rate,
+      oee: 0.68, collection_rate: finance.collection_rate, cash_balance: finance.cash_balance,
+    },
+    alerts: mockAlerts(db, 'HOME', data), generated_at: nowIso(),
+  })
+})
+
+route('GET', '/dashboard/production', (ctx) => {
+  const db = getDb()
+  const production = mockProductionKpi(db)
+  const rows = mockProgressRows(db, '')
+  const progress = {
+    operations: rows.length,
+    avg_completion_rate: rows.length ? round(rows.reduce((s: number, r: any) => s + r.completion_rate, 0) / rows.length, 4) : 0,
+    delayed: rows.filter((r: any) => r.status === 'DELAYED').length,
+    rows: rows.slice(0, 30),
+  }
+  const data = { production, quality: { first_pass_rate: 0.92 }, equipment: { oee: 0.68 }, progress }
+  return ok({ ...data, window: ctx.query.window ?? 'ALL', alerts: mockAlerts(db, 'PRODUCTION', data), generated_at: nowIso() })
+})
+
+route('GET', '/dashboard/production-progress', (ctx) => {
+  const db = getDb()
+  const rows = mockProgressRows(db, String(ctx.query.order ?? ''))
+  const summary = {
+    operations: rows.length,
+    orders: new Set(rows.map((r: any) => r.production_order_number)).size,
+    avg_completion_rate: rows.length ? round(rows.reduce((s: number, r: any) => s + r.completion_rate, 0) / rows.length, 4) : 0,
+    by_status: {} as Record<string, number>,
+  }
+  for (const row of rows) summary.by_status[row.status] = (summary.by_status[row.status] ?? 0) + 1
+  return ok({ summary, rows, window: ctx.query.window ?? 'ALL', alerts: mockAlerts(db, 'PROGRESS', { progress: summary }), generated_at: nowIso() })
+})
+
+route('GET', '/dashboard/finance', (ctx) => {
+  const db = getDb()
+  const finance = mockFinanceKpi(db)
+  const trendMap: Record<string, number> = {}
+  for (const entry of activeRows(db, 'glJournalEntries')) {
+    const key = String(entry.entry_date ?? '').slice(0, 7) || '未知'
+    trendMap[key] = (trendMap[key] ?? 0) + 1
+  }
+  const trend = Object.entries(trendMap).sort().map(([month, entries]) => ({ month, entries }))
+  const periods = activeRows(db, 'glFiscalPeriods').map((p: any) => ({ period_code: p.period_code, status: p.status }))
+  return ok({ finance, trend, periods, window: ctx.query.window ?? 'ALL',
+    alerts: mockAlerts(db, 'FINANCE', { finance }), generated_at: nowIso() })
+})
+
+route('GET', '/dashboard/sales', (ctx) => {
+  const db = getDb()
+  const sales = mockSalesKpi(db)
+  const quotations = activeRows(db, 'quotations')
+  const approved = quotations.filter((q: any) => ['APPROVED', 'CONFIRMED', 'RELEASED', 'COMPLETED'].includes(String(q.status))).length
+  const quotation = { total: quotations.length, approved, conversion_rate: quotations.length ? round(approved / quotations.length, 4) : 0 }
+  const aging: Record<string, number> = {}
+  for (const invoice of activeRows(db, 'salesInvoices').filter((i: any) => i.status !== 'CANCELLED')) {
+    const outstanding = toNumber(invoice.amount) - toNumber(invoice.received_amount)
+    if (outstanding > 0) {
+      const key = invoice.customer_name || invoice.customer_id || '-'
+      aging[key] = round((aging[key] ?? 0) + outstanding, 2)
+    }
+  }
+  const customers = Object.entries(aging).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([customer, outstanding]) => ({ customer, outstanding }))
+  return ok({ sales, quotation, customers, window: ctx.query.window ?? 'ALL',
+    alerts: mockAlerts(db, 'SALES', { sales, quotation }), generated_at: nowIso() })
+})
+
 route('GET', '/users', (ctx) => {
   const db = getDb()
   let users = listOf(db, 'users').filter((user) => !user.is_deleted)

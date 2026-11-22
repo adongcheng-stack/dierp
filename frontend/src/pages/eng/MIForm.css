@@ -1,6 +1,8 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Grid, brand-locked DIERP blue · copy: verbatim · redesign: full
+ * Hallmark · pre-emit critique: P4 H5 E4 S4 R4 V4 · weakest: S, keep the drag row tethered to the ledger */
 .row-dragging {
-  background: #fafafa;
-  border: 1px solid #ccc;
+  background: var(--color-paper-2);
+  border: 1px solid hsl(var(--line-strong));
 }
 
 .row-dragging td {

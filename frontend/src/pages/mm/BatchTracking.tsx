@@ -62,7 +62,7 @@ const BatchTracking: React.FC = () => {
       render: (v: string | null) =>
         v ? (
           <Tooltip title="按最近完成时间 + 效期天数估算">
-            {v} <span style={{ color: '#888' }}>(估)</span>
+            {v} <span style={{ color: 'var(--color-muted)' }}>(估)</span>
           </Tooltip>
         ) : (
           <Tag>待完工序</Tag>
@@ -76,7 +76,7 @@ const BatchTracking: React.FC = () => {
       render: (v: number | null) => {
         if (v === null) return <Tag>—</Tag>
         if (v < 0) return <Tag color="error">已过期 {-v} 天</Tag>
-        return <span style={{ color: v <= 30 ? '#cf1322' : undefined }}>{v}</span>
+        return <span style={{ color: v <= 30 ? 'var(--color-error)' : undefined }}>{v}</span>
       },
     },
     {

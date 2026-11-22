@@ -53,7 +53,7 @@ export function fmtPct(value: number | null | undefined, digits = 1): string {
 /** OEE 率值配色：>=85% 绿 / >=60% 橙 / 其余红 */
 export function oeeColor(value: number | null | undefined): string {
   const pct = Number(value ?? 0) * 100
-  if (pct >= 85) return '#389e0d'
-  if (pct >= 60) return '#d46b08'
-  return '#cf1322'
+  if (pct >= 85) return 'var(--color-success)'
+  if (pct >= 60) return 'var(--color-warning)'
+  return 'var(--color-error)'
 }

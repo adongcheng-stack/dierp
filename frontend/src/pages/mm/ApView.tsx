@@ -48,7 +48,7 @@ const ApView: React.FC = () => {
       width: 150,
       align: 'right' as const,
       render: (v: number) =>
-        v > 0 ? <span style={{ color: '#cf1322' }}>{fmt(v)}</span> : <Tag color="green">已结清</Tag>,
+        v > 0 ? <span style={{ color: 'var(--color-error)' }}>{fmt(v)}</span> : <Tag color="green">已结清</Tag>,
     },
   ]
 
@@ -66,7 +66,7 @@ const ApView: React.FC = () => {
       <Row gutter={16} className="mb-4">
         <Col span={8}>
           <Card>
-            <Statistic title="应付总额" value={totalPayable} precision={2} prefix="¥" valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="应付总额" value={totalPayable} precision={2} prefix="¥" valueStyle={{ color: 'var(--color-error)' }} />
           </Card>
         </Col>
         <Col span={8}>

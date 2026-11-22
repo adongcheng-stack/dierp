@@ -1,0 +1,67 @@
+﻿node : render tier: 5 screenshots in D:\project\erp\.hallmark\shots (1280x800, 1440x900, 1920x1080 folds; 1440 and 375 
+full pages)
+所在位置 C:\Users\che99\AppData\Local\Temp\genie-ps-1795318824409-7aqtze.ps1:954 字符: 80
++ ... ark/tools'; node 'C:/Users/che99/.codebuddy/skills/hallmark/scripts/s ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (render tier: 5 ...375 full pages):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+http://localhost:3101/#/sd/customers
+  REFLEX 72 :1 [1440px] text crowds the edge of its box: aside.app-sidebar bottom -216px | fix: Pad the box: max(8px, 0.5em) at the sides, max(4px, 0.3em) above and below
+d:\project\erp\frontend\src\base.css
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is … | fix: Three · -separated fields: /* Hallmark · waive <gate> · <guard evidence> · <reason> */
+d:\project\erp\frontend\src\components\common\ConfirmProvider.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\components\layout\AppLayout.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\Dashboard.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\admin\DataExchange.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\admin\components\EntityFormModal.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\aps\ApsMasterData.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\auth\Login.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\cost\CostRateList.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\dashboard\DashboardHome.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\dashboard\components\AlertPanel.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\eam\EamWorkbench.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\finance\AccountList.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\mm\ApView.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\planning\KittingList.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\pp\LotCardForm.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\qms\InspectionList.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\sd\CustomerForm.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\pages\traceability\TraceabilityExplorer.tsx
+  WAIVER waive :1 malformed waiver, ignored: /* Hallmark · waive 72 · the sidebar nav is …
+d:\project\erp\frontend\src\index.css
+  WARN 40 :74 1.52:1 < 4.5:1 on .ant-tag-green, .ant-tag-success | fix: Raise the contrast to threshold
+  WARN 41 :243 dark surface (L 21%) on .ant-card sets no text colour | fix: Swap text to paper in the same rule
+  WARN 41 :502 dark surface (L 27%) on .ant-select-dropdown, .ant-picker-dropdown .ant-picker-panel-container, .ant-dropdown .ant-drop…
+  WARN F7 :458 same container recipe on 6 selectors (.ant-input, .ant-input-affix-wrapper, .ant-inpu…...) | fix: Vary weight, radius, or fill by role; not every box is the same box
+d:\project\erp\frontend\src\pages\planning\PurchaseOrderList.tsx
+  WARN 70 :1 a script prints success ("收货成功：${response.data.status =…") with no request behind it | fix: No success state until the form posts somewhere; an empty data-endpoint and a handoff note
+d:\project\erp\frontend\src\pages\eng\MIReview.tsx
+  WARN F2 :161 three-period ellipsis in prose x1 | fix: Use a true ellipsis character (…)
+d:\project\erp\frontend\src\pages\sd\SalesOrderList.tsx
+  WARN F2 :522 three-period ellipsis in prose x1
+.hallmark\before.json
+  WARN kept :1 the pages hold 60 words where they held 124 | fix: Check that no section of content was dropped
+  WARN kept :1 not compared, because this run did not render them: http://localhost:3101/#/login, http://localhost:3101/#/, http://localhost:3101/#/eng/boms, http://localhost:3101/#/sd/quotations/new and 2 more | fix: Render the same pages or URLs the before record holds
+d:\project\erp\frontend\src\pages\mm\BatchTracking.tsx
+  NOTE 19 :77 dash "—" in copy | fix: A comma, a colon, a full stop or parentheses; never a dash
+sloplint: 0 FAIL, 1 REFLEX, 9 WARN, 19 REJECTED, 1 NOTE across 127 file(s) and 1 URL(s).
+kept: links 2/2, fields 324/324, handlers 381/381, headings 2/2; before 112 FAIL, 21 REFLEX, now 0 FAIL, 1 REFLEX
+compare: .hallmark\compare.html shows before and after side by side

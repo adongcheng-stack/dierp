@@ -84,7 +84,7 @@ const PlanningWorkbench: React.FC = () => {
               title="待处理计划订单"
               value={data?.planned_orders_open ?? 0}
               suffix="张"
-              valueStyle={{ color: '#1d4ed8' }}
+              valueStyle={{ color: 'var(--color-accent)' }}
             />
           </Card>
         </Col>
@@ -94,7 +94,7 @@ const PlanningWorkbench: React.FC = () => {
               title="未处理异常"
               value={data?.open_exceptions ?? 0}
               suffix="条"
-              valueStyle={{ color: data?.critical_exceptions ? '#cf1322' : undefined }}
+              valueStyle={{ color: data?.critical_exceptions ? 'var(--color-error)' : undefined }}
             />
           </Card>
         </Col>
@@ -104,7 +104,7 @@ const PlanningWorkbench: React.FC = () => {
               title="缺料/部分齐套"
               value={data?.short_kits ?? 0}
               suffix="单"
-              valueStyle={{ color: data?.short_kits ? '#d46b08' : undefined }}
+              valueStyle={{ color: data?.short_kits ? 'var(--color-warning)' : undefined }}
             />
           </Card>
         </Col>
@@ -160,11 +160,11 @@ const PlanningWorkbench: React.FC = () => {
                     <Statistic
                       title="异常"
                       value={run.exception_count}
-                      valueStyle={{ color: run.exception_count ? '#cf1322' : undefined }}
+                      valueStyle={{ color: run.exception_count ? 'var(--color-error)' : undefined }}
                     />
                   </Col>
                 </Row>
-                <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-ink-soft">
+                <div className="mt-3 rounded-md bg-surface-sunken px-3 py-2 text-sm text-ink-soft">
                   {run.log_text}
                 </div>
               </>
@@ -182,7 +182,7 @@ const PlanningWorkbench: React.FC = () => {
           <Card title="计划闭环" loading={loading}>
             <div className="space-y-3 text-sm">
               <button
-                className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-left hover:border-blue-400"
+                className="flex w-full items-center justify-between rounded-md border border-line px-3 py-2 text-left hover:border-brand"
                 onClick={() => navigate('/pp/mps')}
               >
                 <span>1. 主生产计划（MPS）</span>
@@ -194,7 +194,7 @@ const PlanningWorkbench: React.FC = () => {
                 </Space>
               </button>
               <button
-                className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-left hover:border-blue-400"
+                className="flex w-full items-center justify-between rounded-md border border-line px-3 py-2 text-left hover:border-brand"
                 onClick={() => navigate('/pp/mrp')}
               >
                 <span>2. 物料需求运算（MRP）</span>
@@ -206,7 +206,7 @@ const PlanningWorkbench: React.FC = () => {
                 </Space>
               </button>
               <button
-                className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-left hover:border-blue-400"
+                className="flex w-full items-center justify-between rounded-md border border-line px-3 py-2 text-left hover:border-brand"
                 onClick={() => navigate('/pp/planned-orders')}
               >
                 <span>3. 计划订单确认 / 下达</span>
@@ -218,7 +218,7 @@ const PlanningWorkbench: React.FC = () => {
                 </Space>
               </button>
               <button
-                className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-left hover:border-blue-400"
+                className="flex w-full items-center justify-between rounded-md border border-line px-3 py-2 text-left hover:border-brand"
                 onClick={() => navigate('/pp/planning-exceptions')}
               >
                 <span>4. 计划异常处理</span>
@@ -230,7 +230,7 @@ const PlanningWorkbench: React.FC = () => {
                 </Space>
               </button>
               <button
-                className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-left hover:border-blue-400"
+                className="flex w-full items-center justify-between rounded-md border border-line px-3 py-2 text-left hover:border-brand"
                 onClick={() => navigate('/pp/kitting')}
               >
                 <span>5. 齐套分析与缺料清单</span>
@@ -242,7 +242,7 @@ const PlanningWorkbench: React.FC = () => {
                 </Space>
               </button>
             </div>
-            <div className="mt-4 flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <div className="mt-4 flex items-start gap-2 rounded-md bg-status-warning/10 px-3 py-2 text-xs text-status-warning">
               <WarningOutlined className="mt-0.5" />
               <span>
                 当前演示库有 {fmtQty(data?.forecasts ?? 0)} 条预测参与 MPS 计算；计划参数可在

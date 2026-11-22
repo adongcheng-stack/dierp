@@ -321,7 +321,7 @@ const TraceabilityExplorer: React.FC = () => {
               dataSource={result.nodes}
               pagination={false}
               size="small"
-              rowClassName={(record) => (record.key === result.root ? 'bg-blue-50' : '')}
+              rowClassName={(record) => (record.key === result.root ? 'bg-brand-soft' : '')}
             />
           </Card>
 

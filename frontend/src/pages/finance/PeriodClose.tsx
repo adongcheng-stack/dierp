@@ -133,7 +133,7 @@ const PeriodClose: React.FC = () => {
               title="期间状态"
               value={isClosed ? '已结账 (CLOSED)' : '开放 (OPEN)'}
               prefix={isClosed ? <LockOutlined /> : <UnlockOutlined />}
-              valueStyle={{ color: isClosed ? '#cf1322' : '#389e0d', fontSize: 20 }}
+              valueStyle={{ color: isClosed ? 'var(--color-error)' : 'var(--color-success)', fontSize: 20 }}
             />
           </Card>
         </Col>
@@ -152,7 +152,7 @@ const PeriodClose: React.FC = () => {
             <Statistic
               title="试算平衡"
               value={preview?.balanced ? 'Σ借 = Σ贷 ✓' : 'Σ借 ≠ Σ贷'}
-              valueStyle={{ color: preview?.balanced ? '#3f8600' : '#cf1322', fontSize: 20 }}
+              valueStyle={{ color: preview?.balanced ? 'var(--color-success)' : 'var(--color-error)', fontSize: 20 }}
             />
           </Card>
         </Col>

@@ -278,7 +278,7 @@ const PaymentList: React.FC = () => {
         onCancel={() => setPayOpen(null)}
         width={640}
       >
-        <div style={{ marginBottom: 8, color: '#888' }}>
+        <div style={{ marginBottom: 8, color: 'var(--color-muted)' }}>
           核销合计：<strong>{payTotal.toFixed(2)}</strong> / {payOpen?.amount.toFixed(2) ?? '-'}
           （核销对象=该供应商已确认发票，后端校验单票累计不超发票额）
         </div>

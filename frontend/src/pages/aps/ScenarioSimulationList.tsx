@@ -202,7 +202,7 @@ const ScenarioSimulationList: React.FC = () => {
                       <span>{detail.description ?? '-'}</span>
                     </Space>
                     {detail.impact_summary && <Tag color="orange">{detail.impact_summary}</Tag>}
-                    <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+                    <span style={{ color: 'var(--color-muted)', fontSize: 12 }}>
                       批次 {detail.run_number} · {fmtDateTime(detail.created_at)} · {detail.created_by}
                     </span>
                   </Space>

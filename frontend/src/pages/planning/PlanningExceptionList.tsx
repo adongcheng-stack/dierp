@@ -203,7 +203,7 @@ const PlanningExceptionList: React.FC = () => {
       >
         {target && (
           <div className="space-y-3">
-            <div className="rounded-md bg-slate-50 px-3 py-2 text-sm">
+            <div className="rounded-md bg-surface-sunken px-3 py-2 text-sm">
               <div className="font-medium text-ink">
                 {EXCEPTION_TYPE[target.exception_type] ?? target.exception_type} ·{' '}
                 {target.material_code}

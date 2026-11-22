@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Button, Card, Col, Modal, Radio, Row, Select, Space, Statistic, Table, Tag, Tooltip, message } from 'antd'
 import { CaretRightOutlined, ReloadOutlined, SendOutlined } from '@ant-design/icons'
 import api, { getErrorMessage } from '../../services/api'
@@ -14,7 +14,7 @@ import {
   pct,
 } from './shared'
 
-const BAR_COLORS = ['#1677ff', '#13c2c2', '#722ed1', '#fa8c16', '#eb2f96', '#52c41a']
+const BAR_COLORS = ['var(--color-accent)', 'var(--color-series-2)', 'var(--color-series-3)', 'var(--color-series-4)', 'var(--color-series-5)', 'var(--color-success)']
 
 const ApsWorkbench: React.FC = () => {
   const [overview, setOverview] = useState<any>(null)
@@ -194,7 +194,7 @@ const ApsWorkbench: React.FC = () => {
         </Col>
         <Col span={4}>
           <Card size="small">
-            <Statistic title="排程异常" value={overview?.exceptions ?? 0} suffix={<span style={{ fontSize: 13, color: '#cf1322' }}>{overview?.critical_exceptions ? `/${overview.critical_exceptions} 严重` : ''}</span>} />
+            <Statistic title="排程异常" value={overview?.exceptions ?? 0} suffix={<span style={{ fontSize: 13, color: 'var(--color-error)' }}>{overview?.critical_exceptions ? `/${overview.critical_exceptions} 严重` : ''}</span>} />
           </Card>
         </Col>
         <Col span={4}>
@@ -216,7 +216,7 @@ const ApsWorkbench: React.FC = () => {
                 <StatusTag value={currentRun.status} map={RUN_STATUS} />
                 <Tag>{SOURCE_TYPE[currentRun.source_type] ?? currentRun.source_type}</Tag>
                 <Tag>{ALGORITHM[currentRun.algorithm] ?? currentRun.algorithm}</Tag>
-                <span style={{ color: 'var(--ink-soft, #8c8c8c)', fontSize: 12 }}>
+                <span style={{ color: 'var(--color-ink-soft)', fontSize: 12 }}>
                   {fmtDateTime(currentRun.horizon_start)} ~ {fmtDateTime(currentRun.horizon_end)} · {currentRun.operation_count} 道工序 · {currentRun.exception_count} 条异常
                 </span>
               </>
@@ -246,7 +246,7 @@ const ApsWorkbench: React.FC = () => {
                       left: `${(index / tickCount) * 100}%`,
                       transform: index === tickCount ? 'translateX(-100%)' : 'none',
                       fontSize: 11,
-                      color: '#8c8c8c',
+                      color: 'var(--color-muted)',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -260,7 +260,7 @@ const ApsWorkbench: React.FC = () => {
                 <Tooltip title={row.description}>
                   <div style={{ width: 130, flexShrink: 0, fontSize: 13, fontWeight: 500, paddingRight: 8 }}>
                     {row.work_center_id}
-                    <span style={{ color: '#8c8c8c', fontWeight: 400 }}> ×{row.capacity}</span>
+                    <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}> ×{row.capacity}</span>
                   </div>
                 </Tooltip>
                 <div
@@ -268,8 +268,8 @@ const ApsWorkbench: React.FC = () => {
                     position: 'relative',
                     flex: 1,
                     height: 30,
-                    background: '#fafafa',
-                    border: '1px solid #f0f0f0',
+                    background: 'var(--color-paper-2)',
+                    border: '1px solid var(--color-rule)',
                     borderRadius: 4,
                   }}
                 >
@@ -278,47 +278,56 @@ const ApsWorkbench: React.FC = () => {
                     const right = pct(op.planned_end, timeline.start, timeline.end)
                     const width = Math.max(right - left, 0.6)
                     return (
-                      <Tooltip
-                        key={op.op_id}
-                        title={
-                          <div>
-                            <div>{op.title}</div>
-                            <div>{fmtDateTime(op.planned_start)} → {fmtDateTime(op.planned_end)}</div>
-                            <div>调机 {fmtMinutes(op.setup_minutes)} + 加工 {fmtMinutes(op.run_minutes)} · 数量 {op.planned_qty}</div>
-                          </div>
-                        }
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: `${left}%`,
-                            width: `${width}%`,
-                            top: 4,
-                            height: 22,
-                            background: BAR_COLORS[rowIndex % BAR_COLORS.length],
-                            opacity: 0.85,
-                            borderRadius: 3,
-                            cursor: 'default',
-                            overflow: 'hidden',
-                            fontSize: 11,
-                            color: '#fff',
-                            lineHeight: '22px',
-                            paddingLeft: 4,
-                            whiteSpace: 'nowrap',
-                          }}
+                      <Fragment key={op.op_id}>
+                        <Tooltip
+                          title={
+                            <div>
+                              <div>{op.title}</div>
+                              <div>{fmtDateTime(op.planned_start)} → {fmtDateTime(op.planned_end)}</div>
+                              <div>调机 {fmtMinutes(op.setup_minutes)} + 加工 {fmtMinutes(op.run_minutes)}，数量 {op.planned_qty}</div>
+                            </div>
+                          }
                         >
-                          {op.production_order_number}
-                        </div>
-                      </Tooltip>
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: `${left}%`,
+                              width: `${width}%`,
+                              top: 4,
+                              height: 22,
+                              background: BAR_COLORS[rowIndex % BAR_COLORS.length],
+                              borderRadius: 3,
+                              cursor: 'default',
+                            }}
+                          />
+                        </Tooltip>
+                        {width >= 6 && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              left: `calc(${left}% + ${width}% + 4px)`,
+                              top: 4,
+                              height: 22,
+                              lineHeight: '22px',
+                              fontSize: 12,
+                              color: 'var(--color-ink)',
+                              whiteSpace: 'nowrap',
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            {op.production_order_number}
+                          </span>
+                        )}
+                      </Fragment>
                     )
                   })}
                 </div>
               </div>
             ))}
-            {gantt.gantt.length === 0 && <div style={{ color: '#8c8c8c', padding: 16 }}>该批次暂无排程工序</div>}
+            {gantt.gantt.length === 0 && <div style={{ color: 'var(--color-muted)', padding: 16 }}>该批次暂无排程工序</div>}
           </div>
         ) : (
-          <div style={{ color: '#8c8c8c', padding: 24, textAlign: 'center' }}>
+          <div style={{ color: 'var(--color-muted)', padding: 24, textAlign: 'center' }}>
             {loading ? '加载中…' : '暂无排程数据，请先运行排程'}
           </div>
         )}

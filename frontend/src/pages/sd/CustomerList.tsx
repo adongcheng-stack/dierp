@@ -1,9 +1,10 @@
-import { Table, Button, Space, Tag, App as AntdApp, Modal } from 'antd'
+import { Table, Button, Space, Tag, App as AntdApp, Modal, Select } from 'antd'
 import { PlusOutlined, EditOutlined, CheckOutlined, SendOutlined } from '@ant-design/icons'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../../services/api'
 import { PageHeader } from '../../components/layout/PageHeader'
+import { ErrorState, SkeletonRows } from '../../components/common/DataStates'
 
 // 客户状态中文映射
 const customerStatusMap: Record<string, { label: string; color: string }> = {
@@ -22,22 +23,27 @@ const CustomerList: React.FC = () => {
   const { message } = AntdApp.useApp()
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [approvalModalVisible, setApprovalModalVisible] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
   const [actionType, setActionType] = useState<'submit' | 'approve'>('submit')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusFilter = searchParams.get('status') ?? ''
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchCustomers()
-  }, [])
+  }, [statusFilter])
 
   const fetchCustomers = async () => {
     setLoading(true)
+    setError('')
     try {
-      const response = await api.get('/sd/customers')
+      const response = await api.get('/sd/customers', { params: statusFilter ? { customer_status: statusFilter } : {} })
       setCustomers(response.data)
-    } catch (error) {
-      console.error('获取客户列表失败:', error)
+    } catch (err) {
+      console.error('获取客户列表失败:', err)
+      setError('获取客户列表失败')
     } finally {
       setLoading(false)
     }
@@ -89,7 +95,7 @@ const CustomerList: React.FC = () => {
   }
 
   const columns = [
-    { title: '客户代码', dataIndex: 'customer_id', key: 'customer_id' },
+    { title: '客户代码', dataIndex: 'customer_id', key: 'customer_id', fixed: 'left' as const },
     { title: '公司名称', dataIndex: 'legal_name', key: 'legal_name' },
     { title: '商号', dataIndex: 'trade_name', key: 'trade_name' },
     {
@@ -104,6 +110,7 @@ const CustomerList: React.FC = () => {
     {
       title: '操作',
       key: 'action',
+      fixed: 'right' as const,
       render: (_: any, record: any) => {
         const status = record.customer_status
         return (
@@ -171,21 +178,45 @@ const CustomerList: React.FC = () => {
         title="客户管理"
         description="客户建档、多级审批与激活管理"
         actions={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/sd/customers/new')}
-          >
-            新建客户
-          </Button>
+          <Space wrap>
+            <Select
+              value={statusFilter || undefined}
+              placeholder="状态"
+              allowClear
+              options={Object.entries(customerStatusMap).map(([value, info]) => ({ value, label: info.label }))}
+              onChange={(value) => {
+                const next = new URLSearchParams(searchParams)
+                if (value) next.set('status', value)
+                else next.delete('status')
+                setSearchParams(next)
+              }}
+              className="w-40"
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/sd/customers/new')}
+            >
+              新建客户
+            </Button>
+          </Space>
         }
       />
-      <Table
-        columns={columns}
-        dataSource={customers}
-        loading={loading}
-        rowKey="id"
-      />
+      {error && !customers.length ? (
+        <ErrorState text={error} onRetry={() => void fetchCustomers()} />
+      ) : loading && !customers.length ? (
+        <SkeletonRows rows={4} />
+      ) : (
+        <div className="table-scroll">
+          <Table
+            columns={columns}
+            dataSource={customers}
+            loading={loading}
+            rowKey="id"
+            scroll={{ x: 720 }}
+          />
+        </div>
+      )}
 
       {/* 审批确认对话框 */}
       <Modal

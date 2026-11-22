@@ -135,7 +135,7 @@ export function SliderCaptcha({
       {/* 已拖拽进度 */}
       <div
         className={cn(
-          'absolute inset-y-0 left-0 rounded-md transition-[width] duration-150 ease-ui',
+          'absolute inset-y-0 left-0 rounded-md',
           verified ? 'bg-brand/15' : dragging ? 'bg-brand/15' : 'bg-brand/10',
         )}
         style={{ width: progressWidth }}
@@ -144,8 +144,8 @@ export function SliderCaptcha({
       {/* 提示文字 */}
       <div
         className={cn(
-          'pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 px-3 text-xs transition-colors',
-          verified ? 'font-medium text-brand-ink' : 'text-ink-faint',
+          'pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 px-3 text-sm transition-colors',
+          verified ? 'font-medium text-brand-ink' : 'text-ink-soft',
         )}
       >
         {verified ? (
@@ -182,10 +182,10 @@ export function SliderCaptcha({
         }}
         className={cn(
           'absolute flex h-8 items-center justify-center rounded-md border shadow-card',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+          '',
           dragging ? 'cursor-grabbing' : 'cursor-grab',
           verified
-            ? 'border-brand bg-brand text-white'
+            ? 'border-brand bg-brand text-brand-ink'
             : 'border-line-strong bg-card text-ink-soft hover:border-brand hover:text-brand',
           (disabled || verified) && 'cursor-default',
         )}

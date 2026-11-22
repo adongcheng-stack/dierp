@@ -117,13 +117,13 @@ export function PageTabs({
   ]
 
   return (
-    <div className="relative flex items-center gap-2 border-b border-line bg-surface px-3 py-1.5">
+    <div className="app-tabstrip relative flex h-9 items-center gap-2 border-b border-line bg-surface px-3">
       <button
         type="button"
         onClick={() => scrollBy(-200)}
         disabled={!canScrollLeft}
         className={cn(
-          'shrink-0 rounded-md p-1 transition-colors',
+          'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-none transition-colors',
           canScrollLeft
             ? 'text-ink-faint hover:bg-surface-hover hover:text-ink'
             : 'cursor-not-allowed text-ink-faint/50'
@@ -150,13 +150,13 @@ export function PageTabs({
               setContextMenu({ x: event.clientX, y: event.clientY, key: tab.key })
             }}
             className={cn(
-              'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-sm transition-colors',
+              'flex min-h-8 shrink-0 items-center border-b-2 px-3 py-1.5 text-[13px] leading-none transition-colors',
               activeKey === tab.key
-                ? 'bg-brand-soft font-medium text-brand-ink'
-                : 'text-ink-soft hover:bg-surface-hover hover:text-ink'
+                ? 'border-brand font-medium text-brand-ink'
+                : 'border-transparent text-ink-soft hover:text-ink'
             )}
           >
-            <span className="max-w-[160px] truncate">{tab.label}</span>
+            <span className="max-w-[160px] truncate text-[13px]">{tab.label}</span>
             {tab.closable && (
               <span
                 role="button"
@@ -172,7 +172,7 @@ export function PageTabs({
                     onTabClose(tab.key)
                   }
                 }}
-                className="rounded p-0.5 hover:bg-line"
+                className="relative rounded-none p-1 text-ink-faint hover:bg-surface-hover hover:text-ink after:absolute after:-inset-1 after:content-['']"
               >
                 <X className="h-3 w-3" />
               </span>
@@ -188,7 +188,7 @@ export function PageTabs({
         onClick={() => scrollBy(200)}
         disabled={!canScrollRight}
         className={cn(
-          'shrink-0 rounded-md p-1 transition-colors',
+          'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-none transition-colors',
           canScrollRight
             ? 'text-ink-faint hover:bg-surface-hover hover:text-ink'
             : 'cursor-not-allowed text-ink-faint/50'

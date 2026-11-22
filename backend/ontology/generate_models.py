@@ -14,6 +14,7 @@ Run from repository root:
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,11 @@ MODEL_CONFIGS: list[tuple[str, str, str]] = [
         "model/admin.yaml",
         "backend/common/models/admin.py",
         "frontend/src/types/admin.generated.ts",
+    ),
+    (
+        "model/dashboard.yaml",
+        "backend/common/models/dashboard.py",
+        "frontend/src/types/dashboard.generated.ts",
     ),
 ]
 
@@ -218,8 +224,19 @@ def render_ts(model: dict[str, Any], mappings: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def main() -> None:
+def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="从运营模型生成后端模型与前端契约")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="只比对生成物与当前文件，不写入；发现漂移返回 1（供 CI 门禁使用）",
+    )
+    args = parser.parse_args()
+
     mappings = json.loads(MAPPINGS_FILE.read_text(encoding="utf-8"))
+    drifted: list[str] = []
     for model_rel, backend_rel, frontend_rel in MODEL_CONFIGS:
         model = yaml.safe_load((ONTOLOGY_DIR / model_rel).read_text(encoding="utf-8"))
         model["_source"] = f"ontology/{model_rel}"
@@ -227,16 +244,30 @@ def main() -> None:
         frontend_out = ROOT / frontend_rel
 
         py = render_models(model, mappings)
-        backend_out.parent.mkdir(parents=True, exist_ok=True)
-        backend_out.write_text(py, encoding="utf-8")
-
         ts = render_ts(model, mappings)
-        frontend_out.parent.mkdir(parents=True, exist_ok=True)
-        frontend_out.write_text(ts, encoding="utf-8")
 
-        print(f"generated {backend_rel} ({len(model['entities'])} entities)")
-        print(f"generated {frontend_rel}")
+        if args.check:
+            for rel, expected in ((backend_rel, py), (frontend_rel, ts)):
+                out = ROOT / rel
+                actual = out.read_text(encoding="utf-8") if out.exists() else None
+                if actual != expected:
+                    drifted.append(rel)
+                    print(f"DRIFT {rel}: regenerate with `python backend/ontology/generate_models.py`")
+        else:
+            backend_out.parent.mkdir(parents=True, exist_ok=True)
+            backend_out.write_text(py, encoding="utf-8")
+            frontend_out.parent.mkdir(parents=True, exist_ok=True)
+            frontend_out.write_text(ts, encoding="utf-8")
+            print(f"generated {backend_rel} ({len(model['entities'])} entities)")
+            print(f"generated {frontend_rel}")
+
+    if args.check:
+        if drifted:
+            print(f"generated-file drift detected in {len(drifted)} file(s)")
+            return 1
+        print(f"all generated files in sync ({len(MODEL_CONFIGS)} models)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

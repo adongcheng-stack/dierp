@@ -246,6 +246,35 @@ def main() -> int:
         )
         check("应收流水(类型/金额)", db_ar_facts, mock_ar_facts)
 
+        # 组织架构与驾驶舱种子（本体 overlay）
+        from backend.common.models.admin import Department, Menu, SystemParameter
+        from backend.common.models.dashboard import DashboardRule
+
+        for label, model, collection, key_field in (
+            ("部门种子(编码/名称)", Department, "departments", "code"),
+            ("菜单种子(编码/名称)", Menu, "menus", "code"),
+            ("系统参数(键/值)", SystemParameter, "systemParameters", "param_key"),
+        ):
+            db_facts = sorted(
+                (str(getattr(row, key_field)), str(getattr(row, "name", "")) if key_field == "code" else str(getattr(row, "param_value", "")))
+                for row in live(model)
+            )
+            mock_facts = sorted(
+                (str(row[key_field]), str(row.get("name", "") if key_field == "code" else row.get("param_value", "")))
+                for row in mock.get(collection, [])
+            )
+            check(label, db_facts, mock_facts)
+
+        db_rule_facts = sorted(
+            (r.code, r.scope.value, r.metric, r.operator.value, float(r.threshold), r.level.value)
+            for r in live(DashboardRule)
+        )
+        mock_rule_facts = sorted(
+            (r["code"], r["scope"], r["metric"], r["operator"], float(r["threshold"]), r["level"])
+            for r in mock.get("dashboardRules", [])
+        )
+        check("驾驶舱预警规则(编码/范围/指标/运算符/阈值/级别)", db_rule_facts, mock_rule_facts)
+
         print(f"共 {checks} 项事实对比")
         if errors:
             print(f"\n❌ 不一致 {len(errors)} 项：")

@@ -59,12 +59,12 @@ const CostWorkbench: React.FC = () => {
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="待归集/在归集" value={data?.open_costs ?? 0} suffix="单" valueStyle={{ color: '#d46b08' }} />
+            <Statistic title="待归集/在归集" value={data?.open_costs ?? 0} suffix="单" valueStyle={{ color: 'var(--color-warning)' }} />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="已结算" value={data?.settled_costs ?? 0} suffix="单" valueStyle={{ color: '#389e0d' }} />
+            <Statistic title="已结算" value={data?.settled_costs ?? 0} suffix="单" valueStyle={{ color: 'var(--color-success)' }} />
           </Card>
         </Col>
       </Row>
@@ -77,7 +77,7 @@ const CostWorkbench: React.FC = () => {
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="超支差异" value={data?.adverse_variances ?? 0} suffix="条" valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="超支差异" value={data?.adverse_variances ?? 0} suffix="条" valueStyle={{ color: 'var(--color-error)' }} />
           </Card>
         </Col>
         <Col xs={12} md={6}>

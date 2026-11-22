@@ -31,8 +31,8 @@ DEPARTMENTS = [
 
 # code, name, path, parent_code, type, sort, permission
 MENUS = [
-    ("M-DASH", "仪表盘", "/", None, "DIRECTORY", 1, None),
-    ("M-DASH-MAIN", "仪表盘首页", "/dashboard", "M-DASH", "MENU", 1, "dashboard:view"),
+    ("M-DASH", "首页", "/", None, "DIRECTORY", 1, None),
+    ("M-DASH-MAIN", "首页总览", "/dashboard", "M-DASH", "MENU", 1, "dashboard:view"),
     ("M-DASH-MGMT", "经营看板", "/dashboard/management", "M-DASH", "MENU", 2, "dashboard:management"),
     ("M-SD", "销售管理", "/sd", None, "DIRECTORY", 2, None),
     ("M-SD-CUST", "客户管理", "/sd/customers", "M-SD", "MENU", 1, "sd:customer:list"),

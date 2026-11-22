@@ -437,3 +437,49 @@
 :parentMenu a owl:ObjectProperty ; rdfs:range :Menu .
 :grantedRole a owl:ObjectProperty ; rdfs:range :Role .
 :grantedMenu a owl:ObjectProperty ; rdfs:range :Menu .
+
+# ─────────────────────────────────────────────────────────────
+# 驾驶舱 overlay（dashboard.yaml）
+# ─────────────────────────────────────────────────────────────
+:DashboardRule a owl:Class ; rdfs:subClassOf :NormativeRule ; rdfs:label "驾驶舱预警规则" .
+:dashboardScope a owl:DatatypeProperty ; rdfs:range xsd:string .
+:operator a owl:DatatypeProperty ; rdfs:range xsd:string .
+:threshold a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:defaultWindow a owl:DatatypeProperty ; rdfs:range xsd:string .
+:scope a owl:DatatypeProperty ; rdfs:range xsd:string .
+:level a owl:DatatypeProperty ; rdfs:range xsd:string .
+:menuId a owl:DatatypeProperty ; rdfs:range xsd:integer .
+
+# ─────────────────────────────────────────────────────────────
+# 业财 / 库存估值闭环 overlay（planning.yaml：S51-S52）
+# 顶层范畴严格取 planning.yaml 的 top_category，保证运营模型与本体同构。
+# ─────────────────────────────────────────────────────────────
+:Account a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "会计科目" .
+:JournalEntry a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "记账凭证" .
+:JournalLine a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "分录行" .
+:FiscalPeriod a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "会计期间" .
+:InventoryValuation a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "库存估值" .
+:ValuationMove a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "估值流水" .
+
+:accountCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:accountName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:accountType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:parentCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:isLeaf a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+:periodCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:journalStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:glSourceType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:debit a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:credit a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:summary a owl:DatatypeProperty ; rdfs:range xsd:string .
+:endDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:periodStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:qty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:avgCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:lastCost a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:moveNumber a owl:DatatypeProperty ; rdfs:range xsd:string .
+:direction a owl:DatatypeProperty ; rdfs:range xsd:string .
+:balanceQty a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:balanceAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:costSourceType a owl:DatatypeProperty ; rdfs:range xsd:string .
+:reversalOf a owl:DatatypeProperty ; rdfs:range xsd:string .

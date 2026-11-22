@@ -260,7 +260,7 @@ const PlannedOrderList: React.FC = () => {
       >
         {releaseTarget && (
           <>
-            <div className="mb-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-ink-soft">
+            <div className="mb-4 rounded-md bg-surface-sunken px-3 py-2 text-sm text-ink-soft">
               {ORDER_TYPE[releaseTarget.order_type]?.text} · {releaseTarget.material_code} ·{' '}
               {fmtQty(releaseTarget.quantity)} {releaseTarget.unit} · 需求日期{' '}
               {fmtDate(releaseTarget.due_date)}

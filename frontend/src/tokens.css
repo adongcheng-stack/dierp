@@ -1,0 +1,252 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Grid (deal 1/3, seed redesign-existing-chinese-industrial-c70b·89d20df5·2026-11-22·r0) · palette: DIERP brand, kept · copy: verbatim · redesign: full
+ * nav: kept destinations, recomposed as a rail + breadcrumb bar · signature: 待我审批的报价单 ledger · states: loading, empty, error, full
+ * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R4 V4 · weakest: S, the shell could belong to any ERP; use the column-ledger language and put the real approval queue first */
+
+:root {
+  color-scheme: light;
+
+  /* DIERP 原始色阶：保留品牌蓝与冷中性，提升弱文字与字段边的对比 */
+  --n-50: 214 24% 97%;
+  --n-100: 214 22% 94%;
+  --n-200: 214 18% 90.5%;
+  --n-300: 213 15% 82%;
+  --n-400: 215 13% 58%;
+  --n-500: 215 13% 45%;
+  --n-600: 216 16% 36%;
+  --n-700: 217 19% 26%;
+  --n-800: 218 22% 18%;
+  --n-900: 220 26% 11.5%;
+  --n-950: 222 32% 7%;
+
+  --b-50: 214 92% 97%;
+  --b-100: 214 90% 94.5%;
+  --b-200: 215 86% 88%;
+  --b-300: 215 82% 77%;
+  --b-400: 216 76% 64%;
+  --b-500: 217 72% 55%;
+  --b-600: 218 68% 47%;
+  --b-700: 219 66% 39%;
+  --b-800: 220 62% 32%;
+  --b-900: 221 58% 26%;
+  --b-950: 222 55% 15%;
+
+  /* 语义层：全部为 HSL 三元组，Tailwind 与组件继续用 hsl(var(--x)) */
+  --surface: var(--n-50);
+  --surface-sunken: var(--n-100);
+  --surface-raised: var(--n-50);
+  --surface-hover: var(--n-100);
+  --field-edge: var(--n-500);
+  --line: var(--n-200);
+  --line-strong: var(--n-300);
+  --ink: var(--n-700);
+  --ink-soft: var(--n-600);
+  --ink-faint: var(--n-600);
+  --ink-placeholder: var(--n-600);
+  --brand: var(--b-600);
+  --brand-hover: var(--b-700);
+  --brand-soft: var(--b-50);
+  --brand-ink: var(--b-800);
+  --focus-ring: var(--b-600);
+  --shadow-color: 220 40% 20%;
+
+  --chart-primary: var(--brand);
+  --chart-success: 152 55% 30%;
+  --chart-danger: 0 68% 42%;
+  --chart-warning: 28 85% 30%;
+  --chart-neutral: var(--n-600);
+  --chart-series-2: 187 72% 42%;
+  --chart-series-3: 262 62% 48%;
+  --chart-series-4: 28 92% 42%;
+  --chart-series-5: 330 72% 48%;
+  --swatch-black: 0 0% 6%;
+  --swatch-charcoal: 0 0% 15%;
+
+  /* 兼容层：既有页面与 shadcn 名称指向语义层 */
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--n-50);
+  --secondary: var(--n-100);
+  --secondary-foreground: var(--ink);
+  --muted: var(--n-100);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--n-100);
+  --accent-foreground: var(--ink);
+  --destructive: 0 68% 42%;
+  --destructive-foreground: var(--n-50);
+  --border: var(--field-edge);
+  --input: var(--field-edge);
+  --ring: var(--focus-ring);
+  --radius: 2px;
+
+  /* Hallmark 角色：完整颜色值，供 var(--color-*) 直接用作 color */
+  --color-paper: hsl(var(--surface));
+  --color-paper-2: hsl(var(--surface-sunken));
+  --color-paper-3: hsl(var(--n-200));
+  --color-ink: hsl(var(--ink));
+  --color-ink-2: hsl(var(--ink-soft));
+  --color-ink-soft: var(--color-ink-2);
+  --color-muted: hsl(var(--ink-faint));
+  --color-rule: hsl(var(--line));
+  --color-field: hsl(var(--field-edge));
+  --color-accent: hsl(var(--brand));
+  --color-accent-ink: hsl(var(--n-50));
+  --color-focus: hsl(var(--focus-ring));
+  --color-error: hsl(var(--chart-danger));
+  --color-success: hsl(var(--chart-success));
+  --color-success-ink: hsl(152 60% 24%);
+  --color-success-surface: hsl(152 60% 94%);
+  --color-warning: hsl(var(--chart-warning));
+  --color-mark: hsl(var(--brand-hover));
+  --color-mark-ink: hsl(var(--n-50));
+  --color-series-2: hsl(var(--chart-series-2));
+  --color-series-3: hsl(var(--chart-series-3));
+  --color-series-4: hsl(var(--chart-series-4));
+  --color-series-5: hsl(var(--chart-series-5));
+  --color-swatch-black: hsl(var(--swatch-black));
+  --color-swatch-charcoal: hsl(var(--swatch-charcoal));
+
+  /* 字体：app 屏幕沿用项目无衬线，不引入展示体 */
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-display: var(--font-body);
+  --font-outlier: var(--font-body);
+
+  /* 固定比例 1.15–1.2 的 app 字阶 */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.35rem;
+  --text-3xl: 1.62rem;
+  --text-display-s: 1.35rem;
+  --text-display: 1.62rem;
+  --text-section: 1.125rem;
+  --text-title: 1rem;
+  --text-lead: 0.875rem;
+  --tracking-display: -0.01em;
+  --display-weight: 600;
+
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --space-4xl: 144px;
+  --container: 1440px;
+  --gutter: 24px;
+  --gap-columns: 24px;
+  --section-gap-s: 40px;
+  --section-gap: 64px;
+  --section-gap-l: 96px;
+
+  --radius-card: 0px;
+  --radius-pill: 0px;
+  --rule-hair: 1px;
+  --shadow-card: none;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sticky-nav: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* 外壳尺寸 */
+  --sidebar-w: 240px;
+  --rail-w: 60px;
+  --topbar-h: 56px;
+  --tabstrip-h: 36px;
+}
+
+.dark {
+  color-scheme: dark;
+  --n-50: 210 20% 95%;
+  --n-100: 212 18% 88%;
+  --n-200: 214 16% 74%;
+  --n-300: 215 15% 64%;
+  --n-400: 216 14% 58%;
+  --n-500: 217 12% 48%;
+  --n-600: 216 14% 52%;
+  --n-700: 219 15% 30%;
+  --n-800: 220 17% 15.5%;
+  --n-900: 221 19% 10.5%;
+  --n-950: 222 24% 6.5%;
+
+  --b-50: 215 55% 93%;
+  --b-100: 215 50% 85%;
+  --b-200: 215 46% 73%;
+  --b-300: 216 48% 66%;
+  --b-400: 217 64% 62%;
+  --b-500: 217 68% 55%;
+  --b-600: 218 66% 48%;
+  --b-700: 219 50% 36%;
+  --b-800: 220 46% 25%;
+  --b-900: 221 44% 18%;
+  --b-950: 222 48% 11%;
+
+  --surface: var(--n-900);
+  --surface-sunken: var(--n-950);
+  --surface-raised: var(--n-800);
+  --surface-hover: var(--n-800);
+  --field-edge: var(--n-300);
+  --line: var(--n-700);
+  --line-strong: var(--n-600);
+  --ink: var(--n-50);
+  --ink-soft: var(--n-200);
+  --ink-faint: var(--n-300);
+  --ink-placeholder: var(--n-300);
+  --brand: var(--b-400);
+  --brand-hover: var(--b-300);
+  --brand-soft: var(--b-900);
+  --brand-ink: var(--b-200);
+  --focus-ring: var(--b-400);
+  --shadow-color: 222 40% 3%;
+
+  --chart-success: 142 64% 55%;
+  --chart-danger: 0 84% 63%;
+  --chart-warning: 36 96% 58%;
+  --chart-neutral: var(--n-300);
+
+  --primary-foreground: var(--n-950);
+  --destructive: 0 84% 63%;
+  --destructive-foreground: var(--n-950);
+
+  --color-paper: hsl(var(--surface));
+  --color-paper-2: hsl(var(--surface-sunken));
+  --color-paper-3: hsl(var(--n-800));
+  --color-ink: hsl(var(--ink));
+  --color-ink-2: hsl(var(--ink-soft));
+  --color-ink-soft: var(--color-ink-2);
+  --color-muted: hsl(var(--ink-faint));
+  --color-rule: hsl(var(--line));
+  --color-field: hsl(var(--field-edge));
+  --color-accent: hsl(var(--brand));
+  --color-accent-ink: hsl(var(--n-950));
+  --color-focus: hsl(var(--focus-ring));
+  --color-error: hsl(var(--chart-danger));
+  --color-success: hsl(var(--chart-success));
+  --color-success-surface: hsl(152 45% 18%);
+  --color-warning: hsl(var(--chart-warning));
+  --color-mark: hsl(var(--brand-hover));
+  --color-mark-ink: hsl(var(--n-950));
+}

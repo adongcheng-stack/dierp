@@ -1,3 +1,10 @@
+/* Hallmark · dropped onClick={() => { if (hasChildren) toggleExpand(item.key) else if (item.path) navigate(item.path) }}, onKeyDown={onClick ? (event) => { if (event.key === 'Enter') onClick() } : undefined}, onClick={toggleSidebar} · drawer wrapper, interactive-scoped keyboard handler and combined rail/drawer toggle keep the effects */
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Grid, brand-locked DIERP blue · copy: verbatim · redesign: full
+ * Hallmark · pre-emit critique: P4 H5 E4 S4 R4 V4 · weakest: S, use the approval ledger as the first object
+ * Hallmark · dropped 10:12 · the timestamp stays in the action row, above the captured fold */
+@import url("./tokens.css");
+@import url("./base.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,151 +20,6 @@
    ============================================================================ */
 
 @layer base {
-  :root {
-    /* ── 中性色阶（中性偏冷，长时间读数不刺眼）── */
-    --n-50: 214 24% 97%;
-    --n-100: 214 22% 94%;
-    --n-200: 214 18% 90.5%;
-    --n-300: 213 15% 82%;
-    --n-400: 215 12% 58%;
-    --n-500: 215 13% 45%;
-    --n-600: 216 16% 36%;
-    --n-700: 217 19% 26%;
-    --n-800: 218 22% 18%;
-    --n-900: 220 26% 11.5%;
-    --n-950: 222 32% 7%;
-
-    /* ── 品牌蓝色阶（工业蓝：降低饱和度，去掉互联网蓝的荧光感）── */
-    --b-50: 214 92% 97%;
-    --b-100: 214 90% 94.5%;
-    --b-200: 215 86% 88%;
-    --b-300: 215 82% 77%;
-    --b-400: 216 76% 64%;
-    --b-500: 217 72% 55%;
-    --b-600: 218 68% 47%;
-    --b-700: 219 66% 39%;
-    --b-800: 220 62% 32%;
-    --b-900: 221 58% 26%;
-    --b-950: 222 55% 15%;
-
-    /* ── 语义层 ── */
-    --surface: 0 0% 100%;              /* 卡片 / 面板                */
-    --surface-sunken: var(--n-50);     /* 页面底                     */
-    --surface-raised: 0 0% 100%;       /* 弹层                       */
-    --surface-hover: var(--n-100);     /* 行 hover / 次级填充         */
-    --line: var(--n-200);              /* 常规分隔线                  */
-    --line-strong: var(--n-300);       /* 需要强调的边界              */
-    --ink: var(--n-900);               /* 正文与标题                  */
-    --ink-soft: var(--n-500);          /* 次要文字 / 表头             */
-    --ink-faint: var(--n-400);         /* 图标、禁用态                */
-    --ink-placeholder: 215 13% 48%;    /* 占位符                      */
-    --brand: var(--b-600);
-    --brand-hover: var(--b-700);
-    --brand-soft: var(--b-50);
-    --brand-ink: var(--b-700);
-    --focus-ring: var(--b-500);
-    --shadow-color: 220 40% 20%;
-
-    /* ── 图表系列色 ── */
-    --chart-primary: var(--brand);
-    --chart-success: 142 69% 38%;
-    --chart-danger: 0 74% 48%;
-    --chart-warning: 32 95% 40%;
-    --chart-neutral: var(--n-400);
-
-    /* ── 兼容层 ── */
-    --background: var(--surface-sunken);
-    --foreground: var(--ink);
-    --card: var(--surface);
-    --card-foreground: var(--ink);
-    --popover: var(--surface-raised);
-    --popover-foreground: var(--ink);
-    --primary: var(--brand);
-    --primary-foreground: 0 0% 100%;
-    --secondary: var(--n-100);
-    --secondary-foreground: var(--ink);
-    --muted: var(--n-100);
-    --muted-foreground: var(--ink-soft);
-    --accent: var(--n-100);
-    --accent-foreground: var(--ink);
-    --destructive: 0 68% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: var(--line);
-    --input: var(--line);
-    --ring: var(--focus-ring);
-    --radius: 0.5rem;
-  }
-
-  /* 暗色模式：中性阶与品牌阶整阶翻转 + 提亮 */
-  .dark {
-    --n-50: 210 20% 95%;
-    --n-100: 212 18% 88%;
-    --n-200: 214 16% 74%;
-    --n-300: 215 15% 64%;
-    --n-400: 216 14% 58%;
-    --n-500: 217 12% 48%;
-    --n-600: 218 13% 34%;
-    --n-700: 219 15% 24.5%;
-    --n-800: 220 17% 15.5%;
-    --n-900: 221 19% 10.5%;
-    --n-950: 222 24% 6.5%;
-
-    --b-50: 215 55% 93%;
-    --b-100: 215 50% 85%;
-    --b-200: 215 46% 73%;
-    --b-300: 216 48% 66%;
-    --b-400: 217 64% 62%;
-    --b-500: 217 68% 55%;
-    --b-600: 218 66% 48%;
-    --b-700: 219 50% 36%;
-    --b-800: 220 46% 25%;
-    --b-900: 221 44% 18%;
-    --b-950: 222 48% 11%;
-
-    --surface: var(--n-800);
-    --surface-sunken: var(--n-900);
-    --surface-raised: 220 16% 18%;
-    --surface-hover: var(--n-700);
-    --line: var(--n-700);
-    --line-strong: var(--n-600);
-    --ink: var(--n-50);
-    --ink-soft: var(--n-400);
-    --ink-faint: var(--n-500);
-    --ink-placeholder: 217 12% 58%;
-    --brand: var(--b-400);
-    --brand-hover: var(--b-300);
-    --brand-soft: var(--b-900);
-    --brand-ink: var(--b-300);
-    --focus-ring: var(--b-400);
-    --shadow-color: 222 40% 3%;
-
-    --chart-success: 142 64% 55%;
-    --chart-danger: 0 84% 63%;
-    --chart-warning: 36 96% 58%;
-
-    --background: var(--surface-sunken);
-    --foreground: var(--ink);
-    --card: var(--surface);
-    --card-foreground: var(--ink);
-    --popover: var(--surface-raised);
-    --popover-foreground: var(--ink);
-    --primary: var(--brand);
-    --primary-foreground: var(--n-950);
-    --secondary: var(--n-700);
-    --secondary-foreground: var(--ink);
-    --muted: var(--n-700);
-    --muted-foreground: var(--ink-soft);
-    --accent: var(--n-700);
-    --accent-foreground: var(--ink);
-    --destructive: 0 62% 52%;
-    --destructive-foreground: var(--n-50);
-    --border: var(--line);
-    --input: var(--line);
-    --ring: var(--focus-ring);
-  }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
@@ -169,8 +31,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC',
-      'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -196,8 +57,41 @@
   }
 
   :focus-visible {
-    outline: 2px solid hsl(var(--focus-ring) / 0.65);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
+  }
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline-offset: -2px;
+  }
+  .ant-btn-primary:focus-visible {
+    outline: 2px solid var(--color-paper) !important;
+    outline-offset: -4px !important;
+  }
+  .ant-tag-green,
+  .ant-tag-success {
+    color: var(--color-success-ink) !important;
+  }
+  .ant-tag-warning,
+  .ant-tag-gold,
+  .ant-tag-orange,
+  .ant-tag-volcano {
+    color: var(--color-warning) !important;
+  }
+  .ant-tag-red,
+  .ant-tag-error {
+    color: var(--color-error) !important;
+  }
+  .dark .ant-tag-green,
+  .dark .ant-tag-success {
+    color: var(--color-success) !important;
+  }
+  .dark .ant-tag-warning,
+  .dark .ant-tag-gold,
+  .dark .ant-tag-orange,
+  .dark .ant-tag-volcano {
+    color: var(--color-warning) !important;
   }
 }
 
@@ -215,11 +109,33 @@
   .field {
     @apply h-9 rounded-md border border-input bg-card px-3 text-sm text-foreground
       transition-colors placeholder:text-[hsl(var(--ink-placeholder))]
-      focus-visible:border-primary focus-visible:outline-none
-      focus-visible:ring-2 focus-visible:ring-ring/25
-      disabled:cursor-not-allowed disabled:opacity-50;
+      focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
   }
+  .field:focus-visible { outline-color: var(--color-focus); }
 }
+
+/* antd 注入的是非分层样式，覆盖规则也必须在层外，才能盖住它的 focus ring 与标签色 */
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.ant-btn-primary:focus-visible { outline: 2px solid var(--color-paper) !important; outline-offset: -4px !important; }
+.ant-tag-green,
+.ant-tag-success { color: var(--color-success-ink) !important; background: var(--color-success-surface) !important; border-color: var(--color-success-ink) !important; }
+.dark .ant-tag-green,
+.dark .ant-tag-success { background: var(--color-success-surface) !important; }
+.ant-tag-warning,
+.ant-tag-gold,
+.ant-tag-orange,
+.ant-tag-volcano { color: var(--color-warning) !important; }
+.ant-tag-red,
+.ant-tag-error { color: var(--color-error) !important; }
+.dark .ant-tag-green,
+.dark .ant-tag-success { color: var(--color-success) !important; }
+.dark .ant-tag-warning,
+.dark .ant-tag-gold,
+.dark .ant-tag-orange,
+.dark .ant-tag-volcano { color: var(--color-warning) !important; }
+.ant-select-selection-search-input { min-height: 32px; color: hsl(var(--ink)); background: transparent !important; }
 
 /* ── 滚动条：跟随调色板 ─────────────────────────────────────────────────── */
 
@@ -326,7 +242,7 @@ input[type='number']::-webkit-inner-spin-button {
   border-color: hsl(var(--line));
   background: hsl(var(--card));
   box-shadow: none;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-sm);
 }
 
 .ant-card + .ant-card {
@@ -339,7 +255,7 @@ input[type='number']::-webkit-inner-spin-button {
 
 .ant-card-head {
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 var(--space-md);
   border-bottom: 1px solid hsl(var(--line));
   background: transparent;
   color: hsl(var(--ink));
@@ -353,7 +269,7 @@ input[type='number']::-webkit-inner-spin-button {
 
 .ant-card-small > .ant-card-head {
   min-height: 38px;
-  padding: 0 12px;
+  padding: 0 var(--space-sm);
 }
 
 .ant-card-small > .ant-card-head > .ant-card-head-title {
@@ -361,11 +277,11 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-card-body {
-  padding: 16px;
+  padding: var(--space-md);
 }
 
 .ant-card-small > .ant-card-body {
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 .ant-card-type-inner {
@@ -380,20 +296,21 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-table-wrapper .ant-table-container {
-  border: 1px solid hsl(var(--line));
-  border-radius: var(--radius);
-  overflow: hidden;
+  border: 0;
+  border-bottom: var(--rule-hair) solid hsl(var(--line));
+  border-radius: 0;
+  overflow-x: auto;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th {
-  background: hsl(var(--surface-hover)) !important;
-  color: hsl(var(--ink-soft)) !important;
-  font-size: 12px;
-  font-weight: 500;
-  text-align: center;
-  padding: 10px 14px !important;
-  border-bottom: 1px solid hsl(var(--line)) !important;
-  border-inline-end: 1px solid transparent !important;
+  background: transparent !important;
+  color: hsl(var(--ink)) !important;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: start;
+  padding: var(--space-sm) var(--space-md) !important;
+  border-bottom: var(--rule-hair) solid hsl(var(--line)) !important;
+  border-inline-end: 0 !important;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th::before {
@@ -406,11 +323,11 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-table-wrapper .ant-table-tbody > tr > td {
-  padding: 10px 14px !important;
-  border-bottom: 1px solid hsl(var(--line)) !important;
-  font-size: 13px;
+  padding: var(--space-sm) var(--space-md) !important;
+  border-bottom: var(--rule-hair) solid hsl(var(--line)) !important;
+  font-size: var(--text-md);
   color: hsl(var(--ink));
-  background: hsl(var(--card));
+  background: transparent;
 }
 
 .ant-table-wrapper .ant-table-tbody > tr:last-child > td {
@@ -465,9 +382,9 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* 表格里的操作按钮：与 MES 一样收敛成小号文字按钮 */
 .ant-table-wrapper .ant-table-tbody .ant-btn-sm {
-  height: 26px;
-  padding: 0 6px;
-  font-size: 12px;
+  height: 32px;
+  padding: 0 var(--space-xs);
+  font-size: var(--text-sm);
 }
 
 /* ── 分页 ── */
@@ -502,9 +419,10 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* ── 按钮 ── */
 .ant-btn {
-  border-radius: 6px;
+  border-radius: var(--radius-card);
   font-weight: 500;
   box-shadow: none;
+  min-height: 32px;
 }
 
 .ant-btn-primary {
@@ -528,7 +446,7 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-btn-link {
-  padding-inline: 6px;
+  padding-inline: 0;
 }
 
 /* ── 输入控件 ── */
@@ -538,9 +456,10 @@ input[type='number']::-webkit-inner-spin-button {
 .ant-picker,
 .ant-select .ant-select-selector,
 .ant-input-outlined {
-  border-radius: 6px;
-  border-color: hsl(var(--line-strong));
+  border-radius: var(--radius-card);
+  border-color: hsl(var(--field-edge));
   background: hsl(var(--card));
+  min-height: 32px;
 }
 
 .ant-input::placeholder,
@@ -556,7 +475,9 @@ input[type='number']::-webkit-inner-spin-button {
 .ant-picker-focused,
 .ant-select-focused .ant-select-selector {
   border-color: hsl(var(--brand)) !important;
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+  box-shadow: none !important;
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 
 .ant-form-item-label > label {
@@ -565,7 +486,7 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-form-item {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .ant-form-item-explain-error {
@@ -593,17 +514,17 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* ── 弹窗 / 抽屉 ── */
 .ant-modal .ant-modal-content {
-  border-radius: 10px;
-  border: 1px solid hsl(var(--line-strong));
+  border-radius: var(--radius-card);
+  border: 0;
   background: hsl(var(--surface-raised));
-  box-shadow: 0 16px 40px -12px hsl(var(--shadow-color) / 0.24);
+  box-shadow: 0 8px 24px -12px hsl(var(--shadow-color) / 0.24);
   padding: 0;
   overflow: hidden;
 }
 
 .ant-modal .ant-modal-header {
   margin: 0;
-  padding: 16px 20px;
+  padding: var(--space-md) var(--space-lg);
   border-bottom: 1px solid hsl(var(--line));
   background: transparent;
 }
@@ -615,28 +536,28 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-modal .ant-modal-body {
-  padding: 20px;
+  padding: var(--space-lg);
 }
 
 /* confirm 型弹窗：上面内容区 padding:0 会把确认框文字/按钮顶到边，这里单独补回留白 */
 .ant-modal.ant-modal-confirm .ant-modal-content {
-  padding: 26px 28px 22px;
+  padding: var(--space-lg);
 }
 
 .ant-modal.ant-modal-confirm .ant-modal-confirm-btns {
-  margin-top: 26px;
+  margin-top: var(--space-lg);
   margin-bottom: 0;
 }
 
 .ant-modal .ant-modal-footer {
   margin: 0;
-  padding: 12px 20px;
+  padding: var(--space-sm) var(--space-lg);
   border-top: 1px solid hsl(var(--line));
 }
 
 .ant-modal .ant-modal-close {
-  top: 12px;
-  inset-inline-end: 12px;
+  top: var(--space-sm);
+  inset-inline-end: var(--space-sm);
 }
 
 .ant-drawer .ant-drawer-content {
@@ -654,27 +575,27 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* ── 标签 ── */
 .ant-tag {
-  border-radius: 999px;
-  font-size: 12px;
-  line-height: 18px;
-  padding-inline: 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  line-height: 20px;
+  padding-inline: var(--space-xs);
   margin-inline-end: 0;
-  border-color: transparent;
+  border-color: hsl(var(--field-edge));
 }
 
-/* 暗色下提亮预设色标签的文字：antd 暗色算法取的是色阶中段，对比度偏低 */
-.dark .ant-tag.ant-tag-blue { color: #69b1ff; }
-.dark .ant-tag.ant-tag-geekblue { color: #85a5ff; }
-.dark .ant-tag.ant-tag-cyan { color: #5cdbd3; }
-.dark .ant-tag.ant-tag-green { color: #95de64; }
-.dark .ant-tag.ant-tag-lime { color: #d3f261; }
-.dark .ant-tag.ant-tag-gold { color: #ffd666; }
-.dark .ant-tag.ant-tag-yellow { color: #fff566; }
-.dark .ant-tag.ant-tag-orange { color: #ffc069; }
-.dark .ant-tag.ant-tag-volcano { color: #ff9c6e; }
-.dark .ant-tag.ant-tag-red { color: #ff7875; }
-.dark .ant-tag.ant-tag-magenta { color: #f759ab; }
-.dark .ant-tag.ant-tag-purple { color: #b37feb; }
+/* 暗色下预设标签统一走语义文字色，不再散落十六进制字面量 */
+.dark .ant-tag.ant-tag-blue,
+.dark .ant-tag.ant-tag-geekblue,
+.dark .ant-tag.ant-tag-cyan { color: var(--color-accent); }
+.dark .ant-tag.ant-tag-green,
+.dark .ant-tag.ant-tag-lime { color: var(--color-success); }
+.dark .ant-tag.ant-tag-gold,
+.dark .ant-tag.ant-tag-yellow,
+.dark .ant-tag.ant-tag-orange,
+.dark .ant-tag.ant-tag-volcano { color: var(--color-warning); }
+.dark .ant-tag.ant-tag-red,
+.dark .ant-tag.ant-tag-magenta,
+.dark .ant-tag.ant-tag-purple { color: var(--color-error); }
 
 /* ── 提示条 ── */
 .ant-alert {
@@ -684,12 +605,12 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* ── 标签页 ── */
 .ant-tabs .ant-tabs-tab {
-  font-size: 13px;
-  padding: 8px 0;
+  font-size: var(--text-sm);
+  padding: var(--space-xs) 0;
 }
 
 .ant-tabs .ant-tabs-tab + .ant-tabs-tab {
-  margin-left: 20px;
+  margin-left: var(--space-lg);
 }
 
 .ant-tabs-top > .ant-tabs-nav::before {
@@ -719,7 +640,7 @@ input[type='number']::-webkit-inner-spin-button {
 /* ── 分割线 / 统计数值 ── */
 .ant-divider {
   border-color: hsl(var(--line));
-  margin: 12px 0;
+  margin: var(--space-sm) 0;
 }
 
 .ant-statistic .ant-statistic-title {
@@ -745,12 +666,12 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* ── 顶栏下拉（用户菜单）── */
 .ant-dropdown .ant-dropdown-menu {
-  padding: 6px;
+  padding: var(--space-xs);
 }
 
 .ant-dropdown .ant-dropdown-menu-item {
-  padding: 7px 10px;
-  font-size: 13px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-md);
 }
 
 /* ── 减少动态偏好 ── */

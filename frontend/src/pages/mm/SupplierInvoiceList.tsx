@@ -200,7 +200,7 @@ const SupplierInvoiceList: React.FC = () => {
             />
           </Form.Item>
           {poOption && (
-            <div style={{ marginBottom: 12, color: '#888' }}>
+            <div style={{ marginBottom: 12, color: 'var(--color-muted)' }}>
               已收货价值上限：<strong>{receivedValue.toFixed(2)}</strong>
             </div>
           )}

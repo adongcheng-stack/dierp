@@ -118,7 +118,7 @@ const EamWorkbench: React.FC = () => {
             <Statistic
               title="到期保养"
               value={overview?.due_plans ?? 0}
-              suffix={<span style={{ fontSize: 13, color: '#d46b08' }}>待生成</span>}
+              suffix={<span style={{ fontSize: 13, color: 'var(--color-warning)' }}>待生成</span>}
             />
           </Card>
         </Col>
@@ -127,7 +127,7 @@ const EamWorkbench: React.FC = () => {
             <Statistic
               title="维护工单"
               value={overview?.orders ?? 0}
-              suffix={<span style={{ fontSize: 13, color: '#389e0d' }}>{overview?.orders_done ?? 0} 完成</span>}
+              suffix={<span style={{ fontSize: 13, color: 'var(--color-success)' }}>{overview?.orders_done ?? 0} 完成</span>}
             />
           </Card>
         </Col>
@@ -137,7 +137,7 @@ const EamWorkbench: React.FC = () => {
               title="未关闭故障"
               value={overview?.open_failures ?? 0}
               suffix={
-                <span style={{ fontSize: 13, color: '#cf1322' }}>
+                <span style={{ fontSize: 13, color: 'var(--color-error)' }}>
                   {overview?.critical_failures ? `${overview.critical_failures} 严重` : ''}
                 </span>
               }
@@ -160,7 +160,7 @@ const EamWorkbench: React.FC = () => {
               value={fmtPct(oee?.summary?.oee)}
               valueStyle={{ color: oeeColor(oee?.summary?.oee) }}
               suffix={
-                <span style={{ fontSize: 12, color: '#8c8c8c' }}>
+                <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>
                   A{fmtPct(oee?.summary?.availability, 0)} × P{fmtPct(oee?.summary?.performance, 0)} × Q
                   {fmtPct(oee?.summary?.quality, 0)}
                 </span>
@@ -188,7 +188,7 @@ const EamWorkbench: React.FC = () => {
               key: 'downtime',
               width: 110,
               align: 'right' as const,
-              render: (value: number) => (value > 0 ? <span style={{ color: '#cf1322' }}>{value}</span> : value),
+              render: (value: number) => (value > 0 ? <span style={{ color: 'var(--color-error)' }}>{value}</span> : value),
             },
             {
               title: '可用率',

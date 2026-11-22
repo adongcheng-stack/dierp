@@ -72,6 +72,10 @@ import type {
   MenuStatus,
   ParamType,
   LoginStatus,
+  DashboardScope,
+  AlertOperator,
+  AlertLevel,
+  TimeWindow,
 } from '../../../ontology/generated/types'
 
 export type {
@@ -140,6 +144,10 @@ export type {
   MenuStatus,
   ParamType,
   LoginStatus,
+  DashboardScope,
+  AlertOperator,
+  AlertLevel,
+  TimeWindow,
 }
 
 /** 物料计划参数策略 */

@@ -99,7 +99,7 @@ const CostVarianceList: React.FC = () => {
       align: 'right' as const,
       width: 120,
       render: (value: number) => (
-        <span style={{ color: value > 0 ? '#cf1322' : value < 0 ? '#389e0d' : undefined, fontWeight: value !== 0 ? 600 : 400 }}>
+        <span style={{ color: value > 0 ? 'var(--color-error)' : value < 0 ? 'var(--color-success)' : undefined, fontWeight: value !== 0 ? 600 : 400 }}>
           {fmtMoney(value)}
         </span>
       ),

@@ -108,10 +108,10 @@ const SkillTable: React.FC = () => {
       width: 160,
       render: (value: number) => {
         const pctValue = Math.round(Number(value ?? 0) * 100)
-        const color = pctValue >= 90 ? '#52c41a' : pctValue >= 70 ? '#faad14' : '#ff4d4f'
+        const color = pctValue >= 90 ? 'var(--color-success)' : pctValue >= 70 ? 'var(--color-warning)' : 'var(--color-error)'
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ flex: 1, height: 6, background: '#f0f0f0', borderRadius: 3 }}>
+            <div style={{ flex: 1, height: 6, background: 'var(--color-paper-2)', borderRadius: 3 }}>
               <div style={{ width: `${pctValue}%`, height: 6, background: color, borderRadius: 3 }} />
             </div>
             <span style={{ fontSize: 12 }}>{pctValue}%</span>
@@ -155,7 +155,7 @@ const ChangeoverTable: React.FC = () => {
       key: 'minutes',
       width: 140,
       render: (value: number) => (
-        <span style={{ color: Number(value) > 30 ? '#cf1322' : undefined, fontWeight: Number(value) > 30 ? 600 : 400 }}>
+        <span style={{ color: Number(value) > 30 ? 'var(--color-error)' : undefined, fontWeight: Number(value) > 30 ? 600 : 400 }}>
           {value} 分钟{Number(value) > 30 ? '（超阈值 30m）' : ''}
         </span>
       ),
@@ -196,8 +196,8 @@ const CalendarTable: React.FC = () => {
       width: 140,
       render: (value: number) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1, height: 6, background: '#f0f0f0', borderRadius: 3 }}>
-            <div style={{ width: `${Math.min(100, Number(value ?? 0))}%`, height: 6, background: '#1677ff', borderRadius: 3 }} />
+          <div style={{ flex: 1, height: 6, background: 'var(--color-paper-2)', borderRadius: 3 }}>
+            <div style={{ width: `${Math.min(100, Number(value ?? 0))}%`, height: 6, background: 'var(--color-accent)', borderRadius: 3 }} />
           </div>
           <span style={{ fontSize: 12 }}>{Number(value ?? 0)}%</span>
         </div>

@@ -1196,3 +1196,120 @@
     sh:property [ sh:path :loginStatus ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:in ( "SUCCESS" "FAIL" ) ;
         sh:message "S49 登录状态必须来自 LoginStatus 枚举" ] .
+
+# S50 驾驶舱预警规则
+:DashboardRuleShape a sh:NodeShape ;
+    sh:targetClass :DashboardRule ;
+    sh:property [ sh:path :scope ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "HOME" "MANAGEMENT" "PRODUCTION" "PROGRESS" "FINANCE" "SALES" ) ;
+        sh:message "S50 驾驶舱范围必须来自 DashboardScope 枚举" ] ;
+    sh:property [ sh:path :operator ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "LT" "LTE" "GT" "GTE" ) ;
+        sh:message "S50 运算符必须来自 AlertOperator 枚举" ] ;
+    sh:property [ sh:path :level ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "INFO" "WARNING" "CRITICAL" ) ;
+        sh:message "S50 预警级别必须来自 AlertLevel 枚举" ] ;
+    sh:property [ sh:path :defaultWindow ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "ALL" "LAST30" "LAST90" "LAST365" ) ;
+        sh:message "S50 时间窗口必须来自 TimeWindow 枚举" ] .
+
+# S49b 角色-菜单授权（admin.yaml，补 RoleMenuShape）
+:RoleMenuShape a sh:NodeShape ;
+    sh:targetClass :RoleMenu ;
+    sh:property [ sh:path :roleCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "SALES" "SALES_MANAGER" "ENGINEER" "PLANNER" "PRODUCTION" "WAREHOUSE" "FINANCE" "GENERAL_MANAGER" "ADMIN" ) ;
+        sh:message "S49b 角色编码必须来自 UserRole 枚举" ] ;
+    sh:property [ sh:path :menuId ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:message "S49b 菜单 ID 必填" ] .
+
+# S51 业财闭环：会计科目 / 记账凭证 / 分录行 / 会计期间
+:AccountShape a sh:NodeShape ;
+    sh:targetClass :Account ;
+    sh:property [ sh:path :accountCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 科目编码必填且唯一" ] ;
+    sh:property [ sh:path :accountName ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 科目名称必填" ] ;
+    sh:property [ sh:path :accountType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "ASSET" "LIABILITY" "EQUITY" "REVENUE" "EXPENSE" ) ;
+        sh:message "S51 科目类别必须来自 AccountType 枚举" ] .
+
+:JournalEntryShape a sh:NodeShape ;
+    sh:targetClass :JournalEntry ;
+    sh:property [ sh:path :entryNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 凭证号必填" ] ;
+    sh:property [ sh:path :entryDate ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 记账日期必填" ] ;
+    sh:property [ sh:path :periodCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 会计期间必填" ] ;
+    sh:property [ sh:path :journalStatus ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "POSTED" ) ;
+        sh:message "S51 凭证状态必须来自 JournalStatus 枚举" ] ;
+    sh:property [ sh:path :glSourceType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "SALES_INVOICE_ISSUED" "SALES_INVOICE_REVERSED" "SALES_DELIVERY_SHIPPED" "SUPPLIER_INVOICE_CONFIRMED" "SUPPLIER_PAYMENT_PAID" "RECEIPT_PAID" "RECEIPT_PAID_REVERSE" "MATERIAL_ISSUE" "STOCK_ADJUST" "PRODUCTION_COMPLETE" "PERIOD_CLOSE" "OPENING" "COST_VARIANCE" ) ;
+        sh:message "S51 凭证来源必须来自 GlSourceType 枚举" ] ;
+    sh:property [ sh:path :sourceRef ; sh:minCount 1 ;
+        sh:message "S51 来源单据号必填" ] .
+
+:JournalLineShape a sh:NodeShape ;
+    sh:targetClass :JournalLine ;
+    sh:property [ sh:path :entryNumber ; sh:minCount 1 ;
+        sh:message "S51 分录行必须关联凭证" ] ;
+    sh:property [ sh:path :lineNumber ; sh:minCount 1 ;
+        sh:message "S51 行号必填" ] ;
+    sh:property [ sh:path :accountCode ; sh:minCount 1 ;
+        sh:message "S51 分录行必须关联科目" ] ;
+    sh:property [ sh:path :debit ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S51 借方金额必须大于等于 0" ] ;
+    sh:property [ sh:path :credit ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S51 贷方金额必须大于等于 0" ] .
+
+:FiscalPeriodShape a sh:NodeShape ;
+    sh:targetClass :FiscalPeriod ;
+    sh:property [ sh:path :periodCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 期间编码必填" ] ;
+    sh:property [ sh:path :startDate ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 起始日必填" ] ;
+    sh:property [ sh:path :endDate ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S51 截止日必填" ] ;
+    sh:property [ sh:path :periodStatus ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "OPEN" "CLOSED" ) ;
+        sh:message "S51 期间状态必须来自 PeriodStatus 枚举" ] .
+
+# S52 库存估值闭环：库存估值 / 估值流水
+:InventoryValuationShape a sh:NodeShape ;
+    sh:targetClass :InventoryValuation ;
+    sh:property [ sh:path :materialCode ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S52 估值必须关联物料（一物料一行）" ] ;
+    sh:property [ sh:path :qty ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S52 结存数量必须大于等于 0" ] ;
+    sh:property [ sh:path :amount ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S52 结存金额不得为负" ] ;
+    sh:property [ sh:path :avgCost ; sh:minInclusive 0 ;
+        sh:message "S52 移动加权单价不得为负" ] ;
+    sh:property [ sh:path :lastCost ; sh:minInclusive 0 ;
+        sh:message "S52 最近入库单价不得为负" ] .
+
+:ValuationMoveShape a sh:NodeShape ;
+    sh:targetClass :ValuationMove ;
+    sh:property [ sh:path :moveNumber ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "S52 估值流水号必填" ] ;
+    sh:property [ sh:path :materialCode ; sh:minCount 1 ;
+        sh:message "S52 估值流水必须关联物料" ] ;
+    sh:property [ sh:path :direction ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "IN" "OUT" ) ;
+        sh:message "S52 方向必须来自 ValuationDirection 枚举" ] ;
+    sh:property [ sh:path :qty ; sh:minCount 1 ;
+        sh:message "S52 本次数量必填" ] ;
+    sh:property [ sh:path :unitCost ; sh:minCount 1 ; sh:minInclusive 0 ;
+        sh:message "S52 本次单价不得为负" ] ;
+    sh:property [ sh:path :amount ; sh:minCount 1 ;
+        sh:message "S52 本次金额必填" ] ;
+    sh:property [ sh:path :balanceQty ; sh:minInclusive 0 ;
+        sh:message "S52 变动后数量余额不得为负" ] ;
+    sh:property [ sh:path :balanceAmount ; sh:minInclusive 0 ;
+        sh:message "S52 变动后金额余额不得为负" ] ;
+    sh:property [ sh:path :costSourceType ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "PURCHASE_RECEIPT" "PURCHASE_RETURN" "PRODUCTION_COMPLETE" "MATERIAL_ISSUE" "SALES_ISSUE" "SALES_RETURN" "STOCKTAKE" "OPENING" "TRANSFER" ) ;
+        sh:message "S52 估值来源必须来自 CostSourceType 枚举" ] ;
+    sh:property [ sh:path :sourceRef ; sh:minCount 1 ;
+        sh:message "S52 来源单据号必填" ] .

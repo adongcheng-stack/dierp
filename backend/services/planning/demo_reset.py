@@ -260,10 +260,20 @@ def _rebuild_master_seed(db: Session) -> None:
     seed_inventory_opening(db)
     seed_sales_delivery_demo(db)
     seed_gl_accounts(db)
+    # 财务闭环种子（跨月发票/收付款/核销/凭证），驱动财务驾驶舱四卡与趋势图
+    from backend.services.finance.finance_seed import seed_finance_demo
+
+    seed_finance_demo(db)
+    # 库存闭环种子（仓库/盘点/调拨/估值流水），补齐库存域空表
+    from backend.services.inventory.inventory_seed import seed_inventory_demo
+
+    seed_inventory_demo(db)
     # 组织架构与系统管理种子（部门树/菜单/角色授权/系统参数）
     from backend.services.system.admin_seed import seed_admin_demo
+    from backend.services.dashboard.alerts import seed_dashboard_rules
 
     seed_admin_demo(db)
+    seed_dashboard_rules(db)
 
 
 def _build_demo_run(
@@ -339,6 +349,14 @@ def reset_planning_demo(
         "inspections": db.query(InspectionOrder).count(),
         "ncrs": db.query(NonConformanceReport).count(),
         "purchase_orders": db.query(PurchaseOrder).count(),
+        "sales_invoices": db.query(SalesInvoice).count(),
+        "receipts": db.query(Receipt).count(),
+        "supplier_invoices": db.query(SupplierInvoice).count(),
+        "supplier_payments": db.query(SupplierPayment).count(),
+        "journal_entries": db.query(JournalEntry).count(),
+        "stocktakes": db.query(Stocktake).count(),
+        "stock_transfers": db.query(StockTransfer).count(),
+        "valuation_moves": db.query(ValuationMove).count(),
     }
     if rebuild_run:
         seeded.update(_build_demo_run(db, created_by=created_by, with_scenario=with_scenario))

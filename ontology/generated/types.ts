@@ -133,3 +133,11 @@ export type MenuStatus = 'ACTIVE' | 'INACTIVE';
 export type ParamType = 'STRING' | 'INT' | 'BOOLEAN' | 'JSON';
 
 export type LoginStatus = 'SUCCESS' | 'FAIL';
+
+export type DashboardScope = 'HOME' | 'MANAGEMENT' | 'PRODUCTION' | 'PROGRESS' | 'FINANCE' | 'SALES';
+
+export type AlertOperator = 'LT' | 'LTE' | 'GT' | 'GTE';
+
+export type AlertLevel = 'INFO' | 'WARNING' | 'CRITICAL';
+
+export type TimeWindow = 'ALL' | 'LAST30' | 'LAST90' | 'LAST365';

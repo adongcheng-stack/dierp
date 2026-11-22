@@ -23,7 +23,7 @@ import { resolveBreadcrumbs } from './menuConfig'
 import { isMockMode, resetDb } from '../../mock'
 import api, { getErrorMessage } from '../../services/api'
 
-export function Header() {
+export function Header({ onToggleMobileNav }: { onToggleMobileNav?: () => void }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
@@ -91,7 +91,7 @@ export function Header() {
           })
           const seeded = data?.seeded ?? {}
           message.success(
-            `演示数据已重置：排程 ${seeded.run_number ?? '-'} · 工序 ${seeded.operations ?? 0} 条 · 场景 ${seeded.scenario_id ? '1 个' : '无'}`
+            `演示数据已重置：排程 ${seeded.run_number ?? '-'}，工序 ${seeded.operations ?? 0} 条，场景 ${seeded.scenario_id ? '1 个' : '无'}`
           )
           window.setTimeout(() => window.location.reload(), 700)
         } catch (error) {
@@ -108,8 +108,11 @@ export function Header() {
       label: (
         <div className="py-0.5">
           <div className="text-sm font-medium text-ink">{user?.full_name || user?.username || '未登录'}</div>
-          <div className="text-xs text-ink-soft">
-            {[user?.department, user?.role].filter(Boolean).join(' · ') || 'DIERP ERP'}
+          <div className="flex items-center gap-2 text-xs text-ink-soft">
+            {[user?.department, user?.role].filter(Boolean).map((part, index) => (
+              <span key={part} className={index ? 'border-s border-line ps-2' : ''}>{part}</span>
+            ))}
+            {!user && <span>DIERP ERP</span>}
           </div>
         </div>
       ),
@@ -137,11 +140,11 @@ export function Header() {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-4">
       {/* 左侧：折叠 + 刷新 + 面包屑 */}
-      <nav className="flex min-w-0 items-center gap-2 text-sm">
+      <nav className="flex min-w-0 items-center gap-2 text-[13px]">
         <button
           type="button"
-          onClick={toggleSidebar}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink"
+          onClick={() => { toggleSidebar(); onToggleMobileNav?.() }}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-none text-ink-soft transition-colors hover:bg-surface-hover hover:text-ink"
           title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
         >
           {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
@@ -151,7 +154,7 @@ export function Header() {
           type="button"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-50"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-none text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink disabled:opacity-50"
           title="刷新数据"
         >
           <RotateCw className={cn('h-5 w-5', isRefreshing && 'animate-spin')} />
@@ -185,7 +188,7 @@ export function Header() {
         <button
           type="button"
           onClick={toggleTheme}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-soft transition-colors hover:bg-surface-hover hover:text-ink"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-none text-ink-soft transition-colors hover:bg-surface-hover hover:text-ink"
           title={theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'}
         >
           {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
@@ -194,13 +197,13 @@ export function Header() {
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-soft transition-colors hover:bg-surface-hover hover:text-ink"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-none text-ink-soft transition-colors hover:bg-surface-hover hover:text-ink"
           title={isFullscreen ? '退出全屏' : '全屏'}
         >
           {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
         </button>
 
-        <div className="mx-1 h-5 w-px bg-line" />
+        <div className="mx-1 hidden h-5 w-px bg-line sm:block" />
 
         <Dropdown
           menu={{
@@ -215,12 +218,12 @@ export function Header() {
         >
           <button
             type="button"
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-hover"
+            className="flex items-center gap-2 rounded-none px-2 py-1.5 transition-colors hover:bg-surface-hover"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-xs font-medium text-brand-ink">
               {(user?.full_name || user?.username || 'U').charAt(0)}
             </div>
-            <span className="max-w-[140px] truncate text-sm text-ink">
+            <span className="hidden max-w-[140px] truncate text-[13px] text-ink sm:block">
               {user?.full_name || user?.username || '用户'}
             </span>
             <ChevronDown className="h-4 w-4 text-ink-faint" />

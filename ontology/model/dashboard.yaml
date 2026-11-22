@@ -1,0 +1,25 @@
+# ═══════════════════════════════════════════════════════════════
+# DIERP 驾驶舱与预警运营模型
+# 唯一事实源：DashboardRule（阈值规则）由本体生成模型 + 种子落库。
+# 生成命令：python backend/ontology/generate_models.py
+# ═══════════════════════════════════════════════════════════════
+version: "1.0.0"
+namespace: "https://dierp.local/ontology/erp/v1#"
+
+entities:
+  DashboardRule:
+    table: dashboard_rules
+    label: 驾驶舱指标预警规则
+    ontology_class: DashboardRule
+    top_category: NormativeRule
+    fields:
+      code: {type: string, length: 80, required: true, unique: true, index: true, comment: 规则编码}
+      name: {type: string, length: 100, required: true, comment: 规则名称}
+      scope: {type: enum, enum: DashboardScope, required: true, index: true, comment: 适用驾驶舱}
+      metric: {type: string, length: 120, required: true, comment: KPI 路径（如 equipment.oee）}
+      operator: {type: enum, enum: AlertOperator, default: LT, comment: 比较运算符}
+      threshold: {type: decimal, precision: 15, scale: 4, required: true, comment: 阈值}
+      level: {type: enum, enum: AlertLevel, default: WARNING, comment: 预警级别}
+      message: {type: string, length: 300, comment: 预警话术模板}
+      default_window: {type: enum, enum: TimeWindow, default: ALL, comment: 默认时间窗口}
+      enabled: {type: boolean, default: true, comment: 是否启用}

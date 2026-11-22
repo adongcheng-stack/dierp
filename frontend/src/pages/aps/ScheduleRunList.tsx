@@ -78,7 +78,7 @@ const ScheduleRunList: React.FC = () => {
       key: 'exception_count',
       align: 'right' as const,
       width: 90,
-      render: (value: number) => (value > 0 ? <span style={{ color: '#cf1322', fontWeight: 600 }}>{value}</span> : value),
+      render: (value: number) => (value > 0 ? <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>{value}</span> : value),
     },
     { title: '发布时间', dataIndex: 'published_at', key: 'published_at', width: 160, render: fmtDateTime },
     {

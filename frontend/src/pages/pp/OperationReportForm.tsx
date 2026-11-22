@@ -322,7 +322,7 @@ const OperationReportForm: React.FC = () => {
                 </Select>
                 {operations.length === 0 && selectedOrder && (
                   <div style={{ marginTop: 4, color: 'hsl(var(--destructive))', fontSize: '12px' }}>
-                    ⚠️ 提示：物料 {selectedOrder.material_code} 暂无工艺路线或工序。请先到"工程管理 → 工艺路线"为该物料创建工艺路线并添加工序。
+                    提示：物料 {selectedOrder.material_code} 暂无工艺路线或工序。请先到"工程管理 → 工艺路线"为该物料创建工艺路线并添加工序。
                   </div>
                 )}
                 {operations.length > 0 && (

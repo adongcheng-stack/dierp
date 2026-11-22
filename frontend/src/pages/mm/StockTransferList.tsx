@@ -94,7 +94,7 @@ const StockTransferList: React.FC = () => {
       render: (_: unknown, r: StockTransfer) => (
         <Space size={4}>
           {r.from_warehouse_code}
-          <ArrowRightOutlined style={{ color: '#1890ff' }} />
+          <ArrowRightOutlined style={{ color: 'var(--color-accent)' }} />
           {r.to_warehouse_code}
         </Space>
       ),

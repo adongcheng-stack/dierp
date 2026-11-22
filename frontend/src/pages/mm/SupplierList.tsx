@@ -35,7 +35,7 @@ const SupplierPerformance: React.FC = () => {
       dataIndex: 'rating',
       key: 'rating',
       width: 100,
-      render: (v: number) => '★'.repeat(Math.max(0, Number(v || 0))),
+      render: (v: number) => <span className="tabular-nums">{Math.max(0, Number(v || 0))}</span>,
     },
     {
       title: '有收货采购单',
@@ -209,7 +209,7 @@ const SupplierList: React.FC = () => {
       dataIndex: 'rating',
       key: 'rating',
       width: 80,
-      render: (v: number) => '★'.repeat(Math.max(0, Number(v || 0))),
+      render: (v: number) => <span className="tabular-nums">{Math.max(0, Number(v || 0))}</span>,
     },
     {
       title: '操作',

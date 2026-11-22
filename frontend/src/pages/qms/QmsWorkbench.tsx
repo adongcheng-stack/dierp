@@ -95,7 +95,7 @@ const QmsWorkbench: React.FC = () => {
         </Col>
         <Col span={4}>
           <Card>
-            <Statistic title="不合格检验" value={overview?.inspections_fail ?? 0} valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="不合格检验" value={overview?.inspections_fail ?? 0} valueStyle={{ color: 'var(--color-error)' }} />
           </Card>
         </Col>
         <Col span={4}>
@@ -105,17 +105,17 @@ const QmsWorkbench: React.FC = () => {
         </Col>
         <Col span={4}>
           <Card>
-            <Statistic title="待处理 NCR" value={overview?.ncrs_open ?? 0} valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="待处理 NCR" value={overview?.ncrs_open ?? 0} valueStyle={{ color: 'var(--color-error)' }} />
           </Card>
         </Col>
         <Col span={4}>
           <Card>
-            <Statistic title="设备原因 NCR" value={overview?.ncrs_equipment ?? 0} valueStyle={{ color: '#d46b08' }} />
+            <Statistic title="设备原因 NCR" value={overview?.ncrs_equipment ?? 0} valueStyle={{ color: 'var(--color-warning)' }} />
           </Card>
         </Col>
         <Col span={4}>
           <Card>
-            <Statistic title="严重 NCR" value={overview?.ncrs_critical ?? 0} valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="严重 NCR" value={overview?.ncrs_critical ?? 0} valueStyle={{ color: 'var(--color-error)' }} />
           </Card>
         </Col>
       </Row>
