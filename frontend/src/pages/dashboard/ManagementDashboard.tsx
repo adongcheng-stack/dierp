@@ -123,10 +123,10 @@ const ManagementDashboard: React.FC = () => {
               tone={(finance?.cash_balance ?? 0) >= 0 ? 'good' : 'bad'} />
           </section>
 
-          <section className="grid grid-cols-1 gap-6 border-t border-line pt-4 lg:grid-cols-3">
+          <section className="grid grid-cols-1 gap-6 border-t border-line pt-4 xl:grid-cols-3">
             <div className="min-w-0">
               <h2 className="mb-3 text-lg font-semibold text-ink">设备 OEE（分工作中心）</h2>
-              <div className="table-scroll">
+              <div className="table-scroll tinted-table">
                 <Table
                   rowKey="work_center_id"
                   size="small"
@@ -194,7 +194,7 @@ const ManagementDashboard: React.FC = () => {
 
             <div className="min-w-0">
               <h2 className="mb-3 text-lg font-semibold text-ink">成本差异构成</h2>
-              <div className="table-scroll">
+              <div className="table-scroll tinted-table">
                 <Table
                   rowKey="key"
                   size="small"

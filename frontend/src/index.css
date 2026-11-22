@@ -290,7 +290,7 @@ input[type='number']::-webkit-inner-spin-button {
 
 /* ── 表格 ── */
 .ant-table-wrapper .ant-table {
-  background: transparent;
+  background: hsl(var(--table-surface));
   color: hsl(var(--ink));
   font-size: 13px;
 }
@@ -300,10 +300,11 @@ input[type='number']::-webkit-inner-spin-button {
   border-bottom: var(--rule-hair) solid hsl(var(--line));
   border-radius: 0;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th {
-  background: transparent !important;
+  background: hsl(var(--table-surface)) !important;
   color: hsl(var(--ink)) !important;
   font-size: var(--text-sm);
   font-weight: 600;
@@ -319,7 +320,7 @@ input[type='number']::-webkit-inner-spin-button {
 
 .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-scrollbar {
   box-shadow: none !important;
-  background: hsl(var(--surface-hover)) !important;
+  background: hsl(var(--table-surface)) !important;
 }
 
 .ant-table-wrapper .ant-table-tbody > tr > td {
@@ -327,7 +328,7 @@ input[type='number']::-webkit-inner-spin-button {
   border-bottom: var(--rule-hair) solid hsl(var(--line)) !important;
   font-size: var(--text-md);
   color: hsl(var(--ink));
-  background: transparent;
+  background: hsl(var(--table-surface));
 }
 
 .ant-table-wrapper .ant-table-tbody > tr:last-child > td {
@@ -335,17 +336,18 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-column-sort {
-  background: hsl(var(--surface-hover) / 0.5);
+  background: hsl(var(--table-surface));
 }
 
 .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td,
-.ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td {
-  background: hsl(var(--surface-hover)) !important;
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td,
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-expanded-row > td {
+  background: hsl(var(--table-surface)) !important;
 }
 
 .ant-table-wrapper .ant-table-tbody > tr.ant-table-placeholder > td,
 .ant-table-wrapper .ant-table-placeholder {
-  background: hsl(var(--card)) !important;
+  background: hsl(var(--table-surface)) !important;
   border-bottom: 0 !important;
 }
 
@@ -355,17 +357,26 @@ input[type='number']::-webkit-inner-spin-button {
 
 .ant-table-wrapper .ant-table-cell-fix-left,
 .ant-table-wrapper .ant-table-cell-fix-right {
-  background: hsl(var(--card));
+  background: hsl(var(--table-surface));
 }
 
 .ant-table-wrapper .ant-table-thead .ant-table-cell-fix-left,
-.ant-table-wrapper .ant-table-thead .ant-table-cell-fix-right {
-  background: hsl(var(--surface-hover)) !important;
-}
-
+.ant-table-wrapper .ant-table-thead .ant-table-cell-fix-right,
 .ant-table-wrapper .ant-table-tbody > tr:hover > .ant-table-cell-fix-left,
 .ant-table-wrapper .ant-table-tbody > tr:hover > .ant-table-cell-fix-right {
-  background: hsl(var(--surface-hover)) !important;
+  background: hsl(var(--table-surface)) !important;
+}
+
+.tinted-table .ant-table-wrapper .ant-table,
+.tinted-table .ant-table-wrapper .ant-table-thead > tr > th,
+.tinted-table .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-scrollbar,
+.tinted-table .ant-table-wrapper .ant-table-tbody > tr > td,
+.tinted-table .ant-table-wrapper .ant-table-tbody > tr:hover > td,
+.tinted-table .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td,
+.tinted-table .ant-table-wrapper .ant-table-tbody > tr.ant-table-expanded-row > td,
+.tinted-table .ant-table-wrapper .ant-table-cell-fix-left,
+.tinted-table .ant-table-wrapper .ant-table-cell-fix-right {
+  background: hsl(var(--surface-sunken)) !important;
 }
 
 .ant-table-wrapper .ant-table-column-sorter {

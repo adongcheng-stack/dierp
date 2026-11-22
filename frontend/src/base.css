@@ -65,12 +65,12 @@ button, input, select, textarea { font: inherit; }
 }
 
 /* 窄屏表格：第一列与操作列保持可见，其余列在容器内横向滚动 */
-.table-scroll { max-width: 100%; overflow-x: auto; }
+.table-scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 @media (max-width: 60rem) {
   .table-scroll .ant-table-thead > tr > th:first-child,
-  .table-scroll .ant-table-tbody > tr > td:first-child { position: sticky; left: 0; z-index: 2; background: hsl(var(--surface)); box-shadow: 1px 0 0 var(--color-rule); }
+  .table-scroll .ant-table-tbody > tr > td:first-child { position: sticky; left: 0; z-index: 2; background: hsl(var(--table-surface)); box-shadow: 1px 0 0 var(--color-rule); }
   .table-scroll .ant-table-thead > tr > th:last-child,
-  .table-scroll .ant-table-tbody > tr > td:last-child { position: sticky; right: 0; z-index: 2; background: hsl(var(--surface)); box-shadow: -1px 0 0 var(--color-rule); }
+  .table-scroll .ant-table-tbody > tr > td:last-child { position: sticky; right: 0; z-index: 2; background: hsl(var(--table-surface)); box-shadow: -1px 0 0 var(--color-rule); }
 }
 
 /* 输入聚焦环内嵌，避免和相邻字段碰撞 */

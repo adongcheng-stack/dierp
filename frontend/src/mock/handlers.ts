@@ -8030,8 +8030,10 @@ route('POST', '/finance/periods/:code/reopen', (_ctx, params) => {
 })
 
 export function handleMockRequest(ctx: MockContext): MockResult {
-  enforceWritePermission(ctx)
-  enforceReadPermission(ctx)
+  if (!ctx.path.startsWith('/auth/')) {
+    enforceWritePermission(ctx)
+    enforceReadPermission(ctx)
+  }
 
   const pathSegments = ctx.path.split('/').filter(Boolean)
   for (const candidate of routes) {

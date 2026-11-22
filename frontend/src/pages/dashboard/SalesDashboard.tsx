@@ -58,16 +58,16 @@ const SalesDashboard: React.FC = () => {
             onClick={() => navigate('/sd/quotations')} />
         </Col>
       </Row>
-      <Row gutter={[12, 12]}>
+      <Row gutter={[12, 12]} align="stretch">
         <Col xs={24} md={10}>
-          <Card title="客户应收账龄 TOP10" size="small" loading={loading}>
+          <Card title="客户应收账龄 TOP10" size="small" loading={loading} className="h-full">
             <Table rowKey="customer" columns={columns} dataSource={data?.customers ?? []}
               pagination={false} size="small" />
           </Card>
         </Col>
         <Col xs={24} md={14}>
-          <Card title="报价漏斗" size="small">
-            <div className="flex flex-col gap-3">
+          <Card title="报价漏斗" size="small" className="h-full">
+            <div className="flex h-full flex-col justify-center gap-3">
               {[
                 { label: '报价总数', value: quotation.total ?? 0, width: 100 },
                 { label: '已批准', value: quotation.approved ?? 0,

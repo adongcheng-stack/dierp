@@ -36,6 +36,7 @@
   --surface-sunken: var(--n-100);
   --surface-raised: var(--n-50);
   --surface-hover: var(--n-100);
+  --table-surface: 0 0% 100%;
   --field-edge: var(--n-500);
   --line: var(--n-200);
   --line-strong: var(--n-300);
@@ -208,6 +209,7 @@
   --surface-sunken: var(--n-950);
   --surface-raised: var(--n-800);
   --surface-hover: var(--n-800);
+  --table-surface: var(--n-900);
   --field-edge: var(--n-300);
   --line: var(--n-700);
   --line-strong: var(--n-600);
