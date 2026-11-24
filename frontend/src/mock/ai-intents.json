@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "intents": [
+    {
+      "code": "kitting_shortage",
+      "label": "齐套缺口",
+      "description": "列出齐套状态为短缺的齐套结果，可按生产订单/计划订单号精确过滤。",
+      "entities": [
+        "KittingResult"
+      ],
+      "primary_entity": "KittingResult",
+      "record_key": [
+        "result_number"
+      ],
+      "downlink": "/pp/kitting",
+      "roles": [
+        "GENERAL_MANAGER",
+        "PLANNER",
+        "PRODUCTION"
+      ],
+      "domains": [
+        "planning"
+      ],
+      "shacl_coverage": "partial",
+      "params": [
+        {
+          "name": "kit_status",
+          "type": "str",
+          "required": false,
+          "default": "SHORT"
+        },
+        {
+          "name": "source_ref",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "required": false,
+          "default": 20
+        }
+      ]
+    },
+    {
+      "code": "material_below_safety",
+      "label": "物料低于安全库存",
+      "description": "列出当前库存低于安全库存的物料，按缺口排序。",
+      "entities": [
+        "Material"
+      ],
+      "primary_entity": "Material",
+      "record_key": [
+        "material_code"
+      ],
+      "downlink": "/mm/materials",
+      "roles": [
+        "GENERAL_MANAGER",
+        "PLANNER",
+        "PRODUCTION",
+        "WAREHOUSE"
+      ],
+      "domains": [
+        "mm"
+      ],
+      "shacl_coverage": "full",
+      "params": [
+        {
+          "name": "material_type",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "required": false,
+          "default": 50
+        }
+      ]
+    },
+    {
+      "code": "order_delay_risk",
+      "label": "订单延期风险",
+      "description": "列出交付窗口内未完工、且计划完工晚于交付日或无生产订单的销售订单。",
+      "entities": [
+        "SalesOrder",
+        "ProductionOrder"
+      ],
+      "primary_entity": "SalesOrder",
+      "record_key": [
+        "order_number"
+      ],
+      "downlink": "/sd/sales-orders",
+      "roles": [
+        "GENERAL_MANAGER",
+        "PLANNER",
+        "SALES",
+        "SALES_MANAGER"
+      ],
+      "domains": [
+        "sd",
+        "pp"
+      ],
+      "shacl_coverage": "none",
+      "params": [
+        {
+          "name": "within_days",
+          "type": "int",
+          "required": false,
+          "default": 7
+        },
+        {
+          "name": "customer_id",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "code": "open_mrp_exceptions",
+      "label": "未处理计划异常",
+      "description": "列出 MRP 运行产生的未处理异常，可按严重度与异常类型过滤。",
+      "entities": [
+        "MrpException"
+      ],
+      "primary_entity": "MrpException",
+      "record_key": [
+        "id"
+      ],
+      "downlink": null,
+      "roles": [
+        "GENERAL_MANAGER",
+        "PLANNER"
+      ],
+      "domains": [
+        "planning"
+      ],
+      "shacl_coverage": "full",
+      "params": [
+        {
+          "name": "severity",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "exception_type",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "resolution_status",
+          "type": "str",
+          "required": false,
+          "default": "OPEN"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "required": false,
+          "default": 50
+        }
+      ]
+    },
+    {
+      "code": "customer_credit_status",
+      "label": "客户信用占用",
+      "description": "按客户汇总应收余额与未完成订单金额，计算信用占用比。",
+      "entities": [
+        "Customer",
+        "SalesOrder",
+        "ReceivableEntry"
+      ],
+      "primary_entity": "Customer",
+      "record_key": [
+        "customer_id"
+      ],
+      "downlink": "/sd/customers",
+      "roles": [
+        "FINANCE",
+        "GENERAL_MANAGER",
+        "SALES_MANAGER"
+      ],
+      "domains": [
+        "sd",
+        "finance"
+      ],
+      "shacl_coverage": "none",
+      "params": [
+        {
+          "name": "customer_id",
+          "type": "str",
+          "required": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "code": "ar_overdue",
+      "label": "超期应收",
+      "description": "列出发票已过到期日仍未收足的应收，按到期日排序。",
+      "entities": [
+        "SalesInvoice",
+        "ReceivableEntry"
+      ],
+      "primary_entity": "SalesInvoice",
+      "record_key": [
+        "invoice_number"
+      ],
+      "downlink": "/sd/invoices",
+      "roles": [
+        "FINANCE",
+        "GENERAL_MANAGER"
+      ],
+      "domains": [
+        "finance"
+      ],
+      "shacl_coverage": "partial",
+      "params": [
+        {
+          "name": "days_overdue",
+          "type": "int",
+          "required": false,
+          "default": 30
+        },
+        {
+          "name": "customer_id",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "invoice_number",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "code": "open_nonconformance",
+      "label": "未关闭不合格品",
+      "description": "列出未关闭的 NCR（OPEN/UNDER_REVIEW/DISPOSITIONED），可按严重度过滤。",
+      "entities": [
+        "NonConformanceReport"
+      ],
+      "primary_entity": "NonConformanceReport",
+      "record_key": [
+        "ncr_number"
+      ],
+      "downlink": "/qms/ncrs",
+      "roles": [
+        "ENGINEER",
+        "GENERAL_MANAGER",
+        "PRODUCTION"
+      ],
+      "domains": [
+        "planning"
+      ],
+      "shacl_coverage": "full",
+      "params": [
+        {
+          "name": "status",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "severity",
+          "type": "str | None",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "required": false,
+          "default": 50
+        }
+      ]
+    }
+  ]
+}

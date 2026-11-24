@@ -1,0 +1,71 @@
+projection_version: 1
+comment: >
+  AI 只读投影：声明遗留表在 AI 语义层中的可见字段与本体锚点，以及 YAML 托管实体的
+  形状路径覆盖。不生成 SQLAlchemy 模型；字段必须存在于 Base.metadata，类/形状必须存在于 TTL。
+  注意：本文件不是模型生成源，不加入 generate_models.MODEL_CONFIGS，也不加入
+  validate-consistency.MODEL_FILES；entity_overrides 不回写 ontology/model/*.yaml。
+
+entities:
+  - table: materials
+    ontology_class: Material
+    shape: MaterialShape
+    label: 物料主数据
+    domain: mm
+    fields: [material_code, material_name, material_type, unit, current_stock, safety_stock, lead_time_days, procurement_type, status]
+  - table: sales_orders
+    ontology_class: SalesOrder
+    shape: SalesOrderShape
+    label: 销售订单
+    domain: sd
+    fields: [order_number, customer_id, material_code, quantity, unit_price, total_amount, currency, delivery_date, status, review_status]
+    rdf_overrides: { order_number: documentNumber, delivery_date: dueDate }
+  - table: production_orders
+    ontology_class: ProductionOrder
+    shape: ProductionOrderShape
+    label: 生产订单
+    domain: pp
+    fields: [order_number, sales_order_number, material_code, quantity, unit, planned_start_date, planned_finish_date, actual_finish_date, status, lot_number]
+    rdf_overrides: { order_number: documentNumber }
+  - table: customers
+    ontology_class: Customer
+    shape: null            # 本体只声明类，尚无 NodeShape
+    label: 客户
+    domain: sd
+    fields: [customer_id, legal_name, credit_limit, customer_status]
+
+# 对 YAML 托管实体的形状路径覆盖（不写入 ontology/model/*.yaml，避免触发模型生成漂移）
+# 键 = 物理列名，值 = 形状实际使用的 sh:path（本地名）。形状路径未命中数必须为 0。
+entity_overrides:
+  # 设计 §5.3 已登记的 6 条抽象路径
+  - ontology_class: Forecast
+    rdf_overrides: { forecast_number: documentNumber }
+  - ontology_class: MpsPlan
+    rdf_overrides: { mps_number: documentNumber }
+  - ontology_class: MrpRun
+    rdf_overrides: { run_number: documentNumber }
+  - ontology_class: PlannedOrder
+    rdf_overrides: { planned_order_number: documentNumber }
+  - ontology_class: PurchaseOrder
+    rdf_overrides: { purchase_order_number: documentNumber }
+  - ontology_class: ScheduleRun
+    rdf_overrides: { run_number: documentNumber, algorithm: scheduleAlgorithm }
+  # 实施 W0.4 时逐形状核对补登记（设计 §5.3 称"发现遗漏时在此补登记，不允许放宽为警告"）
+  - ontology_class: Supplier
+    rdf_overrides: { supplier_code: supplierId }
+  - ontology_class: PurchaseRequest
+    rdf_overrides: { purchase_request_number: requestNumber }
+  - ontology_class: ProductionCost
+    rdf_overrides: { total_actual: totalCost, status: settlementStatus }
+  - ontology_class: ScheduledOperation
+    rdf_overrides: { operation_no: operationNumber }
+  - ontology_class: JournalEntry
+    rdf_overrides: { status: journalStatus, source_type: glSourceType }
+  - ontology_class: FiscalPeriod
+    rdf_overrides: { status: periodStatus }
+  - ontology_class: ValuationMove
+    rdf_overrides: { source_type: costSourceType }
+  # 域例外：planning.yaml 中的财务实体
+  - ontology_class: SalesInvoice
+    domain: finance
+  - ontology_class: ReceivableEntry
+    domain: finance

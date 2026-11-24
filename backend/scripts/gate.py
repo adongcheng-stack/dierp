@@ -32,6 +32,7 @@ HERMETIC: list[tuple[str, list[str], Path]] = [
     ("后端/alembic check", [sys.executable, "-m", "alembic", "check"], BACKEND),
     ("后端/demo parity", [sys.executable, "scripts/check_demo_parity.py"], BACKEND),
     ("后端/RBAC parity", [sys.executable, "scripts/check_rbac_parity.py"], BACKEND),
+    ("后端/AI 语义目录", [sys.executable, "scripts/check_ai_catalog.py"], BACKEND),
     ("前端/tsc", ["npx", "tsc", "--noEmit"], FRONTEND),
     ("前端/eslint", ["npx", "eslint", ".", "--ext", "ts,tsx", "--max-warnings", "0"], FRONTEND),
     ("前端/vitest", ["npx", "vitest", "run"], FRONTEND),

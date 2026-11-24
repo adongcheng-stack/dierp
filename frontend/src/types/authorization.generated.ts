@@ -10,6 +10,7 @@ export type UserRole = 'SALES' | 'SALES_MANAGER' | 'ENGINEER' | 'PLANNER' | 'PRO
 
 export const WRITE_ROLE_POLICY: Record<string, string[]> = {
   "admin": ["ADMIN"],
+  "ai": [],
   "auth": [],
   "dashboard": [],
   "eng": ["ADMIN", "ENGINEER", "GENERAL_MANAGER"],
@@ -29,10 +30,11 @@ export const READ_OPEN_DOMAINS: string[] = ["auth", "dashboard", "eng", "finance
 
 export const READ_ROLE_POLICY: Record<string, string[]> = {
   "admin": ["ADMIN"],
+  "ai": ["ADMIN", "ENGINEER", "FINANCE", "GENERAL_MANAGER", "PLANNER", "PRODUCTION", "SALES", "SALES_MANAGER", "WAREHOUSE"],
   "system": ["ADMIN"],
   "users": ["ADMIN"],
 }
 
 export const WRITE_METHODS: string[] = ["DELETE", "PATCH", "POST", "PUT"]
 
-export const ALL_DOMAINS: string[] = ["admin", "auth", "dashboard", "eng", "finance", "mm", "planning", "pp", "purchase", "qms", "sd", "system", "traceability", "users"]
+export const ALL_DOMAINS: string[] = ["admin", "ai", "auth", "dashboard", "eng", "finance", "mm", "planning", "pp", "purchase", "qms", "sd", "system", "traceability", "users"]

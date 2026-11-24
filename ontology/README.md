@@ -49,6 +49,17 @@ ontology/
 
 文件头均标注 `GENERATED FILE - DO NOT EDIT BY HAND`。改字段请改 `model/planning.yaml` 后重跑生成器；改枚举请先改 `mappings.json`。
 
+### AI 只读投影 `model/ai-projection.yaml`
+
+该文件**不是**模型生成源：不写入 `generate_models.py` 的模型列表，也不参与 `validate-consistency.py` 的 YAML 校验，因此修改它不会生成任何 SQLAlchemy/TS 代码。
+
+它只做两件事，供 AI 语义目录（`backend/services/ai/catalog.py`）构建只读契约：
+
+1. `entities`：登记未进入 YAML 的遗留表（materials / sales_orders / production_orders / customers）对 AI 可见的字段白名单与本体锚点；
+2. `entity_overrides`：登记 YAML 实体的“物理列 → 形状 `sh:path`”覆盖（如 `forecast_number → documentNumber`）与域例外（SalesInvoice / ReceivableEntry → `finance`）。
+
+约束：投影字段必须存在于 `Base.metadata`；类/形状必须存在于 TTL；形状路径未命中数必须为 0，否则目录构建直接失败。**override 不写回 `model/*.yaml`**。
+
 ---
 
 ## 3. 常用命令

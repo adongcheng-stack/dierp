@@ -60,7 +60,7 @@
     "NcrDisposition": ["REWORK", "SCRAP", "USE_AS_IS", "RETURN", "REVIEW"],
     "NcrStatus": ["OPEN", "UNDER_REVIEW", "DISPOSITIONED", "CLOSED"],
     "UserRole": ["SALES", "SALES_MANAGER", "ENGINEER", "PLANNER", "PRODUCTION", "WAREHOUSE", "FINANCE", "GENERAL_MANAGER", "ADMIN"],
-    "AccessDomain": ["sd", "eng", "pp", "mm", "planning", "qms", "purchase", "finance", "users", "admin", "system", "auth", "dashboard", "traceability"],
+    "AccessDomain": ["sd", "eng", "pp", "mm", "planning", "qms", "purchase", "finance", "users", "admin", "system", "auth", "dashboard", "traceability", "ai"],
     "HttpWriteMethod": ["POST", "PUT", "PATCH", "DELETE"],
     "DepartmentStatus": ["ACTIVE", "INACTIVE"],
     "DepartmentType": ["COMPANY", "DIVISION", "DEPARTMENT", "TEAM", "WORKSHOP"],

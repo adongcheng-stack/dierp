@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import jwt
-from backend.api.routers import sd, eng, pp, mm, auth, users, planning, qms, traceability, dashboard, purchase, finance, admin, system
+from backend.api.routers import sd, eng, pp, mm, auth, users, planning, qms, traceability, dashboard, purchase, finance, admin, system, ai as ai_router
 from backend.api.routers.auth import (
     ALGORITHM,
     NEW_TOKEN_HEADER,
@@ -137,6 +137,9 @@ app.include_router(traceability.router, prefix="/api/traceability", tags=["双�
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["经营看板"], dependencies=_read_gate)
 app.include_router(admin.router, prefix="/api/admin", tags=["管理/审计"], dependencies=_gates)
 app.include_router(system.router, prefix="/api/system", tags=["组织架构/系统管理"], dependencies=_gates)
+# AI 域：只读、强制登录；不挂 _gates（见 backend/api/routers/ai.py 顶部说明）
+app.include_router(ai_router.router, prefix="/api/ai", tags=["AI 助手"],
+                   dependencies=[Depends(ai_router.require_ai_access)])
 
 
 @app.get("/")

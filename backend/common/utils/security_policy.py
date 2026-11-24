@@ -12,6 +12,7 @@ ROLES = frozenset({"ADMIN", "ENGINEER", "FINANCE", "GENERAL_MANAGER", "PLANNER",
 # 写权限：域 -> 允许写操作的角色集合；未列出的域一律拒绝（fail-closed）
 WRITE_ROLE_POLICY: dict[str, frozenset[str]] = {
     "admin": frozenset({"ADMIN"}),
+    "ai": frozenset(),
     "auth": frozenset(),
     "dashboard": frozenset(),
     "eng": frozenset({"ADMIN", "ENGINEER", "GENERAL_MANAGER"}),
@@ -33,6 +34,7 @@ READ_OPEN_DOMAINS = frozenset({"auth", "dashboard", "eng", "finance", "mm", "pla
 # 只读策略：必须登录且限定角色的域（如 users）
 READ_ROLE_POLICY: dict[str, frozenset[str]] = {
     "admin": frozenset({"ADMIN"}),
+    "ai": frozenset({"ADMIN", "ENGINEER", "FINANCE", "GENERAL_MANAGER", "PLANNER", "PRODUCTION", "SALES", "SALES_MANAGER", "WAREHOUSE"}),
     "system": frozenset({"ADMIN"}),
     "users": frozenset({"ADMIN"}),
 }
@@ -40,6 +42,7 @@ READ_ROLE_POLICY: dict[str, frozenset[str]] = {
 # 域元信息（用于报错文案）
 DOMAIN_META: dict[str, str] = {
     "admin": "EventRecord",
+    "ai": "EventRecord",
     "auth": "Agent",
     "dashboard": "EventRecord",
     "eng": "Document",

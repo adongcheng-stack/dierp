@@ -20,7 +20,7 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from backend.common.database.base import Base, engine  # noqa: E402
-from backend.common.models import eng, mm, pp, sd, user, planning  # noqa: E402,F401
+from backend.common.models import ai, eng, mm, pp, sd, user, planning  # noqa: E402,F401
 
 config = context.config
 if config.config_file_name is not None:

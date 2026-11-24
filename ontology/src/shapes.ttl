@@ -1159,7 +1159,7 @@
 :AccessDomainShape a sh:NodeShape ;
     sh:targetClass :AccessDomain ;
     sh:property [ sh:path :domainCode ; sh:minCount 1 ; sh:maxCount 1 ;
-        sh:in ( "sd" "eng" "pp" "mm" "planning" "qms" "purchase" "finance" "users" "admin" "system" "auth" "dashboard" "traceability" ) ;
+        sh:in ( "sd" "eng" "pp" "mm" "planning" "qms" "purchase" "finance" "users" "admin" "system" "auth" "dashboard" "traceability" "ai" ) ;
         sh:message "S48 访问域编码必须来自 AccessDomain 枚举" ] ;
     sh:property [ sh:path :allowsRole ; sh:minCount 0 ;
         sh:class :Role ; sh:message "S48 allowsRole 只能指向 Role 个体" ] ;

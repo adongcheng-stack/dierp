@@ -1,0 +1,6 @@
+- generic [active]:
+  - generic:
+    - generic [ref=e8]: 网页被保护，正在解密中...
+    - link [ref=e10] [cursor=pointer]:
+      - /url: https://www.bt.cn
+      - img [ref=e12]

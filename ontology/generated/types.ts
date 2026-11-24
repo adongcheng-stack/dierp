@@ -118,7 +118,7 @@ export type NcrStatus = 'OPEN' | 'UNDER_REVIEW' | 'DISPOSITIONED' | 'CLOSED';
 
 export type UserRole = 'SALES' | 'SALES_MANAGER' | 'ENGINEER' | 'PLANNER' | 'PRODUCTION' | 'WAREHOUSE' | 'FINANCE' | 'GENERAL_MANAGER' | 'ADMIN';
 
-export type AccessDomain = 'sd' | 'eng' | 'pp' | 'mm' | 'planning' | 'qms' | 'purchase' | 'finance' | 'users' | 'admin' | 'system' | 'auth' | 'dashboard' | 'traceability';
+export type AccessDomain = 'sd' | 'eng' | 'pp' | 'mm' | 'planning' | 'qms' | 'purchase' | 'finance' | 'users' | 'admin' | 'system' | 'auth' | 'dashboard' | 'traceability' | 'ai';
 
 export type HttpWriteMethod = 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 

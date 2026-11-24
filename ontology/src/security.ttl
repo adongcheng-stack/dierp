@@ -119,6 +119,15 @@
     :topCategory "EventRecord" ;
     :anonymousRead true .
 
+# AI 助手与语义检索：强制登录（不匿名），写操作 fail-closed（不声明 :allowsRole）
+:DOMAIN_AI a :AccessDomain, :NormativeRule ;
+    :domainCode "ai" ; rdfs:label "AI 助手与语义检索" ;
+    :topCategory "EventRecord" ;
+    :anonymousRead false ;
+    :readRole :ROLE_ADMIN, :ROLE_GENERAL_MANAGER, :ROLE_PLANNER, :ROLE_PRODUCTION,
+               :ROLE_SALES, :ROLE_SALES_MANAGER, :ROLE_WAREHOUSE,
+               :ROLE_FINANCE, :ROLE_ENGINEER .
+
 # ─────────────────────────────────────────────────────────────
 # JWT 与写方法配置
 # ─────────────────────────────────────────────────────────────
