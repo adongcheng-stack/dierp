@@ -72,6 +72,14 @@ const cases = [
   ['匿名 GET /users（401）', { method: 'GET', path: '/users' }, 401],
   ['WAREHOUSE GET /users（403）', { method: 'GET', path: '/users', user: users.warehouse }, 403],
   ['ADMIN GET /users（200）', { method: 'GET', path: '/users', user: users.admin }, 200],
+  // W1.3/W1.4：AI 域读放行、chat 不受写门拦截、越权由意图角色矩阵拒绝
+  ['匿名 GET /ai/ping（401）', { method: 'GET', path: '/ai/ping' }, 401],
+  ['匿名 GET /ai/insights/dashboard（401）', { method: 'GET', path: '/ai/insights/dashboard' }, 401],
+  ['PLANNER GET /ai/insights/dashboard（200）', { method: 'GET', path: '/ai/insights/dashboard', user: users.planner }, 200],
+  ['FINANCE GET /ai/insights/dashboard（200）', { method: 'GET', path: '/ai/insights/dashboard', user: users.finance }, 200],
+  ['WAREHOUSE POST /ai/chat 问信用（403）', { method: 'POST', path: '/ai/chat', user: users.warehouse, body: { question: '客户 FJ002 信用超额了吗？' } }, 403],
+  ['PLANNER POST /ai/chat 问齐套（200）', { method: 'POST', path: '/ai/chat', user: users.planner, body: { question: '这周哪些工单缺料？' } }, 200],
+  ['ADMIN POST /ai/chat 问信用（200）', { method: 'POST', path: '/ai/chat', user: users.admin, body: { question: '客户 FJ002 信用超额了吗？' } }, 200],
 ]
 
 let failed = 0

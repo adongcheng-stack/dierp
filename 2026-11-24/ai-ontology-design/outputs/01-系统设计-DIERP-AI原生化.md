@@ -56,7 +56,7 @@
    - **两层硬控制**：参数模式（pydantic，`extra="forbid"` + 类型/范围）+ 意图级角色白名单（`ai` 域强制登录之上再收窄）；
    - **一层覆盖式约束校验**：SHACL（pyshacl，复用既有 64 个 NodeShape），每个意图显式声明 `shacl_coverage: full|partial|none`，响应回传真实状态；`skipped` 不等于 `passed`；
    - **一层完整性检查**：溯源（每个返回行必须能追到"表 + `record_key` + 本体 IRI"，否则整条回答失败）。
-   现状下 7 个意图中 3 个为 `full`、1 个为 `partial`、3 个为 `none`（§7.2），这是公开的能力边界，P2 补形状后升级。
+   现状下 7 个意图中 3 个为 `full`、2 个为 `partial`、2 个为 `none`（§7.2），这是公开的能力边界，P2 补形状后升级。
 4. **勘察发现 5 处文档前提需要修正**，已并入设计（详见 §2）：
    - 本体只覆盖 88 张表中的 59 张（另有 9 张只声明了类、无字段元数据），**不能声称"全库语义化"**；
    - `rdflib/pyshacl/owlrl/pyyaml` 只在 CI 临时安装，**不在 `requirements.txt`**，线上镜像会 `ImportError`；
@@ -577,7 +577,7 @@ app.include_router(ai_router.router, prefix="/api/ai", tags=["AI 助手"],
 | `open_mrp_exceptions` | planning | PLANNER, GENERAL_MANAGER |
 | `customer_credit_status` | sd | SALES_MANAGER, FINANCE, GENERAL_MANAGER |
 | `ar_overdue` | finance | FINANCE, GENERAL_MANAGER |
-| `open_nonconformance` | qms | ENGINEER, PRODUCTION, GENERAL_MANAGER |
+| `open_nonconformance` | planning | ENGINEER, PRODUCTION, GENERAL_MANAGER |
 
 `check_ai_catalog.py` 校验：`allowed_roles` 非空、⊆ `ROLES`、`domain` ∈ 已声明域；`INTENT_REGISTRY` 与 `ALLOWED_ROLES` 不漂移。
 
@@ -676,7 +676,7 @@ class IntentSpec(BaseModel):
 | 3 | `material_below_safety` | 哪些物料低于安全库存？ | `Material` | `material_type` 可选（枚举）；`limit` 1–200 默认 50 | full | `material_code` / `/mm/materials` | WAREHOUSE/PLANNER/PRODUCTION/GM |
 | 4 | `open_mrp_exceptions` | 还有哪些计划异常？ | `MrpException` | `severity` 可选；`exception_type` 可选；`resolution_status` 默认 `OPEN`；`limit` | full | `id`（事件表无单号，`run_number` 允许为空）/ `null`（定位到 MRP 运行批次） | PLANNER/GM |
 | 5 | `customer_credit_status` | 这个客户信用超额了吗？ | `Customer` + `SalesOrder` + `ReceivableEntry` | `customer_id` 必填 | none | `customer_id` / `/sd/customers` | SALES_MANAGER/FINANCE/GM |
-| 6 | `ar_overdue` | 哪些应收超期？ | `SalesInvoice`（+`ReceivableEntry`） | `days_overdue` 1–365 默认 30；`customer_id` 可选；`invoice_number` 可选 | none | `invoice_number` / `/sd/invoices` | FINANCE/GM |
+| 6 | `ar_overdue` | 哪些应收超期？ | `SalesInvoice`（+`ReceivableEntry`） | `days_overdue` 1–365 默认 30；`customer_id` 可选；`invoice_number` 可选 | partial | `invoice_number` / `/sd/invoices` | FINANCE/GM |
 | 7 | `open_nonconformance` | 哪些不合格品还没关闭？ | `NonConformanceReport` | `status` 可选（默认 `OPEN/UNDER_REVIEW/DISPOSITIONED`）；`severity` 可选；`limit` | full | `ncr_number` / `/qms/ncrs` | ENGINEER/PRODUCTION/GM |
 
 > 下钻路由以 `frontend` 现有路由为准，不存在时降级为纯文本单号（不新建页面）。`downlink=null` 的意图（#4）只能定位到批次，这是如实的能力限制（评审 I9）。
@@ -690,10 +690,10 @@ class IntentSpec(BaseModel):
 | 3 | `material_type` | `MaterialShape` 含 `materialType` | full |
 | 4 | `severity`/`exception_type`/`resolution_status` | `MrpExceptionShape` 三者全含 | full |
 | 5 | `customer_id` | 无 `CustomerShape` | none |
-| 6 | `days_overdue`/`customer_id`/`invoice_number` | `SalesInvoiceShape` 只约束 `amount/invoiceNumber/salesOrderNumber/status` | none |
+| 6 | `days_overdue`/`customer_id`/`invoice_number` | `SalesInvoiceShape` 覆盖 `invoiceNumber`（对应 `invoice_number` 参数），不覆盖 `days_overdue`/`customer_id` | partial |
 | 7 | `status`/`severity` | `NonConformanceReportShape` 均含 | full |
 
-3 个 `full`、1 个 `partial`、3 个 `none`，与 §0 第 3 点一致。`none` 的意图仅靠 pydantic 类型/范围 + 投影字段白名单兜底，响应必须回传 `shacl: "skipped"`。P2 补 `CustomerShape`、应收账龄形状与 `SalesOrder` 的风险字段后升级为 `partial/full`；**在此之前不宣称"所有参数都过约束校验"**。
+3 个 `full`、2 个 `partial`、2 个 `none`，与 §0 第 3 点一致。`none` 的意图仅靠 pydantic 类型/范围 + 投影字段白名单兜底，响应必须回传 `shacl: "skipped"`。P2 补 `CustomerShape`、应收账龄形状与 `SalesOrder` 的风险字段后升级为 `partial/full`；**在此之前不宣称"所有参数都过约束校验"**。
 
 #### 7.2.1 取数口径（评审 I4，全部可编码、可用 fixture 断言）
 
@@ -702,8 +702,8 @@ class IntentSpec(BaseModel):
 | 意图 | 状态/过滤口径 | 金额与空值口径 |
 |---|---|---|
 | 1 `kitting_shortage` | `kitting_results.kit_status = 'SHORT'`；可选 `source_ref` 精确匹配；按 `checked_at desc` 排序 | 无金额；`shortage_qty` 为空按 0 处理但不计入行 |
-| 2 `order_delay_risk` | `sales_orders.status IN ('APPROVED','IN_PRODUCTION')`（`SHIPPED` 已发货，不属于风险）；`delivery_date <= today + within_days`；风险条件 = 存在生产订单且 `(planned_finish_date IS NULL OR planned_finish_date > sales_orders.delivery_date)`，**或**不存在任何生产订单 | 输出 `order_number/customer_id/material_code/quantity/delivery_date/order_status/risk_reason`；不含单价与金额（字段白名单） |
-| 3 `material_below_safety` | `current_stock < safety_stock`；`material_type` 可选；按缺口率 `(safety_stock-current_stock)/NULLIF(safety_stock,0) desc` | 缺额 `safety_stock-current_stock`；`safety_stock<=0` 不参与排序但仍在结果中 |
+| 2 `order_delay_risk` | `sales_orders.status IN ('APPROVED','IN_PRODUCTION')`（`SHIPPED` 已发货，不属于风险）；`now <= delivery_date <= now + within_days`；风险条件 = 存在生产订单且 `(planned_finish_date IS NULL OR planned_finish_date > sales_orders.delivery_date)`，**或**不存在任何生产订单 | 输出 `order_number/customer_id/material_code/quantity/delivery_date/order_status/risk_reason`；不含单价与金额（字段白名单） |
+| 3 `material_below_safety` | `current_stock < safety_stock`；`material_type` 可选；按绝对缺口 `safety_stock - current_stock` 降序 | 缺额 `safety_stock - current_stock` |
 | 4 `open_mrp_exceptions` | `resolution_status='OPEN'`（默认）；`severity/exception_type` 可选；按 `shortage_qty desc` | 无金额 |
 | 5 `customer_credit_status` | 应收余额 = `SUM(receivable_entries.amount)`：模型按**带符号金额**记账（`INVOICE` 为正、`RECEIPT` 为负、`RECEIPT_REVERSE` 为正、`INVOICE_REVERSE` 为负、`ADJUST` 按录入符号），`ReceivableEntryType` 共 5 个值，符号由写入方保证，查询侧不再按类型二次拼符号；未完成订单 = `sales_orders.status IN ('APPROVED','IN_PRODUCTION')` | 占用比 = `(ar_balance + open_order_amount) / NULLIF(credit_limit,0)`；`credit_limit<=0` 时比值返回 `null` 并输出 `credit_limit=0` 原文，不抛零除；`customer_id` 不存在 → 空结果 + `reason=customer_not_found`（不报 500，也不编造） |
 | 6 `ar_overdue` | `sales_invoices.status IN ('ISSUED','PARTIALLY_PAID')`（排除 `DRAFT/PAID/CANCELLED`）且 `received_amount < amount` 且 `due_date < today - days_overdue`；`invoice_number/customer_id` 可选 | 未收 = `amount - received_amount`；`amount<=0` 的行排除 |

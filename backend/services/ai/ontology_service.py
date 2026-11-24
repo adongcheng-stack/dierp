@@ -81,6 +81,7 @@ class OntologyService:
         self.shapes: Graph | None = None
         self.schema: Graph | None = None
         self.mappings: dict[str, list[str]] = {}
+        self.enum_labels: dict[str, dict[str, str]] = {}
         self.load_count = 0
 
     # ── 加载 ──────────────────────────────────────────────
@@ -116,11 +117,29 @@ class OntologyService:
         self.shapes = shapes
         self.schema = schema
         self.mappings = mappings
+        self.enum_labels = {
+            str(name): {str(code): str(label) for code, label in values.items()}
+            for name, values in (mappings.get("labels") or {}).items()
+            if isinstance(values, dict)
+        }
         self.load_count += 1
 
     def _ensure(self) -> None:
         if self.semantic is None:
             self.load()
+
+    def ensure_loaded(self) -> None:
+        """公开的懒加载入口：调用方直接读 ``semantic/shapes/schema`` 前先调用。
+
+        单例可能在测试重置或进程冷启动后处于未加载状态；直接把 ``shapes``
+        （可能为 ``None``）传给 pyshacl，会退化成本图自校验而静默通过。
+        """
+        self._ensure()
+
+    def enum_label(self, enum_name: str, code: str, default: str = "未知") -> str:
+        """枚举码 → 中文标签；标签唯一来源是 mappings.json 的 labels 段。"""
+        self._ensure()
+        return self.enum_labels.get(enum_name, {}).get(str(code), default)
 
     # ── 描述 ──────────────────────────────────────────────
     def _class_uri(self, name: str) -> URIRef | None:

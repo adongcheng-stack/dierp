@@ -1313,3 +1313,159 @@
         sh:message "S52 估值来源必须来自 CostSourceType 枚举" ] ;
     sh:property [ sh:path :sourceRef ; sh:minCount 1 ;
         sh:message "S52 来源单据号必填" ] .
+
+# ═══════════════════════════════════════════════════════════════
+# MES 跨库只读侧形状（mes-mapping.yaml）
+# 取值来自真实 MES 库只读抽样：工单状态 6 码、工序状态 2 码、设备 ID 13001-13003。
+# ═══════════════════════════════════════════════════════════════
+
+# M1 MES 工单
+:MesWorkOrderShape a sh:NodeShape ;
+    sh:targetClass :MesWorkOrder ;
+    sh:property [
+        sh:path :mesWorkOrderNo ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^GD-[0-9]{8}-[0-9]{5}$" ;
+        sh:message "M1 MES 工单号必填且形如 GD-YYYYMMDD-NNNNN"
+    ] ;
+    sh:property [
+        sh:path :mesOrderStatus ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "DRAFT" "SUBMITTED" "IN_PRODUCTION" "PAUSED" "COMPLETED" "CLOSED" ) ;
+        sh:message "M1 MES 工单状态必须来自 MesWorkOrderStatus 枚举"
+    ] ;
+    sh:property [
+        sh:path :mesOrderQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M1 MES 工单计划数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesOrderCompletedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M1 MES 工单完工数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesOrderQualifiedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M1 MES 工单合格数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesOrderScrappedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M1 MES 工单报废数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesPlannedStart ; sh:minCount 1 ; sh:datatype xsd:dateTime ;
+        sh:message "M1 MES 工单计划开始时间必填"
+    ] ;
+    sh:property [
+        sh:path :mesPlannedEnd ; sh:minCount 1 ; sh:datatype xsd:dateTime ;
+        sh:message "M1 MES 工单计划结束时间必填"
+    ] ;
+    sh:property [
+        sh:path :mesProductName ; sh:datatype xsd:string ;
+        sh:message "M1 MES 产品名称允许为空；有值时必须是字符串"
+    ] .
+
+# M2 MES 工序任务（必须归属一张 MES 工单）
+:MesProcessTaskShape a sh:NodeShape ;
+    sh:targetClass :MesProcessTask ;
+    sh:property [
+        sh:path :mesTaskId ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ; sh:minInclusive 1 ;
+        sh:message "M2 MES 工序任务 ID 必填且为正整数"
+    ] ;
+    sh:property [
+        sh:path :belongsToMesWorkOrder ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ; sh:class :MesWorkOrder ;
+        sh:message "M2 MES 工序任务必须归属一张 MES 工单"
+    ] ;
+    sh:property [
+        sh:path :mesTaskSequence ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ; sh:minInclusive 1 ;
+        sh:message "M2 MES 工序序号必填且从 1 开始"
+    ] ;
+    sh:property [
+        sh:path :mesTaskStatus ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "PENDING" "COMPLETED" ) ;
+        sh:message "M2 MES 工序状态必须来自 MesProcessTaskStatus 枚举"
+    ] ;
+    sh:property [
+        sh:path :mesEquipmentId ; sh:datatype xsd:integer ; sh:minInclusive 1 ;
+        sh:message "M2 MES 设备 ID 允许为空；有值时必须是正整数"
+    ] ;
+    sh:property [
+        sh:path :mesTaskCompletedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M2 MES 工序完成数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesTaskQualifiedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M2 MES 工序合格数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesTaskScrappedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M2 MES 工序报废数量必填且不得为负"
+    ] .
+
+# M3 MES 报工记录（必须归属一道 MES 工序）
+:MesProcessReportShape a sh:NodeShape ;
+    sh:targetClass :MesProcessReport ;
+    sh:property [
+        sh:path :mesReportId ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ; sh:minInclusive 1 ;
+        sh:message "M3 MES 报工记录 ID 必填且为正整数"
+    ] ;
+    sh:property [
+        sh:path :reportsMesTask ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ; sh:class :MesProcessTask ;
+        sh:message "M3 MES 报工记录必须归属一道 MES 工序"
+    ] ;
+    sh:property [
+        sh:path :mesReportTime ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "M3 MES 报工时间必填"
+    ] ;
+    sh:property [
+        sh:path :mesReportCompletedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M3 MES 报工数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesReportQualifiedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M3 MES 报工合格数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesReportScrappedQuantity ; sh:minCount 1 ; sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ;
+        sh:message "M3 MES 报工报废数量必填且不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesActualHours ; sh:datatype xsd:decimal ; sh:minInclusive 0 ;
+        sh:message "M3 MES 实际工时允许为空；有值时不得为负"
+    ] ;
+    sh:property [
+        sh:path :mesDefectReason ; sh:datatype xsd:string ;
+        sh:message "M3 MES 缺陷原因允许为空；有值时必须是字符串"
+    ] .
+
+# AI 问答审计记录（语义级审计；HTTP 级轨迹仍在 operation_logs）
+:AiQueryLogShape a sh:NodeShape ;
+    sh:targetClass :AiQueryLog ;
+    sh:property [
+        sh:path :traceId ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "AI 问答审计记录 traceId 必填且唯一"
+    ] ;
+    sh:property [
+        sh:path :status ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "OK" "REJECTED_PERMISSION" "REJECTED_TIMEOUT" "REJECTED_RATE_LIMIT" "REJECTED_TOO_BROAD" "REJECTED_SCHEMA" "REJECTED_INTENT" "REJECTED_SHACL" "REJECTED_PARAM" "FAILED" ) ;
+        sh:message "AI 问答审计状态必须是 AiQueryStatus 枚举"
+    ] ;
+    sh:property [
+        sh:path :shaclStatus ; sh:maxCount 1 ;
+        sh:in ( "passed" "partial" "skipped" "failed" ) ;
+        sh:message "SHACL 校验状态必须是 AiShaclStatus 枚举"
+    ] .

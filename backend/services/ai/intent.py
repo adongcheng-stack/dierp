@@ -82,14 +82,22 @@ class IntentSpec(BaseModel):
     domains: list[str]
     allowed_roles: frozenset[str]
     output_fields: dict[str, list[str]]
+    # 输出列 → 枚举名（枚举名必须在 mappings.json 的 labels 中；供前端本地化展示）
+    output_enums: dict[str, str] = {}
     record_key: list[str]
     downlink: str | None = None
     shacl_coverage: Literal["full", "partial", "none"]
+    # 外部数据源显式绑定的本体 NodeShape（约束仍只在 ontology/src/shapes.ttl）
+    shacl_shape: str | None = None
+    # 参数名 → 形状属性名；仅用于把参数映射到形状路径，不承载约束
+    shacl_params: dict[str, str] = {}
     provenance_kind: Literal["document", "event", "aggregate"]
     rules: list[str] = []
     formula: str | None = None
     handler: Callable[..., QueryResult]
     read_only: Literal[True] = True
+    # 数据来源系统：ERP 走本地 ORM；MES 走跨库只读客户端（默认关闭）
+    source_system: Literal["ERP", "MES"] = "ERP"
 
 
 # P0 不注册意图；P1 的 W1.1 在这里或 intents/__init__.py 填充。

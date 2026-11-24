@@ -1,0 +1,250 @@
+version: "1.3"
+source_system: MES
+description: >-
+  ERP ↔ MES 语义映射 v1.3。表名/字段名依据 MES trunk 实体类、
+  DevLib/branches/20261101/DBscript/测试环境/01-mes_ddl.sql，并对照
+  DevLib/trunk/models/mes_model1.3.ecore 与 DevLib/trunk/ontology/src/mes-ontology.ttl
+  校正；枚举值与空值分布已用 mesdb 真实数据（2026-11-24 只读抽样）复核。
+  仅描述语义对照，不产生任何写操作。ontology_class 必须指向既有本体类，
+  枚举码必须来自 mappings.json。未匹配字段/实体在 unmapped_fields /
+  unmapped_reasons 中显式说明，禁止为覆盖率硬凑。
+namespace: https://dierp.local/ontology/erp/v1#
+
+mes_catalog:
+  entities:
+    - Equipment
+    - WorkOrder
+    - Operation
+    - Material
+    - InspectionOrder
+    - Warehouse
+    - ScrapRecord
+
+unmapped_reasons:
+  ScrapRecord: >-
+    MES 本体将 ScrapRecord 定义为 EventRecord（scrapNo/targetType/targetId/
+    scrapReason/scrapDate/approvedBy/remark）；ERP 本体没有对应的“报废事件”类。
+    最接近的 NonConformanceReport 是 Document（ncrNumber/defectCode/sourceType/
+    评审处置），与报废事件语义和字段均不匹配，且 qc_scrap_record 没有报废数量列。
+    真实库该表 0 行。保持整实体未映射，不硬凑覆盖率。
+
+mappings:
+  - mes_entity: Equipment
+    mes_ontology_class: Equipment
+    mes_table: equ_equipment
+    ontology_class: Resource
+    # ecore: EquipmentStatus = RUNNING/IDLE/FAULT/MAINTENANCE/STOPPED/SCRAPPED；
+    # 真实库 status 为 VARCHAR(20)，实际值 25002(10)、25003(1)，与业务码
+    # 25001..25006 一一对应；25001/25004 当前未出现但按枚举保留，
+    # 25005/25006 无 ERP 等价（见 unmapped_fields）。
+    fields:
+      - mes_field: code
+        ontology_property: resourceId
+      - mes_field: name
+        ontology_property: resourceName
+      - mes_field: status
+        ontology_property: status
+        enum: ResourceStatus
+        value_map:
+          "25001": ACTIVE
+          "25002": ACTIVE
+          "25003": DOWN
+          "25004": MAINTENANCE
+    unmapped_fields:
+      - mes_field: type
+        reason: "ERP Resource.resourceType 仅允许 MACHINE/LABOR；MES 为设备工艺类别码 13001..13005，语义不同源。"
+      - mes_field: workshop_id
+        reason: "MES 只记录所属车间 ID，无工作中心主数据；ERP workCenterId 是产能/成本归集单元，与车间不等价。"
+      - mes_field: production_line
+        reason: "本体 Resource Shape 未声明产线属性。"
+      - mes_field: asset_type
+        reason: "本体 Resource Shape 未声明资产类型属性（MES 为 20001 硬件/20002 软件）。"
+      - mes_field: status=25005
+        reason: "ResourceStatus 无“停用”码值，不硬映射。"
+      - mes_field: status=25006
+        reason: "ResourceStatus 无“报废”码值，不硬映射。"
+
+  - mes_entity: WorkOrder
+    mes_ontology_class: WorkOrder
+    mes_table: prd_work_order
+    ontology_class: ProductionOrder
+    # MES ecore WorkOrderStatus = DRAFT/SUBMITTED/IN_PRODUCTION/PAUSED/COMPLETED/CLOSED；
+    # 真实库 20 行均为这些值（PAUSED 有 1 行，仍无 ERP 等价）。
+    fields:
+      - mes_field: work_order_no
+        ontology_property: documentNumber
+      - mes_field: quantity
+        ontology_property: quantity
+      - mes_field: status
+        ontology_property: status
+        enum: DocumentStatus
+        value_map:
+          DRAFT: DRAFT
+          SUBMITTED: RELEASED
+          IN_PRODUCTION: IN_PROGRESS
+          COMPLETED: COMPLETED
+          CLOSED: CLOSED
+    unmapped_fields:
+      - mes_field: status=PAUSED
+        reason: "DocumentStatus 无“暂停”码值，保留原值，不硬映射。"
+      - mes_field: completed_quantity
+        reason: "ProductionOrder Shape 只声明 quantity，无完工数量属性。"
+      - mes_field: qualified_quantity
+        reason: "ProductionOrder Shape 未声明合格数量属性。"
+      - mes_field: scrapped_quantity
+        reason: "ProductionOrder Shape 未声明报废数量属性（报废在 qc_scrap_record 记录，但本体无对应类）。"
+      - mes_field: planned_start_date
+        reason: "ProductionOrder Shape 未声明计划开始日期属性。"
+      - mes_field: planned_end_date
+        reason: "ProductionOrder Shape 未声明计划结束日期属性。"
+      - mes_field: actual_start_date
+        reason: "ProductionOrder Shape 未声明实际开始时间属性。"
+      - mes_field: actual_end_date
+        reason: "ProductionOrder Shape 未声明实际结束时间属性。"
+      - mes_field: priority
+        reason: "ProductionOrder Shape 未声明优先级属性。"
+      - mes_field: workshop_id
+        reason: "ProductionOrder Shape 未声明车间属性；MES 车间不是 ERP 工作中心。"
+      - mes_field: production_line
+        reason: "ProductionOrder Shape 未声明产线属性。"
+
+  - mes_entity: Operation
+    mes_ontology_class: ProcessTask
+    mes_table: prd_process_task
+    ontology_class: ScheduledOperation
+    # 语义口径：MES 本体 ProcessTask（工单工序任务，prd_process_task）对应
+    # ERP 的排程工序行；MES ProcessTask 的 sequence/taskNo 不强行映射到
+    # ScheduledOperation.operationNumber。真实库 task.status 仅 PENDING/COMPLETED，
+    # 仍未映射（ERP 无执行态枚举）。
+    fields:
+      - mes_field: process_id
+        ontology_property: opId
+      - mes_field: planned_start_date
+        ontology_property: plannedStart
+      - mes_field: planned_end_date
+        ontology_property: plannedEnd
+    unmapped_fields:
+      - mes_field: status
+        reason: "MES 为执行态 PENDING/IN_PROGRESS/COMPLETED/REWORKED/SCRAPPED；ERP ScheduleOpStatus 为排程发布态 PLANNED/LOCKED/PUBLISHED/CANCELLED，不同源。"
+      - mes_field: equipment_id
+        reason: "prd_process_task 只有设备 ID，没有工作中心；ScheduledOperation 的 workCenterId 不能由设备代替。"
+      - mes_field: operation_number
+        reason: "MES 无独立“工序号”列；process_id 已映射到 opId，不再重复映射。"
+      - mes_field: sequence
+        reason: "ScheduledOperation Shape 未声明工序顺序属性（仅有 operationNumber/opId）。"
+      - mes_field: completed_quantity
+        reason: "ScheduledOperation Shape 未声明完成数量属性。"
+      - mes_field: qualified_quantity
+        reason: "ScheduledOperation Shape 未声明合格数量属性。"
+      - mes_field: scrapped_quantity
+        reason: "ScheduledOperation Shape 未声明报废数量属性。"
+
+  - mes_entity: Material
+    mes_ontology_class: Material
+    mes_table: mat_material
+    ontology_class: Material
+    # 注意：MES 的 MaterialType 是 PURCHASED/SELF_PRODUCED（采购/自制），
+    # 对应 ERP procurementType；MES 的 ProductCategory（RAW_MATERIAL/
+    # SEMI_PRODUCT/FINISHED_PRODUCT/AUXILIARY）才对应 ERP materialType。
+    # 字段名同形但语义不同，不可互换。真实库 product_category 有 278/307 为 NULL，
+    # 非空值为 RAW_MATERIAL/SEMI_PRODUCT/FINISHED_PRODUCT；material_type 为
+    # PURCHASED/SELF_PRODUCED。
+    fields:
+      - mes_field: code
+        ontology_property: materialCode
+      - mes_field: product_category
+        ontology_property: materialType
+        enum: MaterialType
+        value_map:
+          FINISHED_PRODUCT: FG
+          SEMI_PRODUCT: SEMI
+          RAW_MATERIAL: RAW
+      - mes_field: material_type
+        ontology_property: procurementType
+        enum: ProcurementType
+        value_map:
+          PURCHASED: BUY
+          SELF_PRODUCED: MAKE
+    unmapped_fields:
+      - mes_field: product_category=NULL
+        reason: "真实库 278/307 行 product_category 为 NULL；ERP materialType 无空值语义，NULL 不映射。"
+      - mes_field: product_category=AUXILIARY
+        reason: "ERP MaterialType 无“辅料”码值，PACKAGING 是包装物，语义不等价（真实库当前未出现 AUXILIARY）。"
+      - mes_field: name
+        reason: "Material Shape 未声明物料名称属性。"
+      - mes_field: specification
+        reason: "Material Shape 未声明规格属性。"
+      - mes_field: model
+        reason: "Material Shape 未声明型号属性。"
+      - mes_field: unit_in
+        reason: "Material Shape 未声明计量单位属性。"
+      - mes_field: unit_out
+        reason: "Material Shape 未声明计量单位属性。"
+      - mes_field: safety_stock
+        reason: "Material Shape 未声明安全库存属性（安全库存属于 PlanningPolicy 域）。"
+      - mes_field: min_stock
+        reason: "Material Shape 未声明最低库存；reorderPoint 属于 PlanningPolicy，语义不等价。"
+      - mes_field: status
+        reason: "Material Shape 未声明状态属性。"
+      - mes_field: category
+        reason: "MES 物料分类为 sys_enum_info 动态枚举键，本体 Material 未声明分类属性。"
+
+  - mes_entity: InspectionOrder
+    mes_ontology_class: QualityCheckRecord
+    mes_table: qc_check_record
+    ontology_class: InspectionOrder
+    # 真实库 check_type 仅 INSPECTION（通用检验），result 仅 PASS/FAIL；
+    # ecore QualityResult 还定义 PENDING，但当前数据未出现。
+    fields:
+      - mes_field: check_no
+        ontology_property: inspectionNumber
+      - mes_field: result
+        ontology_property: result
+        enum: InspectionResult
+        value_map:
+          PASS: PASS
+          FAIL: FAIL
+    unmapped_fields:
+      - mes_field: check_type
+        reason: "真实库 check_type 仅出现 INSPECTION（通用检验）；ERP InspectionType 仅 INCOMING/IN_PROCESS/FINAL，无通用值；IQC/IPQC/OQC/FQC 未在真实数据出现，不能作为已对齐映射。"
+      - mes_field: result=PENDING
+        reason: "ERP InspectionResult 第三态为 HOLD（挂起），与“待定”不完全等价，不硬映射（真实库当前未出现 PENDING）。"
+      - mes_field: status
+        reason: "qc_check_record 无状态列，仅有 result；不能映射 InspectionStatus。"
+      - mes_field: target_id
+        reason: "MES 用 target_id + target_type 指向受检对象；InspectionOrder 需要 materialCode，字段级映射不做隐式 JOIN。"
+      - mes_field: target_type
+        reason: "同上，需要在 target 关联后解析物料编码；本体未声明 targetType 属性。"
+      - mes_field: quantity_inspected
+        reason: "qc_check_record 无检验数量列（数量在明细/报工中），不能凭空取值。"
+      - mes_field: quantity_rejected
+        reason: "qc_check_record 无不合格数量列，不能凭空取值。"
+      - mes_field: check_time
+        reason: "InspectionOrder Shape 未声明检验时间属性。"
+      - mes_field: inspector_id
+        reason: "MES 只存检验员 ID，未冗余姓名；InspectionOrder.inspector 期望人员名称，需关联 sys_employee，字段级不映射。"
+      - mes_field: remark
+        reason: "InspectionOrder Shape 未声明备注属性。"
+      - mes_field: serial_number
+        reason: "MES 为产品 SN，不是批次号；lotNumber 语义不等价。"
+      - mes_field: standard_id
+        reason: "InspectionOrder Shape 未声明质检标准属性。"
+      - mes_field: equipment_id
+        reason: "InspectionOrder Shape 未声明检验设备属性。"
+
+  - mes_entity: Warehouse
+    mes_ontology_class: Warehouse
+    mes_table: biz_warehouse
+    ontology_class: Warehouse
+    fields:
+      - mes_field: code
+        ontology_property: warehouseCode
+      - mes_field: name
+        ontology_property: warehouseName
+    unmapped_fields:
+      - mes_field: address
+        reason: "Warehouse Shape 仅声明 warehouseCode/warehouseName，未声明地址属性。"
+      - mes_field: status
+        reason: "Warehouse Shape 未声明状态属性；真实库 status=ACTIVE，MES 另有 INACTIVE/TEMP_CLOSED。"
+      - mes_field: type
+        reason: "Warehouse Shape 未声明仓库类型属性；MES type 为中文枚举描述，不是稳定码值。"

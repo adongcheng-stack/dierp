@@ -10,7 +10,7 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "kitting_shortage"
 
-ALLOWED_ROLES = frozenset({"PLANNER", "PRODUCTION", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"PLANNER", "PRODUCTION", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "result_number", "source_ref", "material_code",
@@ -68,6 +68,7 @@ SPEC = IntentSpec(
     domains=["planning"],
     allowed_roles=ALLOWED_ROLES,
     output_fields={"*": list(ALL_COLUMNS)},
+    output_enums={"kit_status": "KitStatus"},
     record_key=["result_number"],
     downlink="/pp/kitting",
     shacl_coverage="partial",

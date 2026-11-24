@@ -11,7 +11,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: '业务域',
     keys: ['sd', 'pp', 'purchase', 'inventory', 'finance', 'eng', 'cost', 'qms', 'eam', 'aps'],
   },
-  { title: '系统', keys: ['admin'] },
+  { title: '系统', keys: ['admin', '/ai'] },
 ]
 
 const allKeys = NAV_SECTIONS.flatMap((section) => section.keys)

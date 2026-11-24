@@ -14,6 +14,7 @@
       ],
       "downlink": "/pp/kitting",
       "roles": [
+        "ADMIN",
         "GENERAL_MANAGER",
         "PLANNER",
         "PRODUCTION"
@@ -21,6 +22,9 @@
       "domains": [
         "planning"
       ],
+      "output_enums": {
+        "kit_status": "KitStatus"
+      },
       "shacl_coverage": "partial",
       "params": [
         {
@@ -56,6 +60,7 @@
       ],
       "downlink": "/mm/materials",
       "roles": [
+        "ADMIN",
         "GENERAL_MANAGER",
         "PLANNER",
         "PRODUCTION",
@@ -64,6 +69,9 @@
       "domains": [
         "mm"
       ],
+      "output_enums": {
+        "material_type": "MaterialType"
+      },
       "shacl_coverage": "full",
       "params": [
         {
@@ -94,6 +102,7 @@
       ],
       "downlink": "/sd/sales-orders",
       "roles": [
+        "ADMIN",
         "GENERAL_MANAGER",
         "PLANNER",
         "SALES",
@@ -103,6 +112,9 @@
         "sd",
         "pp"
       ],
+      "output_enums": {
+        "order_status": "SalesOrderStatus"
+      },
       "shacl_coverage": "none",
       "params": [
         {
@@ -132,12 +144,18 @@
       ],
       "downlink": null,
       "roles": [
+        "ADMIN",
         "GENERAL_MANAGER",
         "PLANNER"
       ],
       "domains": [
         "planning"
       ],
+      "output_enums": {
+        "exception_type": "MrpExceptionType",
+        "severity": "ExceptionSeverity",
+        "resolution_status": "ResolutionStatus"
+      },
       "shacl_coverage": "full",
       "params": [
         {
@@ -181,6 +199,7 @@
       ],
       "downlink": "/sd/customers",
       "roles": [
+        "ADMIN",
         "FINANCE",
         "GENERAL_MANAGER",
         "SALES_MANAGER"
@@ -189,6 +208,7 @@
         "sd",
         "finance"
       ],
+      "output_enums": {},
       "shacl_coverage": "none",
       "params": [
         {
@@ -213,12 +233,16 @@
       ],
       "downlink": "/sd/invoices",
       "roles": [
+        "ADMIN",
         "FINANCE",
         "GENERAL_MANAGER"
       ],
       "domains": [
         "finance"
       ],
+      "output_enums": {
+        "status": "InvoiceStatus"
+      },
       "shacl_coverage": "partial",
       "params": [
         {
@@ -254,6 +278,7 @@
       ],
       "downlink": "/qms/ncrs",
       "roles": [
+        "ADMIN",
         "ENGINEER",
         "GENERAL_MANAGER",
         "PRODUCTION"
@@ -261,6 +286,11 @@
       "domains": [
         "planning"
       ],
+      "output_enums": {
+        "severity": "NcrSeverity",
+        "status": "NcrStatus",
+        "disposition": "NcrDisposition"
+      },
       "shacl_coverage": "full",
       "params": [
         {
@@ -280,6 +310,48 @@
           "type": "int",
           "required": false,
           "default": 50
+        }
+      ]
+    },
+    {
+      "code": "mes_work_order_progress",
+      "label": "MES 工单进度",
+      "description": "按 MES 工单号查询该工单的工序任务与报工记录（跨库只读，默认关闭）。",
+      "entities": [
+        "ProductionOrder",
+        "ScheduledOperation"
+      ],
+      "primary_entity": "ProductionOrder",
+      "record_key": [
+        "row_key"
+      ],
+      "downlink": "/pp/production-orders",
+      "roles": [
+        "ADMIN",
+        "GENERAL_MANAGER",
+        "PLANNER",
+        "PRODUCTION"
+      ],
+      "domains": [
+        "pp"
+      ],
+      "output_enums": {
+        "order_status": "MesWorkOrderStatus",
+        "task_status": "MesProcessTaskStatus"
+      },
+      "shacl_coverage": "full",
+      "params": [
+        {
+          "name": "work_order_no",
+          "type": "str",
+          "required": true,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "required": false,
+          "default": 200
         }
       ]
     }

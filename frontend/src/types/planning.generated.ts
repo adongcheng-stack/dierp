@@ -76,6 +76,8 @@ import type {
   AlertOperator,
   AlertLevel,
   TimeWindow,
+  MesWorkOrderStatus,
+  MesProcessTaskStatus,
 } from '../../../ontology/generated/types'
 
 export type {
@@ -148,6 +150,8 @@ export type {
   AlertOperator,
   AlertLevel,
   TimeWindow,
+  MesWorkOrderStatus,
+  MesProcessTaskStatus,
 }
 
 /** 物料计划参数策略 */

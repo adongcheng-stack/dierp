@@ -1,4 +1,4 @@
-"""AI 语义底座配置（17 个环境变量，唯一读取入口）。
+"""AI 语义底座配置（19 个环境变量，唯一读取入口）。
 
 设计依据：``01-系统设计-DIERP-AI原生化.md`` §12。
 所有配置只在这里读取；其它模块通过 ``get_settings()`` 获得同一份不可变实例。
@@ -8,7 +8,7 @@ from __future__ import annotations
 from functools import lru_cache
 from urllib.parse import urlparse
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
@@ -46,9 +46,32 @@ class AISettings(BaseSettings):
     ai_log_prompts: bool = False
     ai_log_question: bool = True
 
+    # MCP 只读工具层（token 为空时 fail-closed，不开放）
+    ai_mcp_token: str = ""
+    ai_mcp_role: str = "GENERAL_MANAGER"
+
+    # MES 跨库只读查询（默认关闭；凭据只从环境变量注入，禁止落盘）
+    mes_query_enabled: bool = False
+    mes_db_host: str = "127.0.0.1"
+    mes_db_port: int = 3306
+    mes_db_name: str = "mesdb"
+    mes_db_user: str = ""
+    mes_db_password: SecretStr = SecretStr("")
+    mes_query_timeout_seconds: int = 5
+    mes_query_max_rows: int = 200
+
     @property
     def enabled(self) -> bool:
         return self.ai_enabled
+
+    @property
+    def mes_ready(self) -> bool:
+        """MES 查询是否具备可执行条件：开关打开且账号/密码已注入。"""
+        return bool(
+            self.mes_query_enabled
+            and self.mes_db_user
+            and self.mes_db_password.get_secret_value()
+        )
 
     @model_validator(mode="after")
     def _validate_llm_consistency(self) -> "AISettings":

@@ -20,3 +20,6 @@ email-validator==2.1.0
 rdflib==7.6.0
 pyshacl==0.40.1
 PyYAML==6.0.3
+# MES 跨库只读查询驱动：仅用于 mes_client.py 的 SELECT（独立连接 + 只读事务），
+# 不引入 SQLAlchemy 之外的 ORM/框架；版本与本地已验证环境一致。
+PyMySQL==2.2.8

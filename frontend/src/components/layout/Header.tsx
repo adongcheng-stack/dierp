@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { App as AntdApp, Dropdown, type MenuProps } from 'antd'
+import { Dropdown, type MenuProps } from 'antd'
 import {
   ChevronDown,
   ChevronRight,
@@ -21,7 +21,6 @@ import useUIStore from '../../stores/uiStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { resolveBreadcrumbs } from './menuConfig'
 import { isMockMode, resetDb } from '../../mock'
-import api, { getErrorMessage } from '../../services/api'
 
 export function Header({ onToggleMobileNav }: { onToggleMobileNav?: () => void }) {
   const location = useLocation()
@@ -30,7 +29,6 @@ export function Header({ onToggleMobileNav }: { onToggleMobileNav?: () => void }
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const { theme, toggleTheme } = useThemeStore()
   const confirm = useConfirm()
-  const { message } = AntdApp.useApp()
 
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -72,31 +70,13 @@ export function Header({ onToggleMobileNav }: { onToggleMobileNav?: () => void }
   const handleResetDemo = () => {
     confirm({
       title: '重置演示数据',
-      content: isMockMode
-        ? '将清空本次演示中所有新增和修改的数据，并恢复到初始演示数据。确定继续吗？'
-        : '将清空排程批次、插单场景、维护工单与故障记录等运行时数据，并重建一套演示场景。订单、BOM、工艺路线等主数据不受影响。确定继续吗？',
+      content: '将清空本次演示中所有新增和修改的数据，并恢复到初始演示数据。确定继续吗？',
       okText: '确认重置',
       cancelText: '取消',
       icon: 'warning',
-      onOk: async () => {
-        if (isMockMode) {
-          resetDb()
-          window.location.reload()
-          return
-        }
-        try {
-          const { data } = await api.post('/planning/demo/reset', {
-            rebuild_run: true,
-            with_scenario: true,
-          })
-          const seeded = data?.seeded ?? {}
-          message.success(
-            `演示数据已重置：排程 ${seeded.run_number ?? '-'}，工序 ${seeded.operations ?? 0} 条，场景 ${seeded.scenario_id ? '1 个' : '无'}`
-          )
-          window.setTimeout(() => window.location.reload(), 700)
-        } catch (error) {
-          message.error(getErrorMessage(error))
-        }
+      onOk: () => {
+        resetDb()
+        window.location.reload()
       },
     })
   }
@@ -119,13 +99,13 @@ export function Header({ onToggleMobileNav }: { onToggleMobileNav?: () => void }
       disabled: true,
     },
     { type: 'divider' },
-    // 演示数据重置：mock 模式所有用户可用；真实后端仅管理员（后端同样校验）
-    ...(isMockMode || user?.role === 'ADMIN'
+    // 演示数据重置仅在 mock 模式显示；真实后端不提供该入口
+    ...(isMockMode
       ? [
           {
             key: 'reset-demo',
             icon: <RotateCw className="h-4 w-4" />,
-            label: isMockMode ? '重置演示数据' : '清理演示数据',
+            label: '重置演示数据',
           },
         ]
       : []),

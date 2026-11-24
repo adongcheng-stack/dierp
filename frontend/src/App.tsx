@@ -62,6 +62,7 @@ const LotCardList = lazy(() => import('./pages/pp/LotCardList'))
 const TraceabilityExplorer = lazy(() => import('./pages/traceability/TraceabilityExplorer'))
 const ManagementDashboard = lazy(() => import('./pages/dashboard/ManagementDashboard'))
 const DashboardHome = lazy(() => import('./pages/dashboard/DashboardHome'))
+const AiAssistantPage = lazy(() => import('./pages/ai/AiAssistantPage'))
 const ProductionDashboard = lazy(() => import('./pages/dashboard/ProductionDashboard'))
 const ProductionProgressBoard = lazy(() => import('./pages/dashboard/ProductionProgressBoard'))
 const FinanceDashboard = lazy(() => import('./pages/dashboard/FinanceDashboard'))
@@ -146,6 +147,7 @@ function App() {
                   <Suspense fallback={<PageLoading />}>
                     <Routes>
                       <Route path="/" element={<DashboardHome />} />
+                      <Route path="/ai" element={<AiAssistantPage />} />
                       <Route path="/sd/customers" element={<CustomerList />} />
                       <Route path="/sd/customers/new" element={<CustomerForm />} />
                       <Route path="/sd/customers/:id/edit" element={<CustomerForm />} />

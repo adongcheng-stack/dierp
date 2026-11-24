@@ -1,4 +1,4 @@
-# 航盛电路ERP系统 - 后端启动脚本 (PowerShell)
+﻿# 航盛电路ERP系统 - 后端启动脚本 (PowerShell)
 
 Write-Host "正在启动后端服务..." -ForegroundColor Green
 Write-Host ""
@@ -27,4 +27,3 @@ Write-Host "API文档: http://localhost:8000/docs" -ForegroundColor Cyan
 Write-Host ""
 
 python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-

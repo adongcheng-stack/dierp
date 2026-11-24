@@ -10,7 +10,7 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "open_nonconformance"
 
-ALLOWED_ROLES = frozenset({"ENGINEER", "PRODUCTION", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"ENGINEER", "PRODUCTION", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "ncr_number", "material_code", "source_ref", "severity",
@@ -73,6 +73,11 @@ SPEC = IntentSpec(
     domains=["planning"],
     allowed_roles=ALLOWED_ROLES,
     output_fields={"*": list(ALL_COLUMNS)},
+    output_enums={
+        "severity": "NcrSeverity",
+        "status": "NcrStatus",
+        "disposition": "NcrDisposition",
+    },
     record_key=["ncr_number"],
     downlink="/qms/ncrs",
     shacl_coverage="full",

@@ -12,7 +12,7 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "ar_overdue"
 
-ALLOWED_ROLES = frozenset({"FINANCE", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"FINANCE", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "invoice_number", "customer_id", "customer_name", "status", "due_date",
@@ -91,6 +91,7 @@ SPEC = IntentSpec(
         "GENERAL_MANAGER": list(ALL_COLUMNS),
         "ADMIN": list(ALL_COLUMNS),
     },
+    output_enums={"status": "InvoiceStatus"},
     record_key=["invoice_number"],
     downlink="/sd/invoices",
     # 设计 §7.2 写 none，但 SalesInvoiceShape 实际约束了 invoiceNumber（sh:path 存在），

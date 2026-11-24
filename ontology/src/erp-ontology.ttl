@@ -8,7 +8,7 @@
 <https://dierp.local/ontology/erp/v1> a owl:Ontology ;
     rdfs:label "DIERP 制造 ERP 领域本体" ;
     rdfs:comment "以计划链（需求→MPS→MRP→计划订单→执行）和成本链（标准成本→实际归集→差异）为主线的制造 ERP 本体。枚举唯一事实源为 src/mappings.json。" ;
-    owl:versionInfo "1.0.0" .
+    owl:versionInfo "1.9.0" .
 
 # ─────────────────────────────────────────────────────────────
 # 六个互斥顶层范畴（建模铁律）
@@ -132,6 +132,8 @@
     rdfs:comment "排程运行产生的产能/交期/缺料/技能/换产/停机异常记录。" .
 :ScenarioImpact a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "插单影响明细" ;
     rdfs:comment "模拟场景对既有排程工序的影响：原/新完工时间、延期天数、影响级别。" .
+:AiQueryLog a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "AI 问答审计记录" ;
+    rdfs:comment "一次 AI 查询的结构化审计记录（append-only）：关联意图、SHACL 状态、溯源与反馈。" .
 
 # ─────────────────────────────────────────────────────────────
 # EAM（设备管理，与 APS Resource 主数据打通）
@@ -158,6 +160,22 @@
 :lineNumber a owl:DatatypeProperty ; rdfs:range xsd:integer .
 :version a owl:DatatypeProperty ; rdfs:range xsd:string .
 :status a owl:DatatypeProperty ; rdfs:range xsd:string .
+
+# ── AI 问答审计属性（AiQueryLog） ──
+:traceId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:requestId a owl:DatatypeProperty ; rdfs:range xsd:string .
+:username a owl:DatatypeProperty ; rdfs:range xsd:string .
+:role a owl:DatatypeProperty ; rdfs:range xsd:string .
+:intentCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:questionSha256 a owl:DatatypeProperty ; rdfs:range xsd:string .
+:shaclStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:rejectReason a owl:DatatypeProperty ; rdfs:range xsd:string .
+:errorCode a owl:DatatypeProperty ; rdfs:range xsd:string .
+:model a owl:DatatypeProperty ; rdfs:range xsd:string .
+:latencyMs a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:rowCount a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:provenanceJson a owl:DatatypeProperty ; rdfs:range xsd:string .
+:feedbackScore a owl:DatatypeProperty ; rdfs:range xsd:integer .
 :materialCode a owl:DatatypeProperty ; rdfs:range xsd:string .
 :materialName a owl:DatatypeProperty ; rdfs:range xsd:string .
 :materialType a owl:DatatypeProperty ; rdfs:range xsd:string .
@@ -483,3 +501,41 @@
 :balanceAmount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
 :costSourceType a owl:DatatypeProperty ; rdfs:range xsd:string .
 :reversalOf a owl:DatatypeProperty ; rdfs:range xsd:string .
+
+# ─────────────────────────────────────────────────────────────
+# MES 跨库只读侧（mes-mapping.yaml）
+# MES 是独立事实源：使用独立类与属性承载工单/工序/报工，不复用 ERP 的
+# ProductionOrder 编号形状（ERP 为 PO-YYYYMMDD-XXXX，MES 为 GD-YYYYMMDD-NNNNN）。
+# ─────────────────────────────────────────────────────────────
+:MesWorkOrder a owl:Class ; rdfs:subClassOf :Document ; rdfs:label "MES 工单" .
+:MesProcessTask a owl:Class ; rdfs:subClassOf :DocumentLine ; rdfs:label "MES 工序任务" .
+:MesProcessReport a owl:Class ; rdfs:subClassOf :EventRecord ; rdfs:label "MES 报工记录" .
+
+:mesWorkOrderNo a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mesProductName a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mesOrderStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mesOrderQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesOrderCompletedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesOrderQualifiedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesOrderScrappedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesPlannedStart a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:mesPlannedEnd a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:mesTaskId a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:mesTaskSequence a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:mesTaskStatus a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mesEquipmentId a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:mesTaskCompletedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesTaskQualifiedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesTaskScrappedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesReportId a owl:DatatypeProperty ; rdfs:range xsd:integer .
+:mesReportTime a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+:mesReportCompletedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesReportQualifiedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesReportScrappedQuantity a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+:mesDefectReason a owl:DatatypeProperty ; rdfs:range xsd:string .
+:mesActualHours a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+
+:belongsToMesWorkOrder a owl:ObjectProperty ;
+    rdfs:domain :MesProcessTask ; rdfs:range :MesWorkOrder .
+:reportsMesTask a owl:ObjectProperty ;
+    rdfs:domain :MesProcessReport ; rdfs:range :MesProcessTask .

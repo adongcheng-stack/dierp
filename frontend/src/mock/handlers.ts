@@ -7,6 +7,9 @@ import {
   WRITE_METHODS,
   WRITE_ROLE_POLICY,
 } from '../types/authorization.generated'
+import aiIntentMeta from './ai-intents.json'
+// 枚举中文标签唯一事实源：ontology/src/mappings.json → generated/types.ts
+import { ENUM_LABELS } from '../../../ontology/generated/types'
 
 export class MockApiError extends Error {
   status: number
@@ -5332,8 +5335,7 @@ const SALES_OPEN_STATUSES = ['PENDING_APPROVAL', 'APPROVED', 'IN_PRODUCTION', 'P
 const PRODUCTION_OPEN_STATUSES = ['PLANNED', 'RELEASED', 'IN_PRODUCTION']
 const NCR_OPEN_STATUSES = ['OPEN', 'UNDER_REVIEW']
 
-route('GET', '/dashboard/management', () => {
-  const db = getDb()
+function mockManagementOverview(db: any) {
   const live = (name: string) => listOf(db, name).filter((x) => !x.is_deleted)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -5433,6 +5435,14 @@ route('GET', '/dashboard/management', () => {
     delayed_production_orders: productionDelayed.length,
     due_maintenance_plans: dueMaintenance,
   }
+
+  return { sales, production, quality, equipment, cost, delivery }
+}
+
+route('GET', '/dashboard/management', () => {
+  const db = getDb()
+  const { sales, production, quality, equipment, cost, delivery } = mockManagementOverview(db)
+  const varianceByType = cost.variance_by_type
 
   // 自动点评（与 ManagementDashboard.insights 同规则）
   const insights: string[] = []
@@ -6381,6 +6391,1018 @@ route('POST', '/purchase/purchase-returns/:number/close', (_ctx, params) => {
   ret.updated_at = nowIso()
   saveDb()
   return ok(purchaseReturnDict(db, ret))
+})
+
+/* ------------------------------- AI 助手（W1.4 mock，契约与后端一致） ------------------------------- */
+
+interface AiIntentMeta {
+  code: string
+  label: string
+  description: string
+  primary_entity: string
+  record_key: string[]
+  downlink: string | null
+  roles: string[]
+  shacl_coverage: string
+  params: Array<{ name: string; default: unknown }>
+}
+
+const AI_INTENTS = aiIntentMeta.intents as unknown as AiIntentMeta[]
+const AI_NS = 'https://dierp.local/ontology/erp/v1#'
+const AI_FULL_AMOUNT_ROLES = new Set(['FINANCE', 'GENERAL_MANAGER', 'ADMIN'])
+const AI_AMOUNT_COLUMNS = new Set([
+  'credit_limit', 'ar_balance', 'open_order_amount', 'amount', 'received_amount', 'outstanding',
+])
+const AI_SAFE_COLUMNS: Record<string, string[]> = {
+  customer_credit_status: ['customer_id', 'customer_name', 'open_order_count'],
+  ar_overdue: [
+    'invoice_number', 'customer_id', 'customer_name', 'status', 'due_date', 'days_overdue',
+  ],
+}
+const AI_MATERIAL_TYPES = new Set(['FG', 'SEMI', 'RAW', 'PACKAGING', 'SERVICE'])
+// MES 只读开关：默认关闭；mock-tests 通过 setMockMesQueryEnabled 切换，
+// 浏览器演示可用 VITE_MES_QUERY_ENABLED=true 启动。
+let aiMesEnabled = String(
+  (import.meta as any).env?.VITE_MES_QUERY_ENABLED ?? '',
+).toLowerCase() === 'true'
+
+export function setMockMesQueryEnabled(value: boolean) {
+  aiMesEnabled = value
+}
+
+export function isMockMesQueryEnabled() {
+  return aiMesEnabled
+}
+const AI_SCHEMA_TOKENS = [
+  '建表', '删表', '表结构', '所有表', '数据库结构', '数据库表', 'ddl', 'schema',
+  '列名', '字段名', 'information_schema', '忽略之前', '忽略上述', '忽略以上',
+  'system prompt', 'ai_query_logs',
+]
+const AI_WRITE_TOKENS = [
+  '删除', '修改', '更新', '新增', '创建', '写入', '插入', '导入', '导出',
+  '改成', '覆盖', '清空',
+]
+const AI_RULES: Array<[string, string[]]> = [
+  ['mes_work_order_progress', ['工序', '报工']],
+  ['kitting_shortage', ['缺料', '齐套']],
+  ['customer_credit_status', ['信用']],
+  ['open_nonconformance', ['不合格', 'ncr']],
+  ['open_mrp_exceptions', ['计划异常']],
+  ['ar_overdue', ['应收', '未收款']],
+  ['material_below_safety', ['安全库存']],
+  ['order_delay_risk', ['延期', '交付', '未完工']],
+]
+const AI_ORDER_NO_RE = /(?<![A-Z0-9])([A-Z]{2,4})-([A-Z0-9]{4,}(?:-[A-Z0-9]+)*)/
+const AI_CUSTOMER_ID_RE = /客户\s*([A-Za-z0-9][A-Za-z0-9_-]{1,19})/
+const AI_CUSTOMER_NAME_RE = /客户\s*([\u4e00-\u9fa5]{2,6}?)(?=的|有|信用|$|\s)/
+const AI_WITHIN_RE = /(\d+)\s*天内/
+const AI_OVERDUE_RE = /(\d+)\s*天以上/
+const AI_TOP_N_RE = /前\s*(\d+)\s*条/
+const AI_SEVERITY_RE = /\b(CRITICAL|WARNING|INFO|MAJOR|MINOR)\b/
+const AI_MATERIAL_TYPE_RE =
+  /(?:物料类型|材料类型|类型)\s*(?:是|为|写为|写成|写|[:=])?\s*['"“]?([A-Za-z][A-Za-z0-9_]{1,19})/
+
+const aiLogs: Array<Record<string, any>> = []
+let aiSequence = 0
+
+function aiMeta(code: string): AiIntentMeta {
+  const meta = AI_INTENTS.find((item) => item.code === code)
+  if (!meta) throw new MockApiError(500, `AI 意图元数据缺失: ${code}`)
+  return meta
+}
+
+function aiTraceId() {
+  aiSequence += 1
+  return `mock-${Date.now().toString(16)}-${aiSequence}`
+}
+
+function aiFail(status: number, code: string, message: string, traceId?: string): never {
+  throw new MockApiError(status, { code, message, trace_id: traceId ?? null })
+}
+
+function aiDefaults(meta: AiIntentMeta): Record<string, any> {
+  const params: Record<string, any> = {}
+  for (const item of meta.params) params[item.name] = item.default
+  return params
+}
+
+function aiPreclassify(text: string) {
+  const lowered = text.toLowerCase()
+  for (const token of AI_SCHEMA_TOKENS) {
+    if (lowered.includes(token)) {
+      aiFail(422, 'AI_INTENT_UNKNOWN', '该问题涉及库表结构或规则覆盖，AI 仅支持受控业务查询')
+    }
+  }
+  for (const token of AI_WRITE_TOKENS) {
+    if (text.includes(token)) aiFail(422, 'AI_INTENT_UNKNOWN', 'AI 只提供只读查询，不支持任何写操作')
+  }
+}
+
+function aiCustomerId(text: string): string | null {
+  const match = AI_CUSTOMER_ID_RE.exec(text) ?? AI_CUSTOMER_NAME_RE.exec(text)
+  return match ? match[1] : null
+}
+
+function aiMaterialType(text: string): string | null {
+  const synonyms: Array<[string, string]> = [
+    ['半成品', 'SEMI'], ['原材料', 'RAW'], ['成品', 'FG'], ['包装', 'PACKAGING'], ['服务', 'SERVICE'],
+  ]
+  for (const [word, code] of synonyms) if (text.includes(word)) return code
+  const match = AI_MATERIAL_TYPE_RE.exec(text)
+  return match ? match[1].toUpperCase() : null
+}
+
+function aiResolve(rawQuestion: string): { code: string; params: Record<string, any> } {
+  const text = String(rawQuestion ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ')
+  if (!text) aiFail(422, 'AI_PARAM_INVALID', 'question 不能为空')
+  aiPreclassify(text)
+  const lowered = text.toLowerCase()
+  const matched = AI_RULES.find(([, words]) => words.some((word) => lowered.includes(word)))
+  if (!matched) aiFail(422, 'AI_INTENT_UNKNOWN', '无法识别该问题对应的查询意图')
+  const code = matched[0]
+  const meta = aiMeta(code)
+  const params = aiDefaults(meta)
+
+  const order = AI_ORDER_NO_RE.exec(text)
+  const severity = AI_SEVERITY_RE.exec(text)
+  const topN = AI_TOP_N_RE.exec(text)
+
+  if (code === 'mes_work_order_progress') {
+    if (!order) aiFail(422, 'AI_PARAM_INVALID', '缺少必填参数 work_order_no（工单号形如 GD-20260914-00001）')
+    params.work_order_no = order[0]
+  } else if (code === 'kitting_shortage') {
+    params.kit_status = 'SHORT'
+    if (order && !['INV', 'NCR', 'SO'].includes(order[1])) params.source_ref = order[0]
+  } else if (code === 'order_delay_risk') {
+    const within = AI_WITHIN_RE.exec(text)
+    if (within) params.within_days = Number(within[1])
+    const customer = aiCustomerId(text)
+    if (customer) params.customer_id = customer
+  } else if (code === 'material_below_safety') {
+    const materialType = aiMaterialType(text)
+    if (materialType) params.material_type = materialType
+  } else if (code === 'open_mrp_exceptions') {
+    if (severity) params.severity = severity[1]
+  } else if (code === 'customer_credit_status') {
+    const customer = aiCustomerId(text)
+    if (customer) params.customer_id = customer
+    if (!params.customer_id) aiFail(422, 'AI_PARAM_INVALID', '缺少必填参数 customer_id')
+  } else if (code === 'ar_overdue') {
+    const overdue = AI_OVERDUE_RE.exec(text)
+    if (overdue) params.days_overdue = Number(overdue[1])
+    const customer = aiCustomerId(text)
+    if (customer) params.customer_id = customer
+    if (order && order[1] === 'INV') params.invoice_number = order[0]
+  } else if (code === 'open_nonconformance') {
+    if (severity) params.severity = severity[1]
+  }
+
+  if (code === 'material_below_safety' && params.material_type
+    && !AI_MATERIAL_TYPES.has(params.material_type)) {
+    aiFail(422, 'AI_PARAM_INVALID', `SHACL 校验失败: material_type:InConstraintComponent`)
+  }
+  if (topN && 'limit' in params) params.limit = Number(topN[1])
+  return { code, params }
+}
+
+function aiVisibleColumns(code: string, columns: string[], role: string): string[] {
+  if (AI_FULL_AMOUNT_ROLES.has(role)) return columns
+  const safe = AI_SAFE_COLUMNS[code]
+  if (!safe) return columns
+  return columns.filter((column) => !AI_AMOUNT_COLUMNS.has(column) && safe.includes(column))
+}
+
+function aiKitting(db: MockDb, params: Record<string, any>) {
+  const rows = activeRows(db, 'kittingResults')
+    .filter((item) => item.kit_status === params.kit_status)
+    .filter((item) => !params.source_ref || item.source_ref === params.source_ref)
+    .sort((a, b) => String(b.checked_at ?? '').localeCompare(String(a.checked_at ?? '')))
+    .slice(0, params.limit)
+    .map((item) => ({
+      result_number: item.result_number,
+      source_ref: item.source_ref,
+      material_code: item.material_code,
+      kit_status: item.kit_status,
+      shortage_qty: toNumber(item.shortage_qty),
+      checked_at: item.checked_at ?? null,
+    }))
+  return {
+    columns: ['result_number', 'source_ref', 'material_code', 'kit_status', 'shortage_qty', 'checked_at'],
+    rows,
+    table: 'kitting_results',
+    recordKeys: rows.map((row) => row.result_number),
+    ontologyClass: 'KittingResult',
+  }
+}
+
+function aiMaterial(db: MockDb, params: Record<string, any>) {
+  const rows = activeRows(db, 'materials')
+    .filter((item) => toNumber(item.current_stock) < toNumber(item.safety_stock))
+    .filter((item) => !params.material_type || item.material_type === params.material_type)
+    .sort((a, b) => (toNumber(b.safety_stock) - toNumber(b.current_stock))
+      - (toNumber(a.safety_stock) - toNumber(a.current_stock)))
+    .slice(0, params.limit)
+    .map((item) => ({
+      material_code: item.material_code,
+      material_name: item.material_name,
+      material_type: item.material_type,
+      current_stock: toNumber(item.current_stock),
+      safety_stock: toNumber(item.safety_stock),
+      shortage: toNumber(item.safety_stock) - toNumber(item.current_stock),
+    }))
+  return {
+    columns: ['material_code', 'material_name', 'material_type', 'current_stock', 'safety_stock', 'shortage'],
+    rows,
+    table: 'materials',
+    recordKeys: rows.map((row) => row.material_code),
+    ontologyClass: 'Material',
+  }
+}
+
+function aiOrderDelay(db: MockDb, params: Record<string, any>) {
+  const now = Date.now()
+  const deadline = now + Number(params.within_days) * 24 * 3600 * 1000
+  const orders = activeRows(db, 'salesOrders')
+    .filter((item) => ['APPROVED', 'IN_PRODUCTION'].includes(item.status))
+    .filter((item) => !params.customer_id || item.customer_id === params.customer_id)
+    .filter((item) => {
+      const due = new Date(item.delivery_date).getTime()
+      return Number.isFinite(due) && due >= now && due <= deadline
+    })
+    .sort((a, b) => String(a.delivery_date).localeCompare(String(b.delivery_date)))
+    .slice(0, 200)
+  const unfinished = activeRows(db, 'productionOrders').filter((item) => !item.actual_finish_date)
+  const rows: Array<Record<string, any>> = []
+  for (const order of orders) {
+    const related = unfinished.filter((item) => item.sales_order_number === order.order_number)
+    let riskReason = ''
+    if (related.length === 0) riskReason = '无生产订单'
+    else if (related.some((item) => !item.planned_finish_date
+      || new Date(item.planned_finish_date) > new Date(order.delivery_date))) {
+      riskReason = '计划完工晚于交付日'
+    } else continue
+    rows.push({
+      order_number: order.order_number,
+      customer_id: order.customer_id,
+      material_code: order.material_code,
+      quantity: toNumber(order.quantity),
+      delivery_date: order.delivery_date,
+      order_status: order.status,
+      risk_reason: riskReason,
+    })
+  }
+  return {
+    columns: [
+      'order_number', 'customer_id', 'material_code', 'quantity',
+      'delivery_date', 'order_status', 'risk_reason',
+    ],
+    rows,
+    table: 'sales_orders',
+    recordKeys: rows.map((row) => row.order_number),
+    ontologyClass: 'SalesOrder',
+  }
+}
+
+function aiMrpExceptions(db: MockDb, params: Record<string, any>) {
+  const rows = activeRows(db, 'mrpExceptions')
+    .filter((item) => item.resolution_status === params.resolution_status)
+    .filter((item) => !params.severity || item.severity === params.severity)
+    .filter((item) => !params.exception_type || item.exception_type === params.exception_type)
+    .sort((a, b) => toNumber(b.shortage_qty) - toNumber(a.shortage_qty))
+    .slice(0, params.limit)
+    .map((item) => ({
+      id: item.id,
+      run_number: item.run_number,
+      exception_type: item.exception_type,
+      severity: item.severity,
+      material_code: item.material_code,
+      shortage_qty: toNumber(item.shortage_qty),
+      shortage_date: item.shortage_date ?? null,
+      suggestion: item.suggestion,
+      resolution_status: item.resolution_status,
+    }))
+  return {
+    columns: [
+      'id', 'run_number', 'exception_type', 'severity', 'material_code',
+      'shortage_qty', 'shortage_date', 'suggestion', 'resolution_status',
+    ],
+    rows,
+    table: 'mrp_exceptions',
+    recordKeys: rows.map((row) => String(row.id)),
+    ontologyClass: 'MrpException',
+  }
+}
+
+function aiCredit(db: MockDb, params: Record<string, any>) {
+  const columns = [
+    'customer_id', 'customer_name', 'credit_limit', 'ar_balance',
+    'open_order_amount', 'open_order_count', 'credit_usage_ratio',
+  ]
+  const customer = activeRows(db, 'customers')
+    .find((item) => item.customer_id === params.customer_id)
+  if (!customer) {
+    return {
+      columns, rows: [], table: 'customers', recordKeys: [], ontologyClass: 'Customer',
+      answer: `未找到客户 ${params.customer_id} 的信用记录。`,
+    }
+  }
+  const arBalance = activeRows(db, 'receivableEntries')
+    .filter((item) => item.customer_id === params.customer_id)
+    .reduce((sum, item) => sum + toNumber(item.amount), 0)
+  const openOrders = activeRows(db, 'salesOrders')
+    .filter((item) => item.customer_id === params.customer_id)
+    .filter((item) => ['APPROVED', 'IN_PRODUCTION'].includes(item.status))
+  const openAmount = openOrders.reduce((sum, item) => sum + toNumber(item.total_amount), 0)
+  const creditLimit = toNumber(customer.credit_limit)
+  const ratio = creditLimit > 0 ? round((arBalance + openAmount) / creditLimit, 4) : null
+  const row = {
+    customer_id: customer.customer_id,
+    customer_name: customer.legal_name,
+    credit_limit: creditLimit,
+    ar_balance: arBalance,
+    open_order_amount: openAmount,
+    open_order_count: openOrders.length,
+    credit_usage_ratio: ratio,
+  }
+  return {
+    columns, rows: [row], table: 'customers', recordKeys: [customer.customer_id],
+    ontologyClass: 'Customer', answer: '',
+  }
+}
+
+function aiArOverdue(db: MockDb, params: Record<string, any>) {
+  const now = Date.now()
+  const cutoff = now - Number(params.days_overdue) * 24 * 3600 * 1000
+  const rows = activeRows(db, 'salesInvoices')
+    .filter((item) => ['ISSUED', 'PARTIALLY_PAID'].includes(item.status))
+    .filter((item) => toNumber(item.received_amount) < toNumber(item.amount))
+    .filter((item) => toNumber(item.amount) > 0)
+    .filter((item) => new Date(item.due_date).getTime() < cutoff)
+    .filter((item) => !params.customer_id || item.customer_id === params.customer_id)
+    .filter((item) => !params.invoice_number || item.invoice_number === params.invoice_number)
+    .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
+    .slice(0, 200)
+    .map((item) => {
+      const amount = toNumber(item.amount)
+      const received = toNumber(item.received_amount)
+      return {
+        invoice_number: item.invoice_number,
+        customer_id: item.customer_id,
+        customer_name: item.customer_name,
+        status: item.status,
+        due_date: item.due_date,
+        amount,
+        received_amount: received,
+        outstanding: amount - received,
+        days_overdue: Math.floor((now - new Date(item.due_date).getTime()) / (24 * 3600 * 1000)),
+      }
+    })
+  return {
+    columns: [
+      'invoice_number', 'customer_id', 'customer_name', 'status', 'due_date',
+      'amount', 'received_amount', 'outstanding', 'days_overdue',
+    ],
+    rows,
+    table: 'sales_invoices',
+    recordKeys: rows.map((row) => row.invoice_number),
+    ontologyClass: 'SalesInvoice',
+  }
+}
+
+function aiNonconformance(db: MockDb, params: Record<string, any>) {
+  const defaultStatuses = ['OPEN', 'UNDER_REVIEW', 'DISPOSITIONED']
+  const rows = activeRows(db, 'nonConformanceReports')
+    .filter((item) => (params.status ? item.status === params.status : defaultStatuses.includes(item.status)))
+    .filter((item) => !params.severity || item.severity === params.severity)
+    .sort((a, b) => toNumber(b.id) - toNumber(a.id))
+    .slice(0, params.limit)
+    .map((item) => ({
+      ncr_number: item.ncr_number,
+      material_code: item.material_code,
+      source_ref: item.source_ref,
+      severity: item.severity,
+      status: item.status,
+      quantity: toNumber(item.quantity),
+      disposition: item.disposition,
+      created_at: item.created_at ?? null,
+    }))
+  return {
+    columns: [
+      'ncr_number', 'material_code', 'source_ref', 'severity',
+      'status', 'quantity', 'disposition', 'created_at',
+    ],
+    rows,
+    table: 'non_conformance_reports',
+    recordKeys: rows.map((row) => row.ncr_number),
+    ontologyClass: 'NonConformanceReport',
+  }
+}
+
+/* MES 工单进度 mock：字段与后端 mes_client.COLUMNS 完全一致，供页面同构渲染 */
+const AI_MES_COLUMNS = [
+  'work_order_no', 'product_name', 'order_status', 'order_quantity',
+  'order_completed_quantity', 'order_qualified_quantity', 'order_scrapped_quantity',
+  'planned_start_date', 'planned_end_date',
+  'process_task_id', 'process_name', 'task_sequence', 'task_status', 'equipment_id',
+  'task_completed_quantity', 'task_qualified_quantity', 'task_scrapped_quantity',
+  'report_id', 'report_time', 'report_completed_quantity',
+  'report_qualified_quantity', 'report_scrapped_quantity', 'defect_reason',
+  'actual_hours', 'row_key',
+]
+
+const AI_MES_FIXTURES: Record<string, {
+  order: Record<string, any>
+  tasks: Array<Record<string, any>>
+  reports: Array<Record<string, any>>
+}> = {
+  'GD-20260914-00001': {
+    order: {
+      id: 1,
+      work_order_no: 'GD-20260914-00001',
+      product_name: '高频PCB板',
+      quantity: 100,
+      completed_quantity: 60,
+      qualified_quantity: 58,
+      scrapped_quantity: 2,
+      status: 'IN_PRODUCTION',
+      planned_start_date: '2026-09-14 08:00:00',
+      planned_end_date: '2026-09-15 18:00:00',
+    },
+    tasks: [
+      {
+        id: 11, process_id: 101, process_name: 'SMT贴片', sequence: 1,
+        status: 'COMPLETED', equipment_id: 5,
+        planned_start_date: '2026-09-14 08:00:00', planned_end_date: '2026-09-14 12:00:00',
+        actual_start_date: '2026-09-14 09:00:00', actual_end_date: '2026-09-14 11:00:00',
+        completed_quantity: 40, qualified_quantity: 39, scrapped_quantity: 1,
+      },
+      {
+        id: 12, process_id: 102, process_name: '组装', sequence: 2,
+        status: 'PENDING', equipment_id: null,
+        planned_start_date: '2026-09-14 13:00:00', planned_end_date: '2026-09-15 18:00:00',
+        actual_start_date: null, actual_end_date: null,
+        completed_quantity: 0, qualified_quantity: 0, scrapped_quantity: 0,
+      },
+    ],
+    reports: [
+      {
+        id: 111, process_task_id: 11, process_id: 101, process_name: 'SMT贴片',
+        report_time: '2026-09-14 11:30:00',
+        completed_quantity: 40, qualified_quantity: 39, scrapped_quantity: 1,
+        defect_reason: '虚焊', actual_hours: 2.5,
+      },
+    ],
+  },
+}
+
+function aiMesBaseRow(order: Record<string, any>, rowKey: string): Record<string, any> {
+  return {
+    work_order_no: order.work_order_no,
+    product_name: order.product_name,
+    order_status: order.status,
+    order_quantity: toNumber(order.quantity),
+    order_completed_quantity: toNumber(order.completed_quantity),
+    order_qualified_quantity: toNumber(order.qualified_quantity),
+    order_scrapped_quantity: toNumber(order.scrapped_quantity),
+    planned_start_date: order.planned_start_date ?? null,
+    planned_end_date: order.planned_end_date ?? null,
+    process_task_id: null,
+    process_name: null,
+    task_sequence: null,
+    task_status: null,
+    equipment_id: null,
+    task_completed_quantity: null,
+    task_qualified_quantity: null,
+    task_scrapped_quantity: null,
+    report_id: null,
+    report_time: null,
+    report_completed_quantity: null,
+    report_qualified_quantity: null,
+    report_scrapped_quantity: null,
+    defect_reason: null,
+    actual_hours: null,
+    row_key: rowKey,
+  }
+}
+
+function aiMesProgress(params: Record<string, any>) {
+  const columns = [...AI_MES_COLUMNS]
+  if (!aiMesEnabled) aiFail(503, 'AI_MES_UNAVAILABLE', 'MES 只读查询未启用或暂时不可用')
+
+  const orderNo = String(params.work_order_no ?? '')
+  const fixture = AI_MES_FIXTURES[orderNo]
+  if (!fixture) {
+    return {
+      columns, rows: [], sources: [], table: 'prd_work_order', recordKeys: [],
+      ontologyClass: 'ProductionOrder', reason: 'work_order_not_found',
+      answer: '未找到该工单，请确认工单号是否正确，或该工单尚未同步到 MES。',
+    }
+  }
+
+  const order = fixture.order
+  if (fixture.tasks.length === 0) {
+    return {
+      columns,
+      rows: [aiMesBaseRow(order, `work_order:${order.id}`)],
+      sources: [{
+        table: 'prd_work_order', record_ref: String(order.id),
+        ontology_class: `${AI_NS}ProductionOrder`, source_system: 'MES',
+      }],
+      table: 'prd_work_order', recordKeys: [String(order.id)],
+      ontologyClass: 'ProductionOrder', reason: 'work_order_no_tasks',
+      answer: `工单 ${orderNo} 存在，但当前没有工序任务或报工记录。`,
+    }
+  }
+
+  const tasks = [...fixture.tasks].sort((a, b) => toNumber(a.sequence) - toNumber(b.sequence))
+  const reports = [...fixture.reports]
+    .sort((a, b) => String(a.report_time ?? '').localeCompare(String(b.report_time ?? '')))
+  const limit = Number(params.limit ?? 200)
+  const rows: Array<Record<string, any>> = []
+  const sources: Array<Record<string, any>> = []
+
+  for (const task of tasks) {
+    if (rows.length >= limit) break
+    const taskReports = reports.filter((item) => item.process_task_id === task.id)
+    const taskFields = {
+      process_task_id: task.id,
+      process_name: task.process_name,
+      task_sequence: task.sequence,
+      task_status: task.status,
+      equipment_id: task.equipment_id ?? null,
+      task_completed_quantity: toNumber(task.completed_quantity),
+      task_qualified_quantity: toNumber(task.qualified_quantity),
+      task_scrapped_quantity: toNumber(task.scrapped_quantity),
+    }
+    if (taskReports.length === 0) {
+      rows.push(Object.assign(aiMesBaseRow(order, `task:${task.id}`), taskFields))
+      sources.push({
+        table: 'prd_process_task', record_ref: String(task.id),
+        ontology_class: `${AI_NS}ScheduledOperation`, source_system: 'MES',
+      })
+      continue
+    }
+    for (const report of taskReports) {
+      if (rows.length >= limit) break
+      rows.push(Object.assign(aiMesBaseRow(order, `report:${report.id}`), taskFields, {
+        report_id: report.id,
+        report_time: report.report_time,
+        report_completed_quantity: toNumber(report.completed_quantity),
+        report_qualified_quantity: toNumber(report.qualified_quantity),
+        report_scrapped_quantity: toNumber(report.scrapped_quantity),
+        defect_reason: report.defect_reason ?? null,
+        actual_hours: toNumber(report.actual_hours),
+      }))
+      sources.push({
+        table: 'prd_process_report', record_ref: String(report.id),
+        ontology_class: `${AI_NS}ScheduledOperation`, source_system: 'MES',
+      })
+    }
+  }
+
+  const noReport = new Set(
+    rows.filter((row) => row.process_task_id != null && row.report_id == null)
+      .map((row) => row.process_task_id),
+  ).size
+  const answer = `共 ${rows.length} 条结果${noReport ? `，其中 ${noReport} 道工序尚无报工记录` : ''}。`
+  return {
+    columns, rows, sources, table: 'prd_process_report', recordKeys: [],
+    ontologyClass: 'ScheduledOperation', answer, reason: null,
+  }
+}
+
+function aiBuild(code: string, db: MockDb, params: Record<string, any>): any {
+  if (code === 'mes_work_order_progress') return aiMesProgress(params)
+  if (code === 'kitting_shortage') return aiKitting(db, params)
+  if (code === 'material_below_safety') return aiMaterial(db, params)
+  if (code === 'order_delay_risk') return aiOrderDelay(db, params)
+  if (code === 'open_mrp_exceptions') return aiMrpExceptions(db, params)
+  if (code === 'customer_credit_status') return aiCredit(db, params)
+  if (code === 'ar_overdue') return aiArOverdue(db, params)
+  return aiNonconformance(db, params)
+}
+
+route('GET', '/ai/ping', (ctx) => {
+  requireUser(ctx)
+  return ok({
+    ok: true, ai_enabled: true, chatbi_enabled: true, mes_query_enabled: aiMesEnabled,
+  })
+})
+
+route('POST', '/ai/chat', (ctx) => {
+  const user = requireUser(ctx)
+  const question = String(ctx.body?.question ?? '')
+  const { code, params } = aiResolve(question)
+  const meta = aiMeta(code)
+  if (!meta.roles.includes(user.role)) {
+    aiFail(403, 'AI_PERMISSION_DENIED', `角色 ${user.role} 无权执行意图 ${code}`)
+  }
+  const built = aiBuild(code, getDb(), params)
+  const columns = aiVisibleColumns(code, built.columns, user.role)
+  const rows = built.rows.map((row: Record<string, any>) => {
+    const visible: Record<string, any> = {}
+    for (const column of columns) visible[column] = row[column]
+    return visible
+  })
+  const traceId = aiTraceId()
+  const answer = built.answer
+    || (rows.length === 0 ? '未找到符合条件的结果。' : `共 ${rows.length} 条结果。`)
+  const provenance = built.sources
+    ? built.sources.slice(0, rows.length)
+    : rows.map((_row: Record<string, any>, index: number) => ({
+      table: built.table,
+      record_ref: built.recordKeys[index],
+      ontology_class: `${AI_NS}${built.ontologyClass}`,
+      source_system: 'ERP',
+    }))
+  const response = {
+    trace_id: traceId,
+    request_id: null,
+    intent: { code, label: meta.label, params },
+    answer,
+    data: {
+      columns, rows, row_count: rows.length, reason: built.reason ?? null,
+    },
+    provenance,
+    limits: {
+      row_count: rows.length,
+      truncated: false,
+      shacl: meta.shacl_coverage === 'none' ? 'skipped' : 'passed',
+      coverage: meta.shacl_coverage,
+      timeout_seconds: 10,
+      max_rows: 200,
+      elapsed_ms: 0,
+    },
+    model: 'deterministic-v1',
+  }
+  aiLogs.unshift({
+    trace_id: traceId,
+    request_id: null,
+    username: user.username,
+    role: user.role,
+    question,
+    intent_code: code,
+    intent: params,
+    status: 'OK',
+    error_code: null,
+    shacl_status: 'passed',
+    row_count: rows.length,
+    latency_ms: 0,
+    model: 'deterministic-v1',
+    provenance: response.provenance,
+    feedback_score: null,
+    feedback_comment: null,
+    created_at: nowIso(),
+  })
+  return ok(response)
+})
+
+route('GET', '/ai/queries', (ctx) => {
+  const user = requireUser(ctx)
+  const page = Math.max(1, Number(ctx.query.page ?? 1) || 1)
+  const pageSize = Math.min(100, Math.max(1, Number(ctx.query.page_size ?? 20) || 20))
+  const visible = user.role === 'ADMIN'
+    ? aiLogs
+    : aiLogs.filter((item) => item.username === user.username)
+  return ok({
+    items: clone(visible.slice((page - 1) * pageSize, page * pageSize)),
+    total: visible.length,
+    page,
+    page_size: pageSize,
+  })
+})
+
+route('POST', '/ai/queries/:traceId/feedback', (ctx, params) => {
+  const user = requireUser(ctx)
+  const score = ctx.body?.score
+  if (typeof score !== 'number' || ![-1, 0, 1].includes(score)) {
+    aiFail(422, 'AI_PARAM_INVALID', 'score 必须为 -1 / 0 / 1')
+  }
+  const log = aiLogs.find((item) => item.trace_id === params.traceId)
+  if (!log) {
+    throw new MockApiError(404, {
+      code: 'NOT_FOUND', message: `问答记录不存在: ${params.traceId}`, trace_id: params.traceId,
+    })
+  }
+  if (user.role !== 'ADMIN' && log.username !== user.username) {
+    aiFail(403, 'AI_PERMISSION_DENIED', '只能反馈本人的问答记录')
+  }
+  log.feedback_score = score
+  log.feedback_comment = ctx.body?.comment ?? null
+  return ok({
+    trace_id: params.traceId,
+    feedback_score: score,
+    feedback_comment: log.feedback_comment,
+  })
+})
+
+route('GET', '/ai/ontology/entities', (ctx) => {
+  requireUser(ctx)
+  return ok({
+    total: AI_INTENTS.length,
+    items: AI_INTENTS.map((item) => ({
+      name: item.primary_entity,
+      label: item.label,
+      entities: [item.primary_entity],
+      downlink: item.downlink,
+    })),
+  })
+})
+
+/* ── A4 异常解读（与 backend/services/ai/insights.py 同构） ── */
+const INSIGHT_METRIC_META: Record<string, { drilldown: string; kind: string }> = {
+  'equipment.oee': { drilldown: '/dashboard/management', kind: 'ratio' },
+  'quality.first_pass_rate': { drilldown: '/dashboard/management', kind: 'ratio' },
+  'production.completion_rate': { drilldown: '/dashboard/production', kind: 'ratio' },
+  'production.delayed_orders': { drilldown: '/dashboard/production-progress', kind: 'count' },
+  'progress.avg_completion_rate': { drilldown: '/dashboard/production-progress', kind: 'ratio' },
+  'finance.collection_rate': { drilldown: '/dashboard/finance', kind: 'ratio' },
+  'finance.payable_open': { drilldown: '/dashboard/finance', kind: 'amount' },
+  'sales.open_orders': { drilldown: '/dashboard/sales', kind: 'count' },
+  'sales.amount_open': { drilldown: '/dashboard/sales', kind: 'amount' },
+  'delivery.delayed_sales_orders': { drilldown: '/dashboard/sales', kind: 'count' },
+  'cost.variance_total': { drilldown: '/dashboard/management', kind: 'amount' },
+  'mrp_exception.shortage_qty': { drilldown: '/pp/planning-exceptions', kind: 'qty' },
+}
+const INSIGHT_MASKED_SUGGESTION: Record<string, string> = {
+  'finance.payable_open': '应付余额超过预警阈值，请注意资金安排',
+  'sales.amount_open': '在手订单金额低于预警阈值，需拓展商机',
+  'cost.variance_total': '存在成本差异，金额已按角色裁剪',
+}
+const INSIGHT_SEVERITY_WEIGHT: Record<string, number> = { CRITICAL: 2, WARNING: 1, INFO: 0 }
+const INSIGHT_SCOPE_ORDER: Record<string, number> = {
+  MANAGEMENT: 0, PRODUCTION: 1, PROGRESS: 2, FINANCE: 3, SALES: 4, PLANNING: 5, HOME: 6,
+}
+const INSIGHT_LABELS = ENUM_LABELS as unknown as Record<string, Record<string, string>>
+const INSIGHT_MAX_EVIDENCE = 5
+const INSIGHT_MAX_MRP_ALERTS = 20
+
+function insightKind(metric: string): string {
+  return INSIGHT_METRIC_META[metric]?.kind ?? 'count'
+}
+
+function insightFormatValue(metric: string, value: number | null): string {
+  if (value === null || value === undefined) return '—'
+  const kind = insightKind(metric)
+  if (kind === 'ratio') return `${Math.round(value * 100)}%`
+  if (kind === 'amount' || kind === 'qty') return value.toFixed(2)
+  return String(Math.round(value))
+}
+
+function insightDeviationText(metric: string, deviation: number | null): string {
+  if (deviation === null || deviation === undefined) return '金额类指标已按角色裁剪'
+  if (deviation === 0) return '与阈值持平'
+  const direction = deviation < 0 ? '低于' : '高于'
+  const kind = insightKind(metric)
+  if (kind === 'ratio') return `${direction}阈值 ${(Math.abs(deviation) * 100).toFixed(1)} 个百分点`
+  if (kind === 'amount') return `${direction}阈值 ${Math.abs(deviation).toFixed(2)}`
+  return `${direction}阈值 ${Math.abs(deviation).toFixed(0)}`
+}
+
+function insightEvidence(items: any[], table: string, refField: string): any[] {
+  return items.map((item) => ({
+    table,
+    record_ref: String(item[refField] ?? item.id),
+    label: String(item[refField] ?? item.id),
+  }))
+}
+
+function insightEvidenceFor(
+  db: any,
+  metric: string,
+  overview: any,
+  progress: any,
+  threshold: number
+): { items: any[]; total: number } {
+  const now = new Date()
+  let items: any[] = []
+  if (metric === 'equipment.oee') {
+    items = [
+      ...overview.equipment.work_centers
+        .filter((wc: any) => toNumber(wc.oee) < threshold)
+        .map((wc: any) => ({ table: 'work_centers', record_ref: String(wc.work_center_id), label: String(wc.work_center_id) })),
+      ...insightEvidence(activeRows(db, 'equipmentFailures').filter((f: any) => f.status === 'OPEN'), 'equipment_failures', 'failure_number'),
+    ]
+  } else if (metric === 'quality.first_pass_rate') {
+    items = insightEvidence(
+      activeRows(db, 'nonConformanceReports').filter((n: any) => NCR_OPEN_STATUSES.includes(String(n.status))),
+      'non_conformance_reports', 'ncr_number'
+    )
+  } else if (metric === 'production.completion_rate') {
+    items = insightEvidence(
+      activeRows(db, 'productionOrders').filter((o: any) => PRODUCTION_OPEN_STATUSES.includes(String(o.status))),
+      'production_orders', 'order_number'
+    )
+  } else if (metric === 'production.delayed_orders') {
+    items = insightEvidence(
+      activeRows(db, 'productionOrders').filter((o: any) =>
+        PRODUCTION_OPEN_STATUSES.includes(String(o.status)) &&
+        o.planned_finish_date && new Date(o.planned_finish_date) < now),
+      'production_orders', 'order_number'
+    )
+  } else if (metric === 'delivery.delayed_sales_orders') {
+    items = insightEvidence(
+      activeRows(db, 'salesOrders').filter((o: any) =>
+        SALES_OPEN_STATUSES.includes(String(o.status)) &&
+        o.delivery_date && new Date(o.delivery_date) < now),
+      'sales_orders', 'order_number'
+    )
+  } else if (metric === 'sales.open_orders' || metric === 'sales.amount_open') {
+    items = insightEvidence(
+      activeRows(db, 'salesOrders').filter((o: any) => SALES_OPEN_STATUSES.includes(String(o.status))),
+      'sales_orders', 'order_number'
+    )
+  } else if (metric === 'finance.collection_rate') {
+    items = insightEvidence(
+      activeRows(db, 'salesInvoices').filter((i: any) =>
+        ['ISSUED', 'PARTIALLY_PAID'].includes(String(i.status)) &&
+        toNumber(i.amount) - toNumber(i.received_amount) > 0),
+      'sales_invoices', 'invoice_number'
+    )
+  } else if (metric === 'finance.payable_open') {
+    items = insightEvidence(
+      activeRows(db, 'supplierInvoices').filter((i: any) => i.status === 'CONFIRMED'),
+      'supplier_invoices', 'invoice_number'
+    )
+  } else if (metric === 'progress.avg_completion_rate') {
+    items = progress.rows
+      .filter((row: any) => toNumber(row.completion_rate) < threshold)
+      .map((row: any) => ({
+        table: 'production_progress',
+        record_ref: `${row.production_order_number}-${row.operation_no}`,
+        label: `${row.production_order_number}-${row.operation_no}`,
+      }))
+  }
+  return { items: items.slice(0, INSIGHT_MAX_EVIDENCE), total: items.length }
+}
+
+function insightAttribution(metric: string, overview: any, total: number): string {
+  if (metric === 'equipment.oee') {
+    const centers = overview.equipment.work_centers ?? []
+    const worst = centers.reduce((min: any, wc: any) => (min == null || wc.oee < min.oee ? wc : min), null as any)
+    return worst
+      ? `最差工作中心 ${worst.work_center_id} 的 OEE 为 ${Math.round(toNumber(worst.oee) * 100)}%，停机 ${toNumber(worst.downtime_hours).toFixed(1)}h`
+      : '设备效率整体偏低'
+  }
+  if (metric === 'quality.first_pass_rate') {
+    return `${overview.quality.ncrs_open} 张未关闭不合格品，其中 ${overview.quality.ncrs_equipment} 张判定为设备原因`
+  }
+  if (metric === 'production.completion_rate') return `${overview.production.open_orders} 张在制工单待完成`
+  if (metric === 'production.delayed_orders') return `${total} 张工单已过计划完工日`
+  if (metric === 'delivery.delayed_sales_orders') return `${total} 张销售订单已过承诺交期`
+  if (metric === 'finance.collection_rate') return `${total} 张销售发票尚未收清`
+  if (metric === 'finance.payable_open') return `${total} 张已确认采购发票待付款`
+  if (metric === 'progress.avg_completion_rate') return `${total} 道工序完成率偏低`
+  if (metric === 'sales.open_orders') return `${total} 张销售订单尚未关闭`
+  if (metric === 'sales.amount_open') return `${total} 张未关闭销售订单在手`
+  if (metric === 'cost.variance_total') return '存在成本差异'
+  return ''
+}
+
+function mockDashboardInsights(db: any, window: string, role: string): any {
+  const overview = mockManagementOverview(db)
+  const finance = mockFinanceKpi(db)
+  const rows = mockProgressRows(db, '')
+  const progress = {
+    operations: rows.length,
+    avg_completion_rate: rows.length
+      ? round(rows.reduce((sum: number, row: any) => sum + toNumber(row.completion_rate), 0) / rows.length, 4)
+      : 0,
+    rows,
+  }
+
+  const scopes: Array<[string, any]> = [
+    ['MANAGEMENT', overview],
+    ['PRODUCTION', overview],
+    ['PROGRESS', { progress }],
+    ['FINANCE', { finance }],
+    ['SALES', { sales: overview.sales }],
+    ['HOME', { ...overview, finance }],
+  ]
+  const seen = new Set<string>()
+  const raw: any[] = []
+  for (const [scope, data] of scopes) {
+    for (const alert of mockAlerts(db, scope, data)) {
+      if (seen.has(alert.metric)) continue
+      seen.add(alert.metric)
+      raw.push(alert)
+    }
+  }
+
+  const amountVisible = AI_FULL_AMOUNT_ROLES.has(role)
+  const alerts: any[] = []
+  for (const alert of raw) {
+    const evidence = insightEvidenceFor(db, alert.metric, overview, progress, toNumber(alert.threshold))
+    if (evidence.total === 0) continue
+    const amountMasked = insightKind(alert.metric) === 'amount' && !amountVisible
+    const current = amountMasked ? null : round(toNumber(alert.actual), 4)
+    const threshold = amountMasked ? null : round(toNumber(alert.threshold), 4)
+    const deviation = current === null || threshold === null ? null : round(current - threshold, 4)
+    alerts.push({
+      code: alert.code,
+      title: alert.name,
+      severity: alert.level,
+      scope: alert.scope,
+      metric: alert.metric,
+      value_kind: insightKind(alert.metric),
+      current_value: current,
+      threshold,
+      operator: 'GT',
+      deviation,
+      deviation_text: insightDeviationText(alert.metric, deviation),
+      evidence: evidence.items,
+      evidence_total: evidence.total,
+      drilldown: INSIGHT_METRIC_META[alert.metric]?.drilldown ?? null,
+      attribution: insightAttribution(alert.metric, overview, evidence.total),
+      suggestion: amountMasked
+        ? (INSIGHT_MASKED_SUGGESTION[alert.metric] ?? '金额类指标已按角色裁剪')
+        : alert.message,
+      amount_masked: amountMasked,
+    })
+  }
+
+  let mrpTotal = 0
+  if (aiMeta('open_mrp_exceptions').roles.includes(role)) {
+    const cutoff = Date.now() - (window === '7d' ? 7 : 30) * 86400000
+    const rows2 = activeRows(db, 'mrpExceptions')
+      .filter((row: any) => row.resolution_status === 'OPEN')
+      .filter((row: any) => !row.shortage_date || new Date(row.shortage_date).getTime() >= cutoff)
+      .sort((a: any, b: any) => toNumber(b.shortage_qty) - toNumber(a.shortage_qty))
+    mrpTotal = rows2.length
+    for (const row of rows2.slice(0, INSIGHT_MAX_MRP_ALERTS)) {
+      const quantity = round(toNumber(row.shortage_qty), 2)
+      const material = row.material_code ?? '-'
+      const exceptionLabel = INSIGHT_LABELS.MrpExceptionType?.[row.exception_type] ?? '未知'
+      alerts.push({
+        code: `MRP-${row.id}`,
+        title: `MRP 异常：${exceptionLabel}`,
+        severity: INSIGHT_LABELS.ExceptionSeverity?.[row.severity] ? row.severity : 'INFO',
+        scope: 'PLANNING',
+        metric: 'mrp_exception.shortage_qty',
+        value_kind: 'qty',
+        current_value: quantity,
+        threshold: 0,
+        operator: 'GT',
+        deviation: quantity,
+        deviation_text: `高于阈值 ${quantity.toFixed(2)}`,
+        evidence: [{ table: 'mrp_exceptions', record_ref: String(row.id), label: material }],
+        evidence_total: 1,
+        drilldown: '/pp/planning-exceptions',
+        attribution: `${exceptionLabel} 物料 ${material} 缺口 ${quantity.toFixed(2)}`,
+        suggestion: row.suggestion ?? '请检查 MRP 运行结果并处理缺口',
+        amount_masked: false,
+      })
+    }
+  }
+
+  alerts.sort((a: any, b: any) =>
+    (INSIGHT_SEVERITY_WEIGHT[b.severity] ?? 0) - (INSIGHT_SEVERITY_WEIGHT[a.severity] ?? 0) ||
+    (INSIGHT_SCOPE_ORDER[a.scope] ?? 9) - (INSIGHT_SCOPE_ORDER[b.scope] ?? 9) ||
+    String(a.code).localeCompare(String(b.code))
+  )
+
+  const summary = {
+    total: alerts.length,
+    critical: alerts.filter((item) => item.severity === 'CRITICAL').length,
+    warning: alerts.filter((item) => item.severity === 'WARNING').length,
+    info: alerts.filter((item) => item.severity === 'INFO').length,
+    truncated: mrpTotal > INSIGHT_MAX_MRP_ALERTS,
+  }
+  const days = window === '7d' ? 7 : 30
+  let narrative: string
+  if (alerts.length === 0) {
+    narrative = `近 ${days} 天未发现需要关注的异常。`
+  } else {
+    const lines = [
+      `近 ${days} 天共发现 ${summary.total} 项异常：严重 ${summary.critical} 项、警告 ${summary.warning} 项、提示 ${summary.info} 项。`,
+    ]
+    for (const alert of alerts) {
+      let line = `【${INSIGHT_LABELS.ExceptionSeverity?.[alert.severity] ?? '未知'}】${alert.title}：当前 ${insightFormatValue(alert.metric, alert.current_value)}，阈值 ${insightFormatValue(alert.metric, alert.threshold)}，${alert.deviation_text}，关联单据 ${alert.evidence_total} 张`
+      if (alert.attribution) line += `；${alert.attribution}`
+      if (alert.suggestion) line += `；建议：${alert.suggestion}`
+      lines.push(`${line}。`)
+    }
+    narrative = lines.join('')
+  }
+
+  return {
+    window,
+    generated_at: nowIso(),
+    summary,
+    alerts,
+    narrative,
+    narration_source: 'template',
+    model: 'deterministic-v1',
+  }
+}
+
+route('GET', '/ai/insights/dashboard', (ctx) => {
+  const user = requireUser(ctx)
+  const window = String(ctx.query.window ?? '7d')
+  if (!['7d', '30d'].includes(window)) {
+    aiFail(422, 'AI_PARAM_INVALID', 'window 仅支持 7d / 30d')
+  }
+  return ok(mockDashboardInsights(getDb(), window, user.role))
 })
 
 /* ------------------------------- 路由入口 ------------------------------- */
@@ -8030,7 +9052,7 @@ route('POST', '/finance/periods/:code/reopen', (_ctx, params) => {
 })
 
 export function handleMockRequest(ctx: MockContext): MockResult {
-  if (!ctx.path.startsWith('/auth/')) {
+  if (!ctx.path.startsWith('/auth/') && !ctx.path.startsWith('/ai/')) {
     enforceWritePermission(ctx)
     enforceReadPermission(ctx)
   }

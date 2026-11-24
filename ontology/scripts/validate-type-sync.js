@@ -122,6 +122,12 @@ const CONFIG = {
     { name: 'PeriodStatus', prop: 'periodStatus', shape: 'FiscalPeriodShape' },
     { name: 'ValuationDirection', prop: 'direction', shape: 'ValuationMoveShape' },
     { name: 'CostSourceType', prop: 'costSourceType', shape: 'ValuationMoveShape' },
+    // MES 跨库只读侧（mes-mapping.yaml）
+    { name: 'MesWorkOrderStatus', prop: 'mesOrderStatus', shape: 'MesWorkOrderShape' },
+    { name: 'MesProcessTaskStatus', prop: 'mesTaskStatus', shape: 'MesProcessTaskShape' },
+    // AI 问答审计（ai_query_logs）
+    { name: 'AiQueryStatus', prop: 'status', shape: 'AiQueryLogShape' },
+    { name: 'AiShaclStatus', prop: 'shaclStatus', shape: 'AiQueryLogShape' },
   ],
   // 必须存在的 NodeShape 名 (Check4)
   REQUIRED_SHAPES: [
@@ -148,6 +154,8 @@ const CONFIG = {
     'DashboardRuleShape',
     'AccountShape', 'JournalEntryShape', 'JournalLineShape', 'FiscalPeriodShape',
     'InventoryValuationShape', 'ValuationMoveShape',
+    'MesWorkOrderShape', 'MesProcessTaskShape', 'MesProcessReportShape',
+    'AiQueryLogShape',
   ],
   // 业务数量基线: 类名 -> 期望实例数 (Check8; 0 表示不检查该项可删除)
   BASELINE: {
@@ -216,6 +224,35 @@ for (const [name, values] of Object.entries(mappings.enumerations || {})) {
   } else {
     logErr(`${name}: MISMATCH - mappings [${mapValues.join(', ')}] vs types [${tsValues.join(', ')}]`);
   }
+}
+
+// ─── Check 1b: mappings.json labels ↔ generated/types.ts ENUM_LABELS ────
+console.log('\n[1b] Enum labels: mappings.json labels <-> generated/types.ts ENUM_LABELS');
+
+const labels = mappings.labels || {};
+const typesNormalized = typesContent.replace(/\r\n/g, '\n');
+let labelErrors = 0;
+for (const [name, mapping] of Object.entries(labels)) {
+  const codes = [...(mappings.enumerations[name] || [])].sort();
+  const keys = Object.keys(mapping).sort();
+  if (JSON.stringify(codes) !== JSON.stringify(keys)) {
+    logErr(`${name}: labels 键与枚举码不一致 - labels [${keys.join(', ')}] vs enums [${codes.join(', ')}]`);
+    labelErrors++;
+  }
+}
+const labelLines = ['export const ENUM_LABELS = {'];
+for (const [name, mapping] of Object.entries(labels)) {
+  labelLines.push(`  ${name}: {`);
+  for (const [code, label] of Object.entries(mapping)) labelLines.push(`    ${code}: '${label}',`);
+  labelLines.push('  },');
+}
+labelLines.push('} as const;');
+if (Object.keys(labels).length === 0) {
+  logErr('mappings.json labels 为空（AI 输出枚举必须有中文标签）');
+} else if (!typesNormalized.includes(labelLines.join('\n'))) {
+  logErr('generated/types.ts 的 ENUM_LABELS 与 mappings.json labels 不一致，请重新生成');
+} else if (labelErrors === 0) {
+  logOk(`ENUM_LABELS: [${Object.keys(labels).length}] enums 与 mappings.json 一致`);
 }
 
 // ─── Check 2: 关键枚举 ↔ shapes.ttl sh:in ───────────────────────────────

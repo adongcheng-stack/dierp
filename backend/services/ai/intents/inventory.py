@@ -10,7 +10,7 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "material_below_safety"
 
-ALLOWED_ROLES = frozenset({"WAREHOUSE", "PLANNER", "PRODUCTION", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"WAREHOUSE", "PLANNER", "PRODUCTION", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "material_code", "material_name", "material_type",
@@ -62,6 +62,7 @@ SPEC = IntentSpec(
     domains=["mm"],
     allowed_roles=ALLOWED_ROLES,
     output_fields={"*": list(ALL_COLUMNS)},
+    output_enums={"material_type": "MaterialType"},
     record_key=["material_code"],
     downlink="/mm/materials",
     shacl_coverage="full",

@@ -10,7 +10,7 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "open_mrp_exceptions"
 
-ALLOWED_ROLES = frozenset({"PLANNER", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"PLANNER", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "id", "run_number", "exception_type", "severity", "material_code",
@@ -76,6 +76,11 @@ SPEC = IntentSpec(
     domains=["planning"],
     allowed_roles=ALLOWED_ROLES,
     output_fields={"*": list(ALL_COLUMNS)},
+    output_enums={
+        "exception_type": "MrpExceptionType",
+        "severity": "ExceptionSeverity",
+        "resolution_status": "ResolutionStatus",
+    },
     record_key=["id"],
     downlink=None,          # 事件表无业务单号，只能定位到 MRP 运行批次
     shacl_coverage="full",

@@ -20,6 +20,7 @@ ERROR_HTTP_STATUS: Final[dict[str, int]] = {
     "AI_EXECUTION_FAILED": 500,
     "AI_PROVENANCE_INCOMPLETE": 500,
     "AI_RATE_LIMITED": 429,
+    "AI_MES_UNAVAILABLE": 503,
 }
 
 DEFAULT_MESSAGES: Final[dict[str, str]] = {
@@ -34,6 +35,7 @@ DEFAULT_MESSAGES: Final[dict[str, str]] = {
     "AI_EXECUTION_FAILED": "查询执行失败",
     "AI_PROVENANCE_INCOMPLETE": "溯源信息不完整，回答已拒绝",
     "AI_RATE_LIMITED": "请求过于频繁，请稍后再试",
+    "AI_MES_UNAVAILABLE": "MES 只读查询未启用或暂时不可用",
 }
 
 # 审计状态（设计 §9.3），集中定义避免字符串漂移

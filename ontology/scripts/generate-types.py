@@ -18,6 +18,17 @@ for name, values in mappings["enumerations"].items():
     union = " | ".join(f"'{v}'" for v in values)
     lines.append(f"export type {name} = {union};")
     lines.append("")
+
+labels = mappings.get("labels", {})
+if labels:
+    lines.append("export const ENUM_LABELS = {")
+    for name, mapping in labels.items():
+        lines.append(f"  {name}: {{")
+        for code, label in mapping.items():
+            lines.append(f"    {code}: '{label}',")
+        lines.append("  },")
+    lines.append("} as const;")
+    lines.append("")
 out = ROOT / "generated" / "types.ts"
 expected = "\n".join(lines)
 

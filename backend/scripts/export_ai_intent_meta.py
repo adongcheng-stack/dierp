@@ -53,6 +53,7 @@ def build_document() -> dict[str, Any]:
             "downlink": spec.downlink,
             "roles": sorted(spec.allowed_roles),
             "domains": list(spec.domains),
+            "output_enums": dict(spec.output_enums),
             "shacl_coverage": spec.shacl_coverage,
             "params": params,
         })

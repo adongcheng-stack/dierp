@@ -16,4 +16,9 @@ describe('NAV_SECTIONS', () => {
       '系统',
     ])
   })
+
+  it('places the AI assistant in the workbench right after home', () => {
+    expect(NAV_SECTIONS[0].keys).toEqual(['/', '/ai', 'kpi'])
+    expect(NAV_ITEMS.find((item) => item.key === '/ai')?.path).toBe('/ai')
+  })
 })

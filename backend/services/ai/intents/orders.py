@@ -13,7 +13,7 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "order_delay_risk"
 
-ALLOWED_ROLES = frozenset({"SALES", "SALES_MANAGER", "PLANNER", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"SALES", "SALES_MANAGER", "PLANNER", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "order_number", "customer_id", "material_code", "quantity",
@@ -99,6 +99,7 @@ SPEC = IntentSpec(
     domains=["sd", "pp"],
     allowed_roles=ALLOWED_ROLES,
     output_fields={"*": list(ALL_COLUMNS)},
+    output_enums={"order_status": "SalesOrderStatus"},
     record_key=["order_number"],
     downlink="/sd/sales-orders",
     shacl_coverage="none",

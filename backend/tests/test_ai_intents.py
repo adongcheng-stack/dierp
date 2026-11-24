@@ -53,7 +53,7 @@ _MODULES = (
 EXPECTED_CODES = {
     "kitting_shortage", "material_below_safety", "order_delay_risk",
     "open_mrp_exceptions", "customer_credit_status", "ar_overdue",
-    "open_nonconformance",
+    "open_nonconformance", "mes_work_order_progress",
 }
 
 EXPECTED_DOWNLINKS = {
@@ -64,6 +64,7 @@ EXPECTED_DOWNLINKS = {
     "customer_credit_status": "/sd/customers",
     "ar_overdue": "/sd/invoices",
     "open_nonconformance": "/qms/ncrs",
+    "mes_work_order_progress": "/pp/production-orders",
 }
 
 
@@ -74,7 +75,7 @@ def dataset(db):
     return db
 
 
-def test_registry_has_exactly_seven_codes():
+def test_registry_has_expected_codes():
     assert set(INTENT_REGISTRY) == EXPECTED_CODES
 
 
@@ -89,16 +90,20 @@ def test_each_spec_declares_complete_contract():
         table = catalog.entities[spec.primary_entity].table
         columns = {c.name for c in Base.metadata.tables[table].columns}
         for key in spec.record_key:
-            assert key in columns, f"{code}: record_key {key} 不是 {table} 的真实列"
+            if spec.source_system == "ERP":
+                assert key in columns, f"{code}: record_key {key} 不是 {table} 的真实列"
+            else:
+                assert key in spec.output_fields["*"], f"{code}: 外部来源 record_key {key} 必须在输出中"
         assert spec.downlink == EXPECTED_DOWNLINKS[code], code
         assert spec.allowed_roles, code
+        assert "ADMIN" in spec.allowed_roles, f"{code}: ADMIN 必须显式进入允许角色"
         assert spec.output_fields, code
         assert spec.shacl_coverage in {"full", "partial", "none"}, code
 
 
 def test_shacl_coverage_distribution_is_truthful():
     coverage = [spec.shacl_coverage for spec in INTENT_REGISTRY.values()]
-    assert coverage.count("full") == 3
+    assert coverage.count("full") == 4
     assert coverage.count("partial") == 2
     assert coverage.count("none") == 2
 

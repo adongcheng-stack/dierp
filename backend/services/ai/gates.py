@@ -104,3 +104,99 @@ def shacl_check(
 
     assert status in VALID_SHACL_STATUSES
     return violations, status
+
+
+def shape_property_paths(shapes_graph: Graph, shape_iri: URIRef) -> set[URIRef]:
+    """收集某个 NodeShape 直接声明的 ``sh:path``（仅 IRI 路径）。"""
+    paths: set[URIRef] = set()
+    for prop in shapes_graph.objects(shape_iri, SHNS.property):
+        path = shapes_graph.value(prop, SHNS.path)
+        if isinstance(path, URIRef):
+            paths.add(path)
+    return paths
+
+
+def _shape_datatype(shapes_graph: Graph, shape_iri: URIRef, path: URIRef) -> URIRef | None:
+    for prop in shapes_graph.objects(shape_iri, SHNS.property):
+        if shapes_graph.value(prop, SHNS.path) != path:
+            continue
+        datatype = shapes_graph.value(prop, SHNS.datatype)
+        if isinstance(datatype, URIRef):
+            return datatype
+    return None
+
+
+def build_shape_param_graph(
+    shape_iri: URIRef,
+    param_bindings: dict[str, str],
+    params: dict[str, Any],
+    shapes_graph: Graph,
+) -> tuple[Graph, set[URIRef], set[URIRef]]:
+    """按显式参数→形状属性绑定构造过滤值节点（外部数据源用）。"""
+    graph = Graph()
+    node = BNode()
+    target = shapes_graph.value(shape_iri, SHNS.targetClass)
+    if isinstance(target, URIRef):
+        graph.add((node, RDF.type, target))
+    paths = shape_property_paths(shapes_graph, shape_iri)
+    provided: set[URIRef] = set()
+    for param_name, prop_name in param_bindings.items():
+        value = params.get(param_name)
+        if value is None:
+            continue
+        path = URIRef(NS + prop_name)
+        if path not in paths:
+            continue
+        datatype = _shape_datatype(shapes_graph, shape_iri, path)
+        graph.add(
+            (node, path, Literal(value) if datatype is None else Literal(value, datatype=datatype))
+        )
+        provided.add(path)
+    return graph, provided, paths
+
+
+def shacl_check_shape(
+    shape_iri: URIRef,
+    param_bindings: dict[str, str],
+    params: dict[str, Any],
+    shapes_graph: Graph,
+) -> tuple[list[dict[str, str]], str]:
+    """外部数据源：按本体 NodeShape 校验已绑定参数，规则与 ``shacl_check`` 一致。"""
+    if (shape_iri, RDF.type, SHNS.NodeShape) not in shapes_graph:
+        return [], "skipped"
+
+    graph, provided, shape_paths = build_shape_param_graph(
+        shape_iri, param_bindings, params, shapes_graph
+    )
+    conforms, results_graph, _ = validate(
+        graph,
+        shacl_graph=shapes_graph,
+        inference="none",
+        advanced=False,
+    )
+
+    violations: list[dict[str, str]] = []
+    for result in results_graph.subjects(RDF.type, SHNS.ValidationResult):
+        path = results_graph.value(result, SHNS.resultPath)
+        component = results_graph.value(result, SHNS.sourceConstraintComponent)
+        if component == SHNS.MinCountConstraintComponent and path not in provided:
+            continue
+        violations.append({
+            "path": str(path).replace(NS, "") if path else "",
+            "component": str(component).rsplit("#", 1)[-1] if component else "",
+            "message": str(results_graph.value(result, SHNS.resultMessage) or ""),
+        })
+
+    mapped = {URIRef(NS + prop) for prop in param_bindings.values()} & shape_paths
+    matched = provided & mapped
+    if violations:
+        status = "failed"
+    elif provided and matched == provided and provided == mapped:
+        status = "passed"
+    elif matched:
+        status = "partial"
+    else:
+        status = "skipped"
+
+    assert status in VALID_SHACL_STATUSES
+    return violations, status

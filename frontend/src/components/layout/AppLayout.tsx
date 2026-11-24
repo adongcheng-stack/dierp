@@ -23,6 +23,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [tabs, setTabs] = useState<TabItem[]>([HOME_TAB])
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const canvasRef = useRef<HTMLElement>(null)
+  const isAiPage = location.pathname === '/ai'
 
   useEffect(() => {
     canvasRef.current?.scrollTo(0, 0)
@@ -119,8 +120,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           />
         </div>
 
-        <main ref={canvasRef} className="app-canvas">
-          <div className="page-content p-4 md:p-6">{children}</div>
+        <main ref={canvasRef} className={`app-canvas${isAiPage ? ' ai-canvas' : ''}`}>
+          <div className={`page-content p-4 md:p-6${isAiPage ? ' ai-full-page' : ''}`}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

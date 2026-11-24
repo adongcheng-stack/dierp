@@ -175,6 +175,14 @@
   display: none;
 }
 
+/* AI 助手：表头在中间滚动区内吸顶 */
+.ai-assistant-page .insights-card .ant-card-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: hsl(var(--surface));
+}
+
 /* ── 表单细节 ───────────────────────────────────────────────────────────── */
 
 input:-webkit-autofill,

@@ -140,6 +140,8 @@ app.include_router(system.router, prefix="/api/system", tags=["组织架构/系�
 # AI 域：只读、强制登录；不挂 _gates（见 backend/api/routers/ai.py 顶部说明）
 app.include_router(ai_router.router, prefix="/api/ai", tags=["AI 助手"],
                    dependencies=[Depends(ai_router.require_ai_access)])
+# MCP 只读工具层：Bearer token 鉴权由路由内部完成，不继承登录依赖
+app.include_router(ai_router.mcp_router, prefix="/api/ai", tags=["AI MCP"])
 
 
 @app.get("/")

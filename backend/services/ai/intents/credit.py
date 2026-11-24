@@ -18,13 +18,13 @@ from backend.services.ai.ontology_service import NS
 
 CODE = "customer_credit_status"
 
-ALLOWED_ROLES = frozenset({"SALES_MANAGER", "FINANCE", "GENERAL_MANAGER"})
+ALLOWED_ROLES = frozenset({"SALES_MANAGER", "FINANCE", "GENERAL_MANAGER", "ADMIN"})
 
 ALL_COLUMNS = [
     "customer_id", "customer_name", "credit_limit",
     "ar_balance", "open_order_amount", "open_order_count", "credit_usage_ratio",
 ]
-# 金额类列默认裁剪（评审 I10）：只有财务/总经理/管理员可见
+# 金额类列默认裁剪（评审 I10）：财务/销售经理/总经理/管理员可见全列
 SAFE_COLUMNS = ["customer_id", "customer_name", "open_order_count"]
 
 _OPEN_STATUSES = (SalesOrderStatus.APPROVED, SalesOrderStatus.IN_PRODUCTION)
@@ -93,7 +93,7 @@ SPEC = IntentSpec(
     allowed_roles=ALLOWED_ROLES,
     output_fields={
         "*": SAFE_COLUMNS,
-        "SALES_MANAGER": SAFE_COLUMNS,
+        "SALES_MANAGER": list(ALL_COLUMNS),
         "FINANCE": list(ALL_COLUMNS),
         "GENERAL_MANAGER": list(ALL_COLUMNS),
         "ADMIN": list(ALL_COLUMNS),

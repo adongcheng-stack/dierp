@@ -38,6 +38,7 @@ import {
   ClipboardX,
   Network,
   Gauge,
+  Sparkles,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -226,6 +227,7 @@ export const NAV_ITEMS: NavItem[] = [
       { key: '/admin/data-exchange', label: '数据导入导出', icon: FileSpreadsheet, path: '/admin/data-exchange' },
     ],
   },
+  { key: '/ai', label: 'AI 助手', icon: Sparkles, path: '/ai' },
 ]
 
 /** path → 页面名称（面包屑 / 标签页用） */
